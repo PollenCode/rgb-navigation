@@ -1,25 +1,38 @@
-import logo from './logo.svg';
-import './App.css';
+import { useEffect, useState } from "react";
+import { SERVER } from "./constants";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+export function App() {
+    const [message, setMessage] = useState(null);
+
+    async function refreshMessage() {
+        setMessage(null);
+        try {
+            let response = await fetch(SERVER + "/message", { method: "POST" });
+            let obj = await response.json();
+            setMessage(obj.message);
+        } catch (ex) {
+            setMessage(`Error: could not reach server. Is it turned on? See /app/server for instructions. (${ex})`);
+        }
+    }
+
+    useEffect(() => {
+        refreshMessage();
+    }, []);
+
+    return (
+        <div>
+            <h2>This is a react application</h2>
+            <small>Open the network tab to see how the message got fetched!</small>
+            <p>
+                Message from server: <strong>{message ?? "Loading..."}</strong>
+            </p>
+            <button
+                onClick={() => {
+                    refreshMessage();
+                }}
+            >
+                Refresh message
+            </button>
+        </div>
+    );
 }
-
-export default App;
