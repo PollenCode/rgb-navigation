@@ -25,9 +25,16 @@ void setup()
     Serial.println("Starting...");
     delay(100);
 
-    pinMode(LED_BUILTIN, INPUT);
-    digitalWrite(LED_BUILTIN, false);
+    pinMode(LED_BUILTIN, OUTPUT);
     memset(lines, 0, sizeof(LineEffect *) * MAX_LINES);
+
+    for (int i = 0; i < 5; i++)
+    {
+        digitalWrite(LED_BUILTIN, true);
+        delay(100);
+        digitalWrite(LED_BUILTIN, false);
+        delay(100);
+    }
 
     Serial.println("Ready");
 }
@@ -45,80 +52,65 @@ void loop()
     //     }
     // }
 
-    // Received packet of type 2
-    // Received packet of type 1
-    // Unimplemented effectType 0
-    // Received packet of type 0
-    // Received packet of type 0
-    // Received packet of type  0
-    // Received packet of type 0
-    // Received packet of type 0
-    // Received packet of type 0
-
-    if (Serial.available() > 0)
+    int available = Serial.available();
+    if (available > 0)
     {
-        int packetType = Serial.read();
-        Serial.print("Received packet of type ");
-        Serial.println(packetType);
-
-        switch (packetType)
+        int packetType = Serial.peek();
+        if ((packetType == 2 && available >= 9) || (packetType == 1 && available >= 2) || (packetType == 3 && available >= 2))
         {
-        case 1:
-            Serial.println("Jump1");
-            // Effect
-            uint8_t effectType = Serial.read();
-            Serial.print("Unimplemented effectType ");
-            Serial.println(effectType);
-            break;
+            Serial.read(); // Consume packetType
+            Serial.print("Received packet of type ");
+            Serial.println(packetType);
 
-        case 3:
-            Serial.println("Jump3");
-        case 2:
-            Serial.println("Jump2");
-            uint8_t id = Serial.read();
-            Serial.print("Id ");
-            Serial.println(id);
-            if (id >= MAX_LINES)
+            if (packetType == 1)
             {
-                Serial.println("Reached max lines");
-                break;
+                // Effect
+                uint8_t effectType = Serial.read();
+                Serial.print("Unimplemented effectType ");
+                Serial.println(effectType);
             }
-
-            if (packetType == 2)
+            else if (packetType == 2 || packetType == 3)
             {
-                if (lines[id] != nullptr)
-                    delete lines[id];
+                uint8_t id = Serial.read();
+                // if (id >= MAX_LINES)
+                // {
+                //     Serial.println("Reached max lines");
+                //     break;
+                // }
 
-                // Enable line effect
-                uint8_t r = Serial.read(), g = Serial.read(), b = Serial.read();
-                int start = Serial.read() << 8 | Serial.read();
-                int end = Serial.read() << 8 | Serial.read();
-                lines[id] = new LineEffect(start, end, Color(r, g, b));
+                if (packetType == 2)
+                {
+                    if (lines[id] != nullptr)
+                        delete lines[id];
 
-                Serial.print("Enable line ");
-                Serial.println(id);
+                    // Enable line effect
+                    uint8_t r = Serial.read(), g = Serial.read(), b = Serial.read();
+                    int start = Serial.read() << 8 | Serial.read();
+                    int end = Serial.read() << 8 | Serial.read();
+                    lines[id] = new LineEffect(start, end, Color(r, g, b));
+
+                    Serial.print("Enable line ");
+                    Serial.println(id);
+                }
+                else
+                {
+                    // Disable line effect
+                    if (lines[id] != nullptr)
+                    {
+                        delete lines[id];
+                        lines[id] = nullptr;
+                    }
+
+                    Serial.print("Disable line ");
+                    Serial.println(id);
+                }
             }
             else
             {
-                // Disable line effect
-                if (lines[id] != nullptr)
-                {
-                    delete lines[id];
-                    lines[id] = nullptr;
-                }
-
-                Serial.print("Disable line ");
-                Serial.println(id);
+                Serial.print("Unknown packet type ");
+                Serial.println(packetType);
             }
-            break;
-
-        default:
-            Serial.println("Jumpdefault");
-            Serial.print("Unknown packet type ");
-            Serial.println(packetType);
-            break;
         }
-        Serial.println("End");
     }
 
     for (int i = 0; i < MAX_LINES; i++)
@@ -127,7 +119,7 @@ void loop()
         if (!le)
             continue;
 
-        digitalWrite(LED_BUILTIN, counter % 100 < 50);
+        digitalWrite(LED_BUILTIN, counter % 1000 < 50);
     }
 
     counter++;
