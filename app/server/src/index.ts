@@ -1,7 +1,7 @@
 require("dotenv").config(); // Load .env file
-const express = require("express");
-const http = require("http");
-const WebSocket = require("ws");
+import express from "express";
+import http from "http";
+import WebSocket from "ws";
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
