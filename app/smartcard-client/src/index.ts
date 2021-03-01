@@ -1,17 +1,17 @@
 require("dotenv").config();
-const pcsc = require("pcsclite")();
-const WebSocket = require("ws");
+import pcscCreator from "pcsclite";
+import WebSocket from "ws";
 
 if (!process.env.URL) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(-1);
 }
 
-let connectedSocket = null;
+let connectedSocket: WebSocket | null = null;
 
 function connect() {
     console.log("connecting...");
-    socket = new WebSocket(process.env.URL);
+    let socket = new WebSocket(process.env.URL!);
     socket.on("open", () => {
         connectedSocket = socket;
         console.log("connection established");
@@ -23,6 +23,8 @@ function connect() {
         setTimeout(connect, 5000);
     });
 }
+
+const pcsc = pcscCreator();
 
 pcsc.on("reader", function (reader) {
     console.log(`reader detected: ${reader.name}`);
@@ -56,7 +58,7 @@ pcsc.on("reader", function (reader) {
                     console.log("uid received", data);
 
                     // Send to server
-                    if (connectedSocket) connectedSocket.send(JSON.stringify({ uid: data }));
+                    connectedSocket?.send(JSON.stringify({ uid: data }));
                 });
             });
         }
