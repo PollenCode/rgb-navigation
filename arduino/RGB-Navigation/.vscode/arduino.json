@@ -1,0 +1,6 @@
+{
+    "sketch": "RGB-Navigation.ino",
+    "programmer": "AVRISP mkII",
+    "board": "arduino:avr:uno",
+    "port": "COM4"
+}
