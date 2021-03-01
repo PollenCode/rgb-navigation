@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SERVER } from "./constants";
 
 export function App() {
-    const [message, setMessage] = useState(null);
+    const [message, setMessage] = useState<string | null>(null);
 
     async function refreshMessage() {
         setMessage(null);
