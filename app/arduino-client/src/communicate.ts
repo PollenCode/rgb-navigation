@@ -36,13 +36,14 @@ export class SerialLedController {
     }
 
     public sendEffect(effectType: number) {
-        this.port.write(Buffer.from([SerialPacketType.Effect, effectType]));
+        this.port.write(Buffer.from([3, SerialPacketType.Effect, effectType]));
     }
 
     public sendEnableLine(id: number, r: number, g: number, b: number, startLed: number, endLed: number, duration: number) {
         // console.log(`enable id=${id} startLed=${startLed} endLed=${endLed} duration=${duration}`);
         this.port.write(
             Buffer.from([
+                12,
                 SerialPacketType.EnableLine,
                 id,
                 r,
@@ -60,6 +61,6 @@ export class SerialLedController {
 
     public sendDisableLine(id: number) {
         // console.log(`disable id=${id}`);
-        this.port.write(Buffer.from([SerialPacketType.DisableLine, id]));
+        this.port.write(Buffer.from([3, SerialPacketType.DisableLine, id]));
     }
 }

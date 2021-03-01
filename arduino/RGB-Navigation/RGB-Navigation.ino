@@ -16,9 +16,10 @@ struct LineEffect
 {
     uint16_t startLed;
     uint16_t endLed;
+    uint64_t endTime;
     Color color;
 
-    LineEffect(uint16_t startLed, uint16_t endLed, Color color) : startLed(startLed), endLed(endLed), color(color) {}
+    LineEffect(uint16_t startLed, uint16_t endLed, uint64_t endTime, Color color) : startLed(startLed), endLed(endLed), endTime(endTime), color(color) {}
 };
 
 // Effect that is used when there are no routes currently displayed
@@ -78,20 +79,28 @@ void processPacket(int packetType)
         if (packetType == 2)
         {
             if (routes[id] != nullptr)
+            {
+                setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
                 delete routes[id];
+            }
 
             // Enable line effect
             uint8_t r = Serial.read(), g = Serial.read(), b = Serial.read();
-            int start = Serial.read() << 8 | Serial.read();
-            int end = Serial.read() << 8 | Serial.read();
-            routes[id] = new LineEffect(start, end, Color(r, g, b));
+            uint16_t startLed = Serial.read() << 8 | Serial.read();
+            uint16_t endLed = Serial.read() << 8 | Serial.read();
+            uint16_t duration = Serial.read() << 8 | Serial.read();
+
+            uint64_t endTime = duration > 0 ? millis() + duration * 1000 : 0;
+            routes[id] = new LineEffect(startLed, endLed, endTime, Color(r, g, b));
 
             Serial.print("Enable line ");
             Serial.print(id);
-            Serial.print(", start=");
-            Serial.print(start);
-            Serial.print(", end=");
-            Serial.println(end);
+            Serial.print(", startLed=");
+            Serial.print(startLed);
+            Serial.print(", endLed=");
+            Serial.print(endLed);
+            Serial.print(", duration=");
+            Serial.println(duration);
         }
         else
         {
@@ -152,23 +161,44 @@ void loop()
     //     }
     // }
 
+    uint64_t time = millis();
+
     int available = Serial.available();
     if (available > 0)
     {
         int packetType = Serial.peek();
         if ((packetType == 2 && available >= 9) || (packetType == 1 && available >= 2) || (packetType == 3 && available >= 2))
         {
+            Serial.print("available: ");
+            Serial.println(Serial.available());
             Serial.read(); // Consume packetType
             processPacket(packetType);
+        }
+        else
+        {
+            // Consumse noise bytes
+            while (Serial.available())
+                Serial.read();
         }
     }
 
     bool anyRoute = false;
+
     for (int i = 0; i < MAX_LINES; i++)
     {
         LineEffect *le = routes[i];
         if (!le)
             continue;
+
+        // Delete line if it has expired
+        if (le->endTime != 0 && le->endTime <= time)
+        {
+            setColorLine(le->startLed, le->endLed, CRGB(0, 0, 0));
+            delete le;
+            routes[i] = nullptr;
+            continue;
+        }
+
         anyRoute = true;
 
         // Draw line effect
@@ -188,7 +218,7 @@ void loop()
 
     if (!anyRoute)
     {
-        // Draw idle effect
+        // Draw idle effect if no routes are being drawn
         if (idleEffect == Black)
             blackEffect();
         else if (idleEffect == Rainbow)
@@ -198,4 +228,6 @@ void loop()
     FastLED.show();
 
     counter++;
+
+    delay(1);
 }

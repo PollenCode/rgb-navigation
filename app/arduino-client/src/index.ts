@@ -21,6 +21,7 @@ let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
 let socket: WebSocket | null = null;
 
 function processMessage(data: LedControllerServerMessage) {
+    console.log("receive", data);
     switch (data.type) {
         case "setIdleEffect":
             arduino.sendEffect(data.effect);
