@@ -37,7 +37,8 @@ uint64_t counter = 0;
 
 void setup()
 {
-    Serial.begin(115200);
+    // Increasing the baud rate will cause corruption and inconsistency
+    Serial.begin(19200);
     Serial.println("Starting...");
     delay(100);
 
@@ -58,8 +59,9 @@ void setup()
     Serial.println("Ready");
 }
 
-void processPacket(int packetType)
+void processPacket()
 {
+    int packetType = Serial.read();
     // Switch does not work for some reason??
     if (packetType == 1) // Set effect
     {
@@ -163,23 +165,13 @@ void loop()
 
     uint64_t time = millis();
 
+    int packetSize = Serial.peek();
     int available = Serial.available();
-    if (available > 0)
+
+    if (packetSize > 0 && available >= packetSize)
     {
-        int packetType = Serial.peek();
-        if ((packetType == 2 && available >= 9) || (packetType == 1 && available >= 2) || (packetType == 3 && available >= 2))
-        {
-            Serial.print("available: ");
-            Serial.println(Serial.available());
-            Serial.read(); // Consume packetType
-            processPacket(packetType);
-        }
-        else
-        {
-            // Consumse noise bytes
-            while (Serial.available())
-                Serial.read();
-        }
+        Serial.read(); // Consume packetSize
+        processPacket();
     }
 
     bool anyRoute = false;
@@ -228,6 +220,4 @@ void loop()
     FastLED.show();
 
     counter++;
-
-    delay(1);
 }
