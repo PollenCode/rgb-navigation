@@ -98,6 +98,7 @@ void processPacket(int packetType)
             // Disable line effect
             if (routes[id] != nullptr)
             {
+                setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
                 delete routes[id];
                 routes[id] = nullptr;
             }
@@ -113,11 +114,28 @@ void processPacket(int packetType)
     }
 }
 
+void blackEffect()
+{
+    for (int i = 0; i < LED_COUNT; i++)
+    {
+        leds[i] = CRGB(20, 20, 20);
+    }
+}
+
 void rainbowEffect()
 {
     for (int i = 0; i < LED_COUNT; i++)
     {
         leds[i] = CHSV(((counter / 8) + i) % 255, 255, 255);
+    }
+}
+
+void setColorLine(int start, int end, CRGB color)
+{
+    int dir = end > start ? 1 : -1;
+    for (int i = start; i != end && i < LED_COUNT && i >= 0; i += dir)
+    {
+        leds[i] = color;
     }
 }
 
@@ -155,16 +173,25 @@ void loop()
 
         // Draw line effect
         int dir = le->endLed > le->startLed ? 1 : -1;
-        for (int i = le->startLed; i != le->endLed && i < LED_COUNT && i >= 0; i += dir)
+        for (int i = le->startLed, j = 0; i != le->endLed && i < LED_COUNT && i >= 0; i += dir, j++)
         {
-            leds[i] = CRGB(le->color.r, le->color.g, le->color.b);
+            if ((counter / 10 + j) % 20 == 0)
+            {
+                leds[i] = CRGB(0, 0, 0);
+            }
+            else
+            {
+                leds[i] = CRGB(le->color.r, le->color.g, le->color.b);
+            }
         }
     }
 
     if (!anyRoute)
     {
         // Draw idle effect
-        if (idleEffect == Rainbow)
+        if (idleEffect == Black)
+            blackEffect();
+        else if (idleEffect == Rainbow)
             rainbowEffect();
     }
 
