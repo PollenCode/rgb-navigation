@@ -1,5 +1,7 @@
 require("dotenv").config(); // Load .env file
 const express = require("express");
+const http = require("http");
+const WebSocket = require("ws");
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -34,6 +36,21 @@ app.post("/message", (req, res, next) => {
     }, 500);
 });
 
+let server = http.createServer(app);
+let socket = new WebSocket.Server({ server, path: "/ws" });
+
+socket.on("connection", (connection) => {
+    console.log("new connection");
+
+    connection.on("message", () => {
+        console.log("incoming data");
+    });
+
+    connection.on("close", () => {
+        console.log("connection closed");
+    });
+});
+
 const port = parseInt(process.env.PORT);
-app.listen(port);
+server.listen(port);
 console.log(`Server started on port ${port}`);

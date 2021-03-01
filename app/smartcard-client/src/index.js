@@ -1,4 +1,13 @@
 const pcsc = require("pcsclite")();
+const WebSocket = require("ws");
+
+let socket = new WebSocket("ws://localhost:3001/ws");
+socket.on("open", () => {
+    console.log("connection opened");
+});
+socket.on("close", () => {
+    console.log("connection closed");
+});
 
 pcsc.on("reader", function (reader) {
     console.log(`reader detected: ${reader.name}`);
