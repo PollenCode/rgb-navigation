@@ -33,6 +33,18 @@ export function App() {
             >
                 Refresh message 2
             </button>
+            <button
+                type="button"
+                onClick={async () => {
+                    await fetch(SERVER + "/leds", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ effect: 1 }),
+                    });
+                }}
+            >
+                Set color
+            </button>
         </div>
     );
 }

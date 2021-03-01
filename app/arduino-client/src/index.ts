@@ -12,14 +12,14 @@ if (!URL || !SERIAL_PORT || !BAUD_RATE) {
 console.log(`opening port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
 
 let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
-setTimeout(() => arduino.sendEnableLine(0, 10, 0, 0, 0, 100), 5000);
-setTimeout(() => arduino.sendEnableLine(0, 50, 0, 0, 0, 100), 8000);
-setTimeout(() => arduino.sendEnableLine(0, 180, 0, 0, 0, 100), 10000);
+setTimeout(() => arduino.sendEnableLine(0, 255, 0, 0, 0, 100), 5000);
+setTimeout(() => arduino.sendDisableLine(0), 15000);
 
 let socket: WebSocket | null = null;
 
 function processMessage(data: any) {
     console.log("incoming", data);
+    arduino.sendEffect(data.effect);
 }
 
 function connect() {
@@ -29,7 +29,7 @@ function connect() {
     });
     socket.on("message", (e) => {
         try {
-            processMessage(JSON.stringify(e));
+            processMessage(JSON.parse(e as string));
         } catch (ex) {
             console.error("could not process data", ex);
         }
