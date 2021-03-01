@@ -39,15 +39,23 @@ app.post("/message", (req, res, next) => {
 let server = http.createServer(app);
 let socket = new WebSocket.Server({ server, path: "/ws" });
 
+let connections: WebSocket[] = [];
+
 socket.on("connection", (connection) => {
     console.log("new connection");
+    connections.push(connection);
 
     connection.on("message", (data) => {
         console.log("incoming data", data);
+        for (let i = 0; i < connections.length; i++) {
+            let c = connections[i];
+            if (c !== connection) c.send(data);
+        }
     });
 
     connection.on("close", () => {
         console.log("connection closed");
+        connections.splice(connections.indexOf(connection), 1);
     });
 });
 

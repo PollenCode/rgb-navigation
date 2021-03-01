@@ -56,7 +56,7 @@ pcsc.on("reader", function (reader) {
                     console.log("uid received", data);
 
                     // Send to server
-                    if (connectedSocket && connectedSocket.readyState === WebSocket.OPEN) connectedSocket.send(JSON.stringify({ uid: data }));
+                    if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ uid: data }));
                 });
             });
         }
