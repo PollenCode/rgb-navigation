@@ -8,7 +8,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 if (!process.env.NODE_ENV || !process.env.PORT) {
-    console.error("Please create a .env file and restart the server. (You should copy the .env.example file)");
+    console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(1);
 }
 
@@ -42,8 +42,8 @@ let socket = new WebSocket.Server({ server, path: "/ws" });
 socket.on("connection", (connection) => {
     console.log("new connection");
 
-    connection.on("message", () => {
-        console.log("incoming data");
+    connection.on("message", (data) => {
+        console.log("incoming data", data);
     });
 
     connection.on("close", () => {

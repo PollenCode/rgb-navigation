@@ -1,13 +1,28 @@
+require("dotenv").config();
 const pcsc = require("pcsclite")();
 const WebSocket = require("ws");
 
-let socket = new WebSocket("ws://localhost:3001/ws");
-socket.on("open", () => {
-    console.log("connection opened");
-});
-socket.on("close", () => {
-    console.log("connection closed");
-});
+if (!process.env.URL) {
+    console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
+    process.exit(-1);
+}
+
+let connectedSocket = null;
+
+function connect() {
+    console.log("connecting...");
+    socket = new WebSocket(process.env.URL);
+    socket.on("open", () => {
+        connectedSocket = socket;
+        console.log("connection established");
+    });
+    socket.on("close", () => {
+        connectedSocket = null;
+        console.log("connection closed");
+        // Try to reconnect...
+        setTimeout(connect, 5000);
+    });
+}
 
 pcsc.on("reader", function (reader) {
     console.log(`reader detected: ${reader.name}`);
@@ -39,6 +54,9 @@ pcsc.on("reader", function (reader) {
                     if (err) return console.error("could not get uid", err);
                     if (data.length <= 2) return console.error("invalid data received from card");
                     console.log("uid received", data);
+
+                    // Send to server
+                    if (connectedSocket) connectedSocket.send(JSON.stringify({ uid: data }));
                 });
             });
         }
@@ -52,3 +70,5 @@ pcsc.on("reader", function (reader) {
 pcsc.on("error", function (err) {
     console.error("error", err.message);
 });
+
+connect();
