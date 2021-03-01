@@ -7,17 +7,14 @@ if (!process.env.URL) {
     process.exit(-1);
 }
 
-let connectedSocket: WebSocket | null = null;
+let socket: WebSocket | null = null;
 
 function connect() {
-    console.log("connecting...");
-    let socket = new WebSocket(process.env.URL!);
+    socket = new WebSocket(process.env.URL!);
     socket.on("open", () => {
-        connectedSocket = socket;
         console.log("connection established");
     });
     socket.on("close", () => {
-        connectedSocket = null;
         console.log("connection closed");
         // Try to reconnect...
         setTimeout(connect, 5000);
@@ -58,7 +55,7 @@ pcsc.on("reader", function (reader) {
                     console.log("uid received", data);
 
                     // Send to server
-                    connectedSocket?.send(JSON.stringify({ uid: data }));
+                    if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ uid: data }));
                 });
             });
         }

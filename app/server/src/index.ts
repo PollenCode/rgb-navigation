@@ -36,11 +36,28 @@ app.post("/message", (req, res, next) => {
     }, 500);
 });
 
+let connections: WebSocket[] = [];
+
+app.post("/leds", (req, res, next) => {
+    for (let i = 0; i < connections.length; i++) {
+        let c = connections[i];
+        c.send(
+            JSON.stringify({
+                effect: req.body.effect,
+            })
+        );
+    }
+    res.json({
+        effect: req.body.effect,
+    });
+});
+
 let server = http.createServer(app);
 let socket = new WebSocket.Server({ server, path: "/ws" });
 
 socket.on("connection", (connection) => {
     console.log("new connection");
+    connections.push(connection);
 
     connection.on("message", (data) => {
         console.log("incoming data", data);
@@ -48,6 +65,7 @@ socket.on("connection", (connection) => {
 
     connection.on("close", () => {
         console.log("connection closed");
+        connections.splice(connections.indexOf(connection), 1);
     });
 });
 
