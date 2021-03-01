@@ -5,6 +5,7 @@
             "includePath": [
                 "H:\\Program Files\\Arduino\\tools\\**",
                 "X:\\Documents\\Arduino\\libraries\\**",
+                "X:\\Documents\\Arduino\\libraries\\FastLED-3.4.0\\src",
                 "H:\\Program Files\\Arduino\\libraries\\**",
                 "H:\\Program Files\\Arduino\\hardware\\tools\\**",
                 "H:\\Program Files\\Arduino\\hardware\\arduino\\avr\\**"
