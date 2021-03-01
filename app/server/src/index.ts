@@ -2,6 +2,7 @@ require("dotenv").config(); // Load .env file
 import express from "express";
 import http from "http";
 import WebSocket from "ws";
+import { LedControllerServerMessage } from "../../shared/Message";
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -41,14 +42,10 @@ let connections: WebSocket[] = [];
 app.post("/leds", (req, res, next) => {
     for (let i = 0; i < connections.length; i++) {
         let c = connections[i];
-        c.send(
-            JSON.stringify({
-                effect: req.body.effect,
-            })
-        );
+        c.send(JSON.stringify(req.body));
     }
     res.json({
-        effect: req.body.effect,
+        status: "ok",
     });
 });
 
