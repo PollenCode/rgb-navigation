@@ -10,7 +10,6 @@ if (!process.env.URL) {
 let socket: WebSocket | null = null;
 
 function connect() {
-    console.log("connecting...");
     socket = new WebSocket(process.env.URL!);
     socket.on("open", () => {
         console.log("connection established");

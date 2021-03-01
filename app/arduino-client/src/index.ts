@@ -1,6 +1,6 @@
 require("dotenv").config();
 import WebSocket from "ws";
-import SerialPort from "serialport";
+import { SerialLedController } from "./communicate";
 
 // Read from .env file
 const { URL, SERIAL_PORT, BAUD_RATE } = process.env;
@@ -11,27 +11,29 @@ if (!URL || !SERIAL_PORT || !BAUD_RATE) {
 
 console.log(`opening port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
 
-let port = new SerialPort(SERIAL_PORT, { baudRate: parseInt(BAUD_RATE) });
-port.on("error", (error) => {
-    console.error("could not open serial port:", error);
-});
-port.on("data", (data) => {
-    console.log("incoming serial data", data);
-});
+let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
+setTimeout(() => arduino.sendEnableLine(0, 10, 0, 0, 0, 100), 5000);
+setTimeout(() => arduino.sendEnableLine(0, 50, 0, 0, 0, 100), 8000);
+setTimeout(() => arduino.sendEnableLine(0, 180, 0, 0, 0, 100), 10000);
 
 let socket: WebSocket | null = null;
 
 function processMessage(data: any) {
-    console.log("incoming data", data);
+    console.log("incoming", data);
 }
 
 function connect() {
-    console.log("connecting...");
     socket = new WebSocket(URL!);
     socket.on("open", () => {
         console.log("connection established");
     });
-    socket.on("message", processMessage);
+    socket.on("message", (e) => {
+        try {
+            processMessage(JSON.stringify(e));
+        } catch (ex) {
+            console.error("could not process data", ex);
+        }
+    });
     socket.on("close", () => {
         console.log("connection closed");
         // Try to reconnect...
