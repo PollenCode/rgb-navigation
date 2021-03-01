@@ -31,7 +31,7 @@ export function App() {
                     refreshMessage();
                 }}
             >
-                Refresh message
+                Refresh message 2
             </button>
         </div>
     );
