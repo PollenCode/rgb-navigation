@@ -40,12 +40,14 @@ export class SerialLedController {
     }
 
     public sendEnableLine(id: number, r: number, g: number, b: number, startLed: number, endLed: number) {
+        // console.log(`enable id=${id} startLed=${startLed} endLed=${endLed}`);
         this.port.write(
             Buffer.from([SerialPacketType.EnableLine, id, r, g, b, (startLed >> 8) & 0xff, startLed & 0xff, (endLed >> 8) & 0xff, endLed & 0xff])
         );
     }
 
     public sendDisableLine(id: number) {
+        // console.log(`disable id=${id}`);
         this.port.write(Buffer.from([SerialPacketType.DisableLine, id]));
     }
 }

@@ -12,8 +12,10 @@ if (!URL || !SERIAL_PORT || !BAUD_RATE) {
 console.log(`opening port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
 
 let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
-setTimeout(() => arduino.sendEnableLine(0, 255, 0, 0, 0, 100), 5000);
+setTimeout(() => arduino.sendEnableLine(0, 255, 0, 0, 30, 0), 5000);
 setTimeout(() => arduino.sendDisableLine(0), 15000);
+setTimeout(() => arduino.sendEnableLine(1, 0, 255, 0, 0, 15), 17000);
+setTimeout(() => arduino.sendDisableLine(1), 25000);
 
 let socket: WebSocket | null = null;
 
