@@ -1,6 +1,6 @@
 # RGB-Navigation
 
-Help visitors traverse corridors using RGB ledstrips.
+Help visitors traverse corridors with RGB ledstrips.
 
 ## Project structure
 
