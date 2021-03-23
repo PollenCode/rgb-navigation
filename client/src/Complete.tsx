@@ -28,7 +28,7 @@ export function Complete(props: RouteComponentProps<{ token: string }>) {
 
     useEffect(() => {
         async function fetchUser() {
-            let res = await fetch("http://localhost:3001/user", {
+            let res = await fetch("http://localhost:3001/api/user", {
                 method: "POST",
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
@@ -98,7 +98,7 @@ export function Complete(props: RouteComponentProps<{ token: string }>) {
                 <Button
                     style={{ margin: "1em 0" }}
                     onClick={async () => {
-                        let res = await fetch("http://localhost:3001/unbind", {
+                        let res = await fetch("http://localhost:3001/api/unbind", {
                             method: "POST",
                             headers: { Authorization: `Bearer ${accessToken}` },
                         });

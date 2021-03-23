@@ -33,7 +33,7 @@ export function Admin() {
                         endLed: 30,
                         startLed: 0,
                     };
-                    await fetch(isDevelopment ? "http://localhost:3001/leds" : "/leds", {
+                    await fetch(isDevelopment ? "http://localhost:3001/api/leds" : "/api/leds", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(req),
