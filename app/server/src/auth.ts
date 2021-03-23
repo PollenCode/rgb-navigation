@@ -10,7 +10,20 @@ export function validateUserAccessToken(token: string) {
     try {
         return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { userId: string };
     } catch (ex) {
-        console.error("could not verify jwt", ex, token);
+        console.error("could not verify user jwt", ex, token);
+        return null;
+    }
+}
+
+export function createDeviceAccessToken(roomId: string) {
+    return jsonwebtoken.sign({ roomId }, process.env.JWT_SECRET!);
+}
+
+export function validateDeviceAccessToken(token: string) {
+    try {
+        return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { roomId: string };
+    } catch (ex) {
+        console.error("could not verify device jwt", ex, token);
         return null;
     }
 }

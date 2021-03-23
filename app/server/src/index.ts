@@ -7,9 +7,9 @@ import { Server } from "socket.io";
 import querystring from "querystring";
 import fetch from "node-fetch";
 import jsonwebtoken from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, User } from "@prisma/client";
 import { withUser } from "./middleware";
-import { createUserAccessToken, getOAuthUrl } from "./auth";
+import { createUserAccessToken, getOAuthUrl, validateDeviceAccessToken, validateUserAccessToken } from "./auth";
 import { isDevelopment } from "./helpers";
 
 if (!process.env.NODE_ENV || !process.env.PORT || !process.env.JWT_SECRET) {
@@ -118,16 +118,103 @@ app.post("/leds", (req, res, next) => {
 let server = http.createServer(app);
 let socket = new Server(server, { cors: { origin: "*" } });
 
+let currentlyBinding: { socketId: string; userId: string } | null = null;
+
 socket.on("connection", (connection) => {
     console.log("new connection", connection.id);
 
-    connection.on("subscribe", ({ to }) => {
-        if (["nfcScan"].includes(to)) connection.join(to);
-        else console.warn("received unknown subscription");
+    connection.on("bind", ({ token }, callback) => {
+        // Validate
+        if (typeof token !== "string") {
+            return callback({ status: "error" });
+        }
+
+        // Check user credentials
+        let tok = validateUserAccessToken(token);
+        if (!tok) return callback({ status: "error" });
+
+        // The system only supports one binding at a time
+        if (currentlyBinding !== null) return callback({ status: "busy" });
+
+        // The next nfcScan event will bind to this user
+        currentlyBinding = { socketId: connection.id, userId: tok.userId };
+        callback({ status: "ok" });
     });
 
-    connection.on("nfcScan", ({ token, uuid }) => {
-        connection.in("nfcScan").emit("nfcScan", { uuid });
+    // This event is submitted by any device which wants to listen for events in a room.
+    // When subscribed, you will listen to the following events: nfcAlreadyBound, nfcUnknownScanned, userShouldFollow
+    connection.on("subscribe", async ({ token }) => {
+        // Validate data
+        if (typeof token !== "string") {
+            return;
+        }
+
+        let deviceToken = validateDeviceAccessToken(token);
+        if (!deviceToken) {
+            return;
+        }
+
+        connection.join(deviceToken.roomId);
+    });
+
+    // This event is submitted by the nfc scanner, which scans a tag with unique id `uuid`.
+    // Every nfc scanner is given a token to verify its identity.
+    connection.on("nfcScan", async ({ token, uuid }) => {
+        // Validate data
+        if (typeof token !== "string" || typeof uuid !== "string") {
+            return;
+        }
+
+        // The nfc scanner device token gets validated (to make sure this message comes from a verified nfc reader),
+        // which also contains the room id it is located in.
+        let deviceToken = validateDeviceAccessToken(token);
+        if (!deviceToken) {
+            return;
+        }
+
+        // Get the user that is bound to the scanned uuid, will return null if there is no one bound yet.
+        let boundUser = await prisma.user.findUnique({
+            where: {
+                identifier: uuid,
+            },
+        });
+
+        // Check if there is a binding action going on (someone is binding nfc to user account)
+        if (currentlyBinding) {
+            // Check if there is already someone bound to the nfc
+            if (boundUser) {
+                socket.in(deviceToken.roomId).emit("nfcAlreadyBound");
+                socket.in(currentlyBinding.socketId).emit("nfcAlreadyBound");
+                return;
+            } else {
+                boundUser = await prisma.user.update({
+                    where: {
+                        id: currentlyBinding.userId,
+                    },
+                    data: {
+                        identifier: uuid,
+                    },
+                });
+            }
+        } else if (!boundUser) {
+            socket.in(deviceToken.roomId).emit("nfcUnknownScanned");
+            return;
+        }
+
+        // TODO: enable leds for user
+        let followData = {};
+        console.warn("enable led for user", boundUser.id, boundUser.name);
+        socket.in(deviceToken.roomId).emit("userShouldFollow", followData);
+        if (currentlyBinding) {
+            socket.in(currentlyBinding.socketId).emit("userShouldFollow", followData);
+            currentlyBinding = null;
+        }
+    });
+
+    connection.on("disconnect", () => {
+        if (currentlyBinding && connection.id === currentlyBinding.socketId) {
+            currentlyBinding = null;
+        }
     });
 });
 
