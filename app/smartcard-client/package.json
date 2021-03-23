@@ -1,0 +1,21 @@
+{
+  "name": "smartcard-client",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "license": "MIT",
+  "scripts": {
+    "start": "nodemon",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "pcsclite": "^1.0.0",
+    "socket.io-client": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.31",
+    "nodemon": "^2.0.7",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.2"
+  }
+}
