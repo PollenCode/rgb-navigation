@@ -4,19 +4,21 @@ import http from "http";
 import https from "https";
 import { LedControllerServerMessage } from "../../shared/Message";
 import { Server } from "socket.io";
+import querystring from "querystring";
 import fetch from "node-fetch";
-
-let app = express();
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(express.static("public"));
 
 if (!process.env.NODE_ENV || !process.env.PORT) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(1);
 }
 
-if (process.env.NODE_ENV === "development") {
+const isDevelopment = process.env.NODE_ENV === "development";
+
+let app = express();
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(express.static("public"));
+if (isDevelopment) {
     // Otherwise browsers block requests
     console.log("In development mode");
     app.use((req, res, next) => {
@@ -27,13 +29,31 @@ if (process.env.NODE_ENV === "development") {
     });
 }
 
+function getGoogleAuthURL() {
+    // Thx https://tomanagle.medium.com/google-oauth-with-node-js-4bff90180fe6
+    let options = {
+        redirect_uri: `${isDevelopment ? "http://localhost:3001/oauth/complete" : "/oauth/complete"}`,
+        client_id: process.env.OAUTH_CLIENT_ID,
+        access_type: "offline",
+        response_type: "code",
+        prompt: "consent",
+        state: "hello",
+        scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"].join(" "),
+    };
+    return `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(options)}`;
+}
+
+app.get("/", async (req, res, next) => {
+    res.redirect(getGoogleAuthURL());
+});
+
 app.get("/oauth/complete", async (req, res, next) => {
     let code = req.query.code;
     if (!code || typeof code !== "string") {
         return res.status(400).json({ status: "error", error: "invalid code" });
     }
 
-    console.log("complete", code);
+    console.log("complete", req.query.code, req.query.state);
 
     let googleRes = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
