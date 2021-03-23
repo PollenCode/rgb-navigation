@@ -30,7 +30,7 @@ pcsc.on("reader", function (reader) {
             console.log("card got inserted");
 
             reader.connect({ share_mode: this.SCARD_SHARE_SHARED }, function (err, protocol) {
-                if (err) return console.error("could not connect to card", err);
+                if (err || typeof protocol !== "number") return console.error("could not connect to card", err);
 
                 // Send apdu command to get unique identifier (https://en.wikipedia.org/wiki/Smart_card_application_protocol_data_unit)
                 // let cmd = [0x00, 0xb0, 0x00, 0x00, 0x20];
