@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from "react";
+import { useHistory } from "react-router-dom";
 import { LedControllerServerMessage } from "../../shared/Message";
+import { Button } from "./components/Button";
 import { isDevelopment } from "./helpers";
 
 export function App() {
     return (
         <div className="flex items-center justify-center min-h-screen">
-            <a href={isDevelopment ? "http://localhost:3001" : "/"} target="_blank" rel="noreferrer">
-                Auth
-            </a>
+            <Button
+                onClick={() => {
+                    window.location.href = isDevelopment ? "http://localhost:3001/" : "/";
+                }}>
+                Authenticate
+            </Button>
+            <button></button>
             <button
                 type="button"
                 onClick={async () => {
