@@ -6,6 +6,7 @@ import { LedControllerServerMessage } from "../../shared/Message";
 import { Server } from "socket.io";
 import querystring from "querystring";
 import fetch from "node-fetch";
+import jsonwebtoken from "jsonwebtoken";
 
 if (!process.env.NODE_ENV || !process.env.PORT) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
@@ -29,8 +30,9 @@ if (isDevelopment) {
     });
 }
 
+// https://developers.google.com/identity/protocols/oauth2/web-server
+// https://developers.google.com/identity/protocols/oauth2/openid-connect
 function getGoogleAuthURL() {
-    // Thx https://tomanagle.medium.com/google-oauth-with-node-js-4bff90180fe6
     let options = {
         redirect_uri: `${isDevelopment ? "http://localhost:3001/oauth/complete" : "/oauth/complete"}`,
         client_id: process.env.OAUTH_CLIENT_ID,
@@ -68,16 +70,23 @@ app.get("/oauth/complete", async (req, res, next) => {
     });
 
     if (!googleRes.ok) {
+        console.error("google returned token error", await googleRes.text());
         return res.status(400).json({ status: "error", error: "could not exchange tokens with google" });
     }
 
-    let tokenData = await googleRes.json();
+    let data = await googleRes.json();
+    // let tokenData;
+    // try {
+    //     tokenData = jsonwebtoken.decode(data.id_token);
+    //     if (!tokenData || typeof tokenData !== "object") throw new Error("tokenData is null");
+    // } catch (ex) {
+    //     console.error("invalid google token", ex);
+    //     return res.status(500).json({ status: "error", error: "invalid google token" });
+    // }
 
-    console.log("googleRes", tokenData);
+    console.log("data", data);
 
-    res.json({
-        status: "ok",
-    });
+    res.redirect((isDevelopment ? "http://localhost:3000/complete/" : "/complete/") + encodeURIComponent(data.id_token));
 });
 
 app.post("/leds", (req, res, next) => {

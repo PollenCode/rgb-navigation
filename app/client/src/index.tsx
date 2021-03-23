@@ -6,6 +6,7 @@ import { SocketContext } from "./socketContext";
 import { io } from "socket.io-client";
 import { BrowserRouter as Router, Redirect, Route, Switch } from "react-router-dom";
 import { isDevelopment } from "./helpers";
+import { Complete } from "./Complete";
 
 let socket = io(isDevelopment ? "http://localhost:3001/" : "/");
 
@@ -15,6 +16,7 @@ ReactDOM.render(
             <Router>
                 <Switch>
                     <Route path="/" exact component={App} />
+                    <Route path="/complete/:id" exact component={Complete} />
                     <Redirect to="/" />
                 </Switch>
             </Router>
