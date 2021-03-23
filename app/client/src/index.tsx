@@ -1,27 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
-import { App } from "./App";
 import { SocketContext } from "./socketContext";
 import { io } from "socket.io-client";
-import { BrowserRouter as Router, Redirect, Route, Switch } from "react-router-dom";
 import { isDevelopment } from "./helpers";
-import { Complete } from "./Complete";
-import { Overview } from "./Overview";
+import { Routes } from "./routes";
 
 let socket = io(isDevelopment ? "http://localhost:3001/" : "/");
 
 ReactDOM.render(
     <React.StrictMode>
         <SocketContext.Provider value={{ socket }}>
-            <Router>
-                <Switch>
-                    <Route path="/" exact component={App} />
-                    <Route path="/complete/:token" exact component={Complete} />
-                    <Route path="/overview/:roomId" exact component={Overview} />
-                    <Redirect to="/" />
-                </Switch>
-            </Router>
+            <Routes />
         </SocketContext.Provider>
     </React.StrictMode>,
     document.getElementById("root")
