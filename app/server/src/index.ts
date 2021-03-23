@@ -8,13 +8,14 @@ import querystring from "querystring";
 import fetch from "node-fetch";
 import jsonwebtoken from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
+import { withUser } from "./middleware";
+import { createUserAccessToken, getOAuthUrl } from "./auth";
+import { isDevelopment } from "./helpers";
 
 if (!process.env.NODE_ENV || !process.env.PORT || !process.env.JWT_SECRET) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(1);
 }
-
-const isDevelopment = process.env.NODE_ENV === "development";
 
 let prisma = new PrismaClient();
 
@@ -35,58 +36,9 @@ if (isDevelopment) {
 
 // https://developers.google.com/identity/protocols/oauth2/web-server
 // https://developers.google.com/identity/protocols/oauth2/openid-connect
-function getGoogleAuthURL() {
-    let options = {
-        redirect_uri: `${isDevelopment ? "http://localhost:3001/oauth/complete" : "/oauth/complete"}`,
-        client_id: process.env.OAUTH_CLIENT_ID,
-        access_type: "offline",
-        response_type: "code",
-        prompt: "consent",
-        state: "hello",
-        scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"].join(" "),
-    };
-    return `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(options)}`;
-}
-
-function createUserAccessToken(userId: string) {
-    return jsonwebtoken.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: 60 * 60 });
-}
-
-function validateUserAccessToken(token: string) {
-    try {
-        return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    } catch (ex) {
-        console.error("could not verify jwt", ex, token);
-        return null;
-    }
-}
-
-function withUser() {
-    return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        let auth = req.headers["authorization"];
-        if (!auth || !auth.startsWith("Bearer ")) {
-            return res.status(401).end();
-        }
-        auth = auth.substring("Bearer ".length);
-
-        let token = validateUserAccessToken(auth);
-        console.log("token");
-        if (!token) {
-            return res.status(401).end();
-        }
-
-        let user = await prisma.user.findUnique({ where: { id: token.userId } });
-        if (!user) {
-            return res.status(401).end();
-        }
-        console.log("user");
-        req.user = user;
-        next();
-    };
-}
 
 app.get("/", async (req, res, next) => {
-    res.redirect(getGoogleAuthURL());
+    res.redirect(getOAuthUrl());
 });
 
 app.get("/oauth/complete", async (req, res, next) => {

@@ -1,0 +1,29 @@
+import jsonwebtoken from "jsonwebtoken";
+import querystring from "querystring";
+import { isDevelopment } from "./helpers";
+
+export function createUserAccessToken(userId: string) {
+    return jsonwebtoken.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: 60 * 60 });
+}
+
+export function validateUserAccessToken(token: string) {
+    try {
+        return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    } catch (ex) {
+        console.error("could not verify jwt", ex, token);
+        return null;
+    }
+}
+
+export function getOAuthUrl() {
+    let options = {
+        redirect_uri: `${isDevelopment ? "http://localhost:3001/oauth/complete" : "/oauth/complete"}`,
+        client_id: process.env.OAUTH_CLIENT_ID,
+        access_type: "offline",
+        response_type: "code",
+        prompt: "consent",
+        state: "hello",
+        scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"].join(" "),
+    };
+    return `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(options)}`;
+}
