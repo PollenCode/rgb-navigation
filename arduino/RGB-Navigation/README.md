@@ -5,6 +5,8 @@ Each data packet sent from the application to the arduino follows the following 
 -   The first byte contains the amount of bytes following this byte + 1
 -   Second byte contains the packet type
 
+**When modifying this protocol, make sure to update the [arduino-client](https://git.ikdoeict.be/stijn.rogiest/rgb-navigation/-/tree/master/arduino-client) project too, as this project implements this protcol.**
+
 ## Packet types
 
 -   `[3, 1, type]`: enable a special effect, with effect type specified by `type`.
