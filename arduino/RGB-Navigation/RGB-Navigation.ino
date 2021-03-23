@@ -150,6 +150,7 @@ void setColorLine(int start, int end, CRGB color)
     }
 }
 
+
 void loop()
 {
     // int a = Serial.available();
