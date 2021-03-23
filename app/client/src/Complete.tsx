@@ -3,11 +3,13 @@ import { RouteComponentProps } from "react-router";
 import jsonwebtoken from "jsonwebtoken";
 
 export function Complete(props: RouteComponentProps<{ id: string }>) {
-    let userData = useMemo(() => jsonwebtoken.decode(decodeURIComponent(props.match.params.id)), [props.match.params.id]);
+    let { email, name, picture } = useMemo(() => jsonwebtoken.decode(decodeURIComponent(props.match.params.id)) as any, [props.match.params.id]);
 
     return (
-        <div>
-            <pre>{JSON.stringify(userData, null, 2)}</pre>
+        <div className="items-center justify-center min-h-screen flex flex-col">
+            <h2 className="text-lg font-semibold text-blue-700">{name}</h2>
+            <h3 className="">{email}</h3>
+            {picture && <img className="rounded m-3" src={picture} alt="profile" />}
         </div>
     );
 }
