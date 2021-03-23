@@ -4,6 +4,7 @@ import http from "http";
 import https from "https";
 import { LedControllerServerMessage } from "../../shared/Message";
 import { Server } from "socket.io";
+import fetch from "node-fetch";
 
 let app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -26,8 +27,37 @@ if (process.env.NODE_ENV === "development") {
     });
 }
 
-app.get("/", (req, res, next) => {
-    res.end("this is the server");
+app.get("/oauth/complete", async (req, res, next) => {
+    let code = req.query.code;
+    if (!code || typeof code !== "string") {
+        return res.status(400).json({ status: "error", error: "invalid code" });
+    }
+
+    console.log("complete", code);
+
+    let googleRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            code,
+            client_id: process.env.OAUTH_CLIENT_ID,
+            client_secret: process.env.OAUTH_CLIENT_SECRET,
+            redirect_uri: "http://localhost:3001/oauth/complete",
+            grant_type: "authorization_code",
+        }),
+    });
+
+    if (!googleRes.ok) {
+        return res.status(400).json({ status: "error", error: "could not exchange tokens with google" });
+    }
+
+    let tokenData = await googleRes.json();
+
+    console.log("googleRes", tokenData);
+
+    res.json({
+        status: "ok",
+    });
 });
 
 app.post("/leds", (req, res, next) => {

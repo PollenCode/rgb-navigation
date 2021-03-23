@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { SERVER } from "./constants";
 import { LedControllerServerMessage } from "../../shared/Message";
+import { getGoogleAuthURL } from "./oauth";
 
 export function App() {
     return (
         <div className="flex items-center justify-center min-h-screen">
+            <a href={getGoogleAuthURL()} target="_blank" rel="noreferrer">
+                Auth
+            </a>
             <button
                 type="button"
                 onClick={async () => {
