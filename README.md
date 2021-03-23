@@ -12,6 +12,8 @@ Help visitors traverse corridors with RGB ledstrips.
 -   `shared/`: contains shared code.
 -   `docs/`: contains documentation.
 
+![architecture](https://git.ikdoeict.be/stijn.rogiest/rgb-navigation/-/raw/master/docs/architecture.png)
+
 ## License
 
 MIT 2021 (c) maintainers
