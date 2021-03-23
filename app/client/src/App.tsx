@@ -13,8 +13,8 @@ export function App() {
                 }}>
                 Authenticate
             </Button>
-            <button></button>
-            <button
+
+            <Button
                 type="button"
                 onClick={async () => {
                     let req: LedControllerServerMessage = {
@@ -33,7 +33,7 @@ export function App() {
                     });
                 }}>
                 Set color
-            </button>
+            </Button>
         </div>
     );
 }

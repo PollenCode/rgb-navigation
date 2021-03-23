@@ -9,7 +9,7 @@ import fetch from "node-fetch";
 import jsonwebtoken from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 
-if (!process.env.NODE_ENV || !process.env.PORT) {
+if (!process.env.NODE_ENV || !process.env.PORT || !process.env.JWT_SECRET) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(1);
 }
@@ -46,6 +46,43 @@ function getGoogleAuthURL() {
         scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"].join(" "),
     };
     return `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(options)}`;
+}
+
+function createUserAccessToken(userId: string) {
+    return jsonwebtoken.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: 60 * 60 });
+}
+
+function validateUserAccessToken(token: string) {
+    try {
+        return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    } catch (ex) {
+        console.error("could not verify jwt", ex, token);
+        return null;
+    }
+}
+
+function withUser() {
+    return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        let auth = req.headers["authorization"];
+        if (!auth || !auth.startsWith("Bearer ")) {
+            return res.status(401).end();
+        }
+        auth = auth.substring("Bearer ".length);
+
+        let token = validateUserAccessToken(auth);
+        console.log("token");
+        if (!token) {
+            return res.status(401).end();
+        }
+
+        let user = await prisma.user.findUnique({ where: { id: token.userId } });
+        if (!user) {
+            return res.status(401).end();
+        }
+        console.log("user");
+        req.user = user;
+        next();
+    };
 }
 
 app.get("/", async (req, res, next) => {
@@ -105,8 +142,17 @@ app.get("/oauth/complete", async (req, res, next) => {
     });
     console.log("user", user);
 
-    let encodedUserData = encodeURIComponent(Buffer.from(JSON.stringify({ ...user, picture: googleTokenData.picture })).toString("base64"));
-    res.redirect((isDevelopment ? "http://localhost:3000/complete/" : "/complete/") + encodedUserData);
+    let data = {
+        ...user,
+        picture: googleTokenData.picture,
+        accessToken: createUserAccessToken(user.id),
+    };
+    let encodedData = encodeURIComponent(Buffer.from(JSON.stringify(data)).toString("base64"));
+    res.redirect((isDevelopment ? "http://localhost:3000/complete/" : "/complete/") + encodedData);
+});
+
+app.post("/user", withUser(), (req, res, next) => {
+    res.json({ user: req.user });
 });
 
 app.post("/leds", (req, res, next) => {
