@@ -13,7 +13,6 @@ export function withUser() {
         auth = auth.substring("Bearer ".length);
 
         let token = validateUserAccessToken(auth);
-        console.log("token");
         if (!token) {
             return res.status(401).end();
         }
@@ -22,7 +21,6 @@ export function withUser() {
         if (!user) {
             return res.status(401).end();
         }
-        console.log("user");
         req.user = user;
         next();
     };
