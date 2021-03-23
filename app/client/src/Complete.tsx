@@ -1,11 +1,19 @@
-import React, { useMemo } from "react";
+import React, { useContext, useEffect, useMemo } from "react";
 import { RouteComponentProps } from "react-router";
 import { Button } from "./components/Button";
+import { SocketContext } from "./socketContext";
 
 export function Complete(props: RouteComponentProps<{ id: string }>) {
     let { email, name, picture, accessToken } = useMemo(() => JSON.parse(atob(decodeURIComponent(props.match.params.id))) as any, [
         props.match.params.id,
     ]);
+    let { socket } = useContext(SocketContext);
+
+    useEffect(() => {
+        socket.emit("bind", { roomId: "dgang", token: accessToken }, (res: any) => {
+            console.log("bind response", res);
+        });
+    }, []);
 
     return (
         <div className="items-center justify-center min-h-screen flex flex-col">

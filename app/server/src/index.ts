@@ -118,14 +118,16 @@ app.post("/leds", (req, res, next) => {
 let server = http.createServer(app);
 let socket = new Server(server, { cors: { origin: "*" } });
 
-let currentlyBinding: { socketId: string; userId: string } | null = null;
+let roomsCurrentlyBinding: {
+    [roomId: string]: { socketId: string; userId: string };
+} = {};
 
 socket.on("connection", (connection) => {
-    console.log("new connection", connection.id);
+    // console.log("new connection", connection.id);
 
-    connection.on("bind", ({ token }, callback) => {
+    connection.on("bind", ({ token, roomId }, callback) => {
         // Validate
-        if (typeof token !== "string") {
+        if (typeof token !== "string" || typeof roomId !== "string") {
             return callback({ status: "error" });
         }
 
@@ -134,15 +136,15 @@ socket.on("connection", (connection) => {
         if (!tok) return callback({ status: "error" });
 
         // The system only supports one binding at a time
-        if (currentlyBinding !== null) return callback({ status: "busy" });
+        if (roomsCurrentlyBinding[roomId]) return callback({ status: "busy" });
 
         // The next nfcScan event will bind to this user
-        currentlyBinding = { socketId: connection.id, userId: tok.userId };
+        roomsCurrentlyBinding[roomId] = { socketId: connection.id, userId: tok.userId };
         callback({ status: "ok" });
     });
 
-    // This event is submitted by any device which wants to listen for events in a room.
-    // When subscribed, you will listen to the following events: nfcAlreadyBound, nfcUnknownScanned, userShouldFollow
+    // This event is submitted by any device that wants to listen for events in a room.
+    // When subscribed, you will listen to the following room events: nfcAlreadyBound, nfcUnknownScanned, userShouldFollow
     connection.on("subscribe", async ({ token }) => {
         // Validate data
         if (typeof token !== "string") {
@@ -171,6 +173,7 @@ socket.on("connection", (connection) => {
         if (!deviceToken) {
             return;
         }
+        let currentlyBinding = roomsCurrentlyBinding[deviceToken.roomId];
 
         // Get the user that is bound to the scanned uuid, will return null if there is no one bound yet.
         let boundUser = await prisma.user.findUnique({
@@ -207,13 +210,15 @@ socket.on("connection", (connection) => {
         socket.in(deviceToken.roomId).emit("userShouldFollow", followData);
         if (currentlyBinding) {
             socket.in(currentlyBinding.socketId).emit("userShouldFollow", followData);
-            currentlyBinding = null;
+            delete roomsCurrentlyBinding[deviceToken.roomId];
         }
     });
 
     connection.on("disconnect", () => {
-        if (currentlyBinding && connection.id === currentlyBinding.socketId) {
-            currentlyBinding = null;
+        for (let roomId in roomsCurrentlyBinding) {
+            if (roomsCurrentlyBinding[roomId].socketId === connection.id) {
+                delete roomsCurrentlyBinding[roomId];
+            }
         }
     });
 });
