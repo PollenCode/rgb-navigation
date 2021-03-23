@@ -17,7 +17,7 @@ ReactDOM.render(
             <Router>
                 <Switch>
                     <Route path="/" exact component={App} />
-                    <Route path="/complete/:id" exact component={Complete} />
+                    <Route path="/complete/:token" exact component={Complete} />
                     <Route path="/overview/:roomId" exact component={Overview} />
                     <Redirect to="/" />
                 </Switch>

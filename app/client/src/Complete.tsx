@@ -21,8 +21,8 @@ function getTextForStatus(status: Status) {
     }
 }
 
-export function Complete(props: RouteComponentProps<{ id: string }>) {
-    let { accessToken } = useMemo(() => JSON.parse(atob(decodeURIComponent(props.match.params.id))), [props.match.params.id]);
+export function Complete(props: RouteComponentProps<{ token: string }>) {
+    let accessToken = decodeURIComponent(props.match.params.token);
     let [user, setUser] = useState<any>();
     let { socket } = useContext(SocketContext);
     let [status, setStatus] = useState<Status>("loading");

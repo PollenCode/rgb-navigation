@@ -91,11 +91,8 @@ app.get("/oauth/complete", async (req, res, next) => {
         },
     });
 
-    let data = {
-        accessToken: createUserAccessToken(user.id),
-    };
-    let encodedData = encodeURIComponent(Buffer.from(JSON.stringify(data)).toString("base64"));
-    res.redirect((isDevelopment ? "http://localhost:3000/complete/" : "/complete/") + encodedData);
+    let accessToken = createUserAccessToken(user.id);
+    res.redirect((isDevelopment ? "http://localhost:3000/complete/" : "/complete/") + encodeURIComponent(accessToken));
 });
 
 app.post("/user", withUser(), (req, res, next) => {
