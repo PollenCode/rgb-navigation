@@ -137,7 +137,7 @@ socket.on("connection", (connection) => {
 
     connection.on("bind", ({ token, roomId }, callback) => {
         // Validate
-        if (typeof token !== "string" || typeof roomId !== "string") {
+        if (typeof token !== "string" || typeof roomId !== "string" || typeof callback !== "function") {
             return callback({ status: "error" });
         }
 
@@ -216,7 +216,7 @@ socket.on("connection", (connection) => {
         }
 
         // TODO: enable leds for user
-        let followData = {};
+        let followData = { name: boundUser.name };
         console.warn("enable led for user", boundUser.id, boundUser.name);
         socket.in(deviceToken.roomId).emit("userShouldFollow", followData);
         if (currentlyBinding) {

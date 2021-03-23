@@ -15,7 +15,7 @@ export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     }
 
     async function onUserShouldFollow(data: any) {
-        setMessages((messages) => [...messages, "Should follow " + JSON.stringify(data)]);
+        setMessages((messages) => [...messages, data.name + " should follow ?"]);
     }
 
     useEffect(() => {
@@ -25,6 +25,7 @@ export function Overview(props: RouteComponentProps<{ roomId: string }>) {
         socket.on("connect", () => {
             socket.emit("subscribe", { roomId: props.match.params.roomId });
         });
+        socket.emit("subscribe", { roomId: props.match.params.roomId });
         return () => {
             socket.off("nfcAlreadyBound", onNfcAlreadyBound);
             socket.off("nfcUnknownScanned", onNfcUnknownScanned);
@@ -36,7 +37,8 @@ export function Overview(props: RouteComponentProps<{ roomId: string }>) {
         <div className="flex justify-center">
             <div className="w-72 m-5  border border-gray-200 rounded" style={{ minHeight: "200px" }}>
                 <h2 className="font-semibold px-5 py-3 border-b border-gray-200">
-                    <span className="h-2.5 w-2.5 mr-1 inline-block bg-red-600 rounded-full" /> Events
+                    <span className="h-2.5 w-2.5 mr-1 inline-block bg-red-600 rounded-full" style={{ animation: "blinking linear 2s infinite" }} />{" "}
+                    Events
                 </h2>
                 <ul className="px-5 py-3">
                     {messages.map((e, i) => (

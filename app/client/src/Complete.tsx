@@ -1,4 +1,3 @@
-import { access } from "node:fs";
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { RouteComponentProps } from "react-router";
 import { Button } from "./components/Button";
@@ -45,8 +44,8 @@ export function Complete(props: RouteComponentProps<{ token: string }>) {
         function tryBind() {
             socket.emit("bind", { roomId: "dgang", token: accessToken }, (res: any) => {
                 if (res.status === "busy" || res.status === "error") {
-                    console.log("bind is busy, trying again in 2 seconds", res);
-                    setTimeout(tryBind, 2000 + Math.random() * 1000);
+                    console.log("bind is busy, trying again in 4 seconds", res);
+                    setTimeout(tryBind, 3000 + Math.random() * 2000);
                     setStatus("waiting-for-others");
                 } else if (res.status === "ok") {
                     setStatus("scan");
