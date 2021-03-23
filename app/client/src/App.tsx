@@ -1,18 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { SERVER } from "./constants";
 import { LedControllerServerMessage } from "../../shared/Message";
-import styled from "styled-components";
-
-const Container = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-`;
 
 export function App() {
     return (
-        <Container>
+        <div className="flex items-center justify-center min-h-screen">
             <button
                 type="button"
                 onClick={async () => {
@@ -33,6 +25,6 @@ export function App() {
                 }}>
                 Set color
             </button>
-        </Container>
+        </div>
     );
 }
