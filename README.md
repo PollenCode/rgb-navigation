@@ -10,6 +10,7 @@ Help visitors traverse corridors with RGB ledstrips.
 -   `arduino/`: contains source code for the Arduino that controls the RGB.
 -   `smartcard-client/`: contains code that connects NFC smartcard readers to the server.
 -   `shared/`: contains shared code.
+-   `docs/`: contains documentation.
 
 ## License
 
