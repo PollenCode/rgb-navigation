@@ -47,8 +47,6 @@ app.get("/oauth/complete", async (req, res, next) => {
         return res.status(400).json({ status: "error", error: "invalid code" });
     }
 
-    console.log("complete", req.query.code, req.query.state);
-
     let googleResponse = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -92,11 +90,8 @@ app.get("/oauth/complete", async (req, res, next) => {
             token: googleData.refresh_token,
         },
     });
-    console.log("user", user);
 
     let data = {
-        ...user,
-        picture: googleTokenData.picture,
         accessToken: createUserAccessToken(user.id),
     };
     let encodedData = encodeURIComponent(Buffer.from(JSON.stringify(data)).toString("base64"));
@@ -104,7 +99,19 @@ app.get("/oauth/complete", async (req, res, next) => {
 });
 
 app.post("/user", withUser(), (req, res, next) => {
-    res.json({ user: req.user });
+    res.json({ status: "ok", user: req.user });
+});
+
+app.post("/unbind", withUser(), async (req, res, next) => {
+    let user = await prisma.user.update({
+        where: {
+            id: req.user!.id,
+        },
+        data: {
+            identifier: null,
+        },
+    });
+    res.json({ status: "ok", user: user });
 });
 
 app.post("/leds", (req, res, next) => {
