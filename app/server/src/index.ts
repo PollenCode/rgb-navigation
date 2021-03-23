@@ -1,12 +1,14 @@
 require("dotenv").config(); // Load .env file
 import express from "express";
 import http from "http";
-import WebSocket from "ws";
+import https from "https";
 import { LedControllerServerMessage } from "../../shared/Message";
+import { Server } from "socket.io";
 
-const app = express();
+let app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.static("public"));
 
 if (!process.env.NODE_ENV || !process.env.PORT) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
@@ -28,41 +30,27 @@ app.get("/", (req, res, next) => {
     res.end("this is the server");
 });
 
-// Example request with slowdown to show how react works
-app.post("/message", (req, res, next) => {
-    setTimeout(() => {
-        res.json({
-            message: "This is a message from the server",
-        });
-    }, 500);
-});
-
-let connections: WebSocket[] = [];
-
 app.post("/leds", (req, res, next) => {
-    for (let i = 0; i < connections.length; i++) {
-        let c = connections[i];
-        c.send(JSON.stringify(req.body));
-    }
+    // Temp
+    socket.in("leds").emit(req.body);
     res.json({
         status: "ok",
     });
 });
 
 let server = http.createServer(app);
-let socket = new WebSocket.Server({ server, path: "/ws" });
+let socket = new Server(server, { cors: { origin: "*" } });
 
 socket.on("connection", (connection) => {
-    console.log("new connection");
-    connections.push(connection);
+    console.log("new connection", connection.id);
 
-    connection.on("message", (data) => {
-        console.log("incoming data", data);
+    connection.on("subscribe", ({ to }) => {
+        if (["nfcScan"].includes(to)) connection.join(to);
+        else console.warn("received unknown subscription");
     });
 
-    connection.on("close", () => {
-        console.log("connection closed");
-        connections.splice(connections.indexOf(connection), 1);
+    connection.on("nfcScan", ({ token, uuid }) => {
+        connection.in("nfcScan").emit("nfcScan", { uuid });
     });
 });
 
