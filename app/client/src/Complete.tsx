@@ -1,9 +1,8 @@
 import React, { useMemo } from "react";
 import { RouteComponentProps } from "react-router";
-import jsonwebtoken from "jsonwebtoken";
 
 export function Complete(props: RouteComponentProps<{ id: string }>) {
-    let { email, name, picture } = useMemo(() => jsonwebtoken.decode(decodeURIComponent(props.match.params.id)) as any, [props.match.params.id]);
+    let { email, name, picture } = useMemo(() => JSON.parse(atob(decodeURIComponent(props.match.params.id))) as any, [props.match.params.id]);
 
     return (
         <div className="items-center justify-center min-h-screen flex flex-col">

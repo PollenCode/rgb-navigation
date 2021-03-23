@@ -75,18 +75,23 @@ app.get("/oauth/complete", async (req, res, next) => {
     }
 
     let data = await googleRes.json();
-    // let tokenData;
-    // try {
-    //     tokenData = jsonwebtoken.decode(data.id_token);
-    //     if (!tokenData || typeof tokenData !== "object") throw new Error("tokenData is null");
-    // } catch (ex) {
-    //     console.error("invalid google token", ex);
-    //     return res.status(500).json({ status: "error", error: "invalid google token" });
-    // }
+    let tokenData;
+    try {
+        tokenData = jsonwebtoken.decode(data.id_token);
+        if (!tokenData || typeof tokenData !== "object") throw new Error("tokenData is null");
+    } catch (ex) {
+        console.error("invalid google token", ex);
+        return res.status(500).json({ status: "error", error: "invalid google token" });
+    }
 
-    console.log("data", data);
+    let returnData = {
+        name: tokenData.name,
+        email: tokenData.email,
+        picture: tokenData.picture,
+    };
 
-    res.redirect((isDevelopment ? "http://localhost:3000/complete/" : "/complete/") + encodeURIComponent(data.id_token));
+    let encoded = encodeURIComponent(Buffer.from(JSON.stringify(returnData)).toString("base64"));
+    res.redirect((isDevelopment ? "http://localhost:3000/complete/" : "/complete/") + encoded);
 });
 
 app.post("/leds", (req, res, next) => {

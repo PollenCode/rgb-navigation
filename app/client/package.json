@@ -12,7 +12,6 @@
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@types/react-router-dom": "^5.1.7",
-    "jsonwebtoken": "^8.5.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",
@@ -47,7 +46,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss7-compat": "^2.0.4",
-    "@types/jsonwebtoken": "^8.5.1",
     "autoprefixer": "^9",
     "postcss": "^7",
     "tailwindcss": "npm:@tailwindcss/postcss7-compat"
