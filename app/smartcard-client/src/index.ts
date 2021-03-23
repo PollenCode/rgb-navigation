@@ -1,27 +1,14 @@
 require("dotenv").config();
 import pcscCreator from "pcsclite";
-import WebSocket from "ws";
+import { io } from "socket.io-client";
 
 if (!process.env.URL) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(-1);
 }
 
-let socket: WebSocket | null = null;
-
-function connect() {
-    socket = new WebSocket(process.env.URL!);
-    socket.on("open", () => {
-        console.log("connection established");
-    });
-    socket.on("close", () => {
-        console.log("connection closed");
-        // Try to reconnect...
-        setTimeout(connect, 5000);
-    });
-}
-
-const pcsc = pcscCreator();
+let socket = io(process.env.URL);
+let pcsc = pcscCreator();
 
 pcsc.on("reader", function (reader) {
     console.log(`reader detected: ${reader.name}`);
@@ -55,7 +42,7 @@ pcsc.on("reader", function (reader) {
                     console.log("uid received", data);
 
                     // Send to server
-                    if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ uid: data }));
+                    socket.emit("nfcScan", { uuid: data });
                 });
             });
         }
@@ -69,5 +56,3 @@ pcsc.on("reader", function (reader) {
 pcsc.on("error", function (err) {
     console.error("error", err.message);
 });
-
-connect();
