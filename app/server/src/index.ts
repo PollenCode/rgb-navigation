@@ -149,7 +149,10 @@ socket.on("connection", (connection) => {
         if (!tok) return callback({ status: "error" });
 
         // The system only supports one binding at a time
-        if (roomsCurrentlyBinding[roomId]) return callback({ status: "busy" });
+        if (roomsCurrentlyBinding[roomId]) {
+            if (roomsCurrentlyBinding[roomId].socketId === connection.id) return callback({ status: "ok" });
+            else return callback({ status: "busy" });
+        }
 
         // The next nfcScan event will bind to this user
         roomsCurrentlyBinding[roomId] = { socketId: connection.id, userId: tok.userId };
@@ -159,16 +162,9 @@ socket.on("connection", (connection) => {
     // This event is submitted by any device that wants to listen for events in a room.
     // When subscribed, you will listen to the following room events: nfcAlreadyBound, nfcUnknownScanned, userShouldFollow
     connection.on("subscribe", async ({ roomId }) => {
-        // Validate data
         if (typeof roomId !== "string") {
             return;
         }
-        // let deviceToken = validateDeviceAccessToken(token);
-        // if (!deviceToken) {
-        //     return;
-        // }
-
-        console.log("subscribed to", roomId);
         connection.join(roomId);
     });
 
@@ -214,6 +210,7 @@ socket.on("connection", (connection) => {
                         identifier: uuid,
                     },
                 });
+                socket.in(currentlyBinding.socketId).emit("nfcBound", { identifier: uuid });
             }
         } else if (!boundUser) {
             console.warn("unknown nfc scanned", uuid);

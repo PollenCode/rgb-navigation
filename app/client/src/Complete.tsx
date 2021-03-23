@@ -4,18 +4,20 @@ import { RouteComponentProps } from "react-router";
 import { Button } from "./components/Button";
 import { SocketContext } from "./socketContext";
 
-type Status = "bound" | "loading" | "waitingForOthers" | "scan";
+type Status = "bound" | "loading" | "waiting-for-others" | "scan" | "already-bound";
 
 function getTextForStatus(status: Status) {
     switch (status) {
         case "scan":
-            return "Scan je kaart.";
-        case "waitingForOthers":
-            return "Je staat in de rij.";
+            return "Scan je kaart";
+        case "waiting-for-others":
+            return "Je staat in de rij";
         case "bound":
-            return "Al verbonden";
+            return "Verbonden";
         case "loading":
             return "Laden...";
+        case "already-bound":
+            return "Kaart al verbonden!";
     }
 }
 
@@ -41,12 +43,11 @@ export function Complete(props: RouteComponentProps<{ id: string }>) {
 
     useEffect(() => {
         function tryBind() {
-            setStatus("loading");
             socket.emit("bind", { roomId: "dgang", token: accessToken }, (res: any) => {
                 if (res.status === "busy" || res.status === "error") {
                     console.log("bind is busy, trying again in 2 seconds", res);
                     setTimeout(tryBind, 2000 + Math.random() * 1000);
-                    setStatus("waitingForOthers");
+                    setStatus("waiting-for-others");
                 } else if (res.status === "ok") {
                     setStatus("scan");
                 }
@@ -54,12 +55,37 @@ export function Complete(props: RouteComponentProps<{ id: string }>) {
         }
         if (!user) {
             setStatus("loading");
-        } else if (!user.identifier) {
-            tryBind();
-        } else {
+        } else if (user.identifier) {
             setStatus("bound");
+        } else {
+            tryBind();
         }
     }, [user]);
+
+    useEffect(() => {
+        async function onNfcAlreadyBound() {
+            setStatus("already-bound");
+            setTimeout(() => setStatus("scan"), 2000);
+        }
+        async function onNfcBound(data: any) {
+            setUser((user: any) => ({ ...user, identifier: data.identifier }));
+            setStatus("bound");
+        }
+        async function onUserFollow() {
+            // TODO
+            console.log("User should follow line");
+            setStatus("bound");
+        }
+
+        socket.on("nfcAlreadyBound", onNfcAlreadyBound);
+        socket.on("nfcBound", onNfcBound);
+        socket.on("userShouldFollow", onUserFollow);
+        return () => {
+            socket.off("nfcAlreadyBound", onNfcAlreadyBound);
+            socket.off("nfcBound", onNfcBound);
+            socket.off("userShouldFollow", onUserFollow);
+        };
+    }, []);
 
     if (!user) return null;
 
@@ -71,6 +97,7 @@ export function Complete(props: RouteComponentProps<{ id: string }>) {
             {user.picture && <img className="rounded m-3" src={user.picture} alt="profile" />}
             {user.identifier && (
                 <Button
+                    style={{ margin: "1em 0" }}
                     onClick={async () => {
                         let res = await fetch("http://localhost:3001/unbind", {
                             method: "POST",
@@ -84,19 +111,6 @@ export function Complete(props: RouteComponentProps<{ id: string }>) {
                     Verbreken
                 </Button>
             )}
-
-            {/* <Button
-                onClick={async () => {
-                    let res = await fetch("http://localhost:3001/user", {
-                        method: "POST",
-                        headers: { Authorization: `Bearer ${accessToken}` },
-                    });
-                    let data = await res.json();
-                    console.log(data);
-                    alert(JSON.stringify(data, null, 2));
-                }}>
-                Get user info
-            </Button> */}
         </div>
     );
 }
