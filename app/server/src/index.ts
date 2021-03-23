@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import querystring from "querystring";
 import fetch from "node-fetch";
 import jsonwebtoken from "jsonwebtoken";
+import { PrismaClient } from "@prisma/client";
 
 if (!process.env.NODE_ENV || !process.env.PORT) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
@@ -14,6 +15,8 @@ if (!process.env.NODE_ENV || !process.env.PORT) {
 }
 
 const isDevelopment = process.env.NODE_ENV === "development";
+
+let prisma = new PrismaClient();
 
 let app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -57,7 +60,7 @@ app.get("/oauth/complete", async (req, res, next) => {
 
     console.log("complete", req.query.code, req.query.state);
 
-    let googleRes = await fetch("https://oauth2.googleapis.com/token", {
+    let googleResponse = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -69,29 +72,41 @@ app.get("/oauth/complete", async (req, res, next) => {
         }),
     });
 
-    if (!googleRes.ok) {
-        console.error("google returned token error", await googleRes.text());
+    if (!googleResponse.ok) {
+        console.error("google returned token error", await googleResponse.text());
         return res.status(400).json({ status: "error", error: "could not exchange tokens with google" });
     }
 
-    let data = await googleRes.json();
-    let tokenData;
+    let googleData = await googleResponse.json();
+    let googleTokenData;
     try {
-        tokenData = jsonwebtoken.decode(data.id_token);
-        if (!tokenData || typeof tokenData !== "object") throw new Error("tokenData is null");
+        googleTokenData = jsonwebtoken.decode(googleData.id_token);
+        if (!googleTokenData || typeof googleTokenData !== "object") throw new Error("tokenData is null");
     } catch (ex) {
         console.error("invalid google token", ex);
         return res.status(500).json({ status: "error", error: "invalid google token" });
     }
 
-    let returnData = {
-        name: tokenData.name,
-        email: tokenData.email,
-        picture: tokenData.picture,
-    };
+    let user = await prisma.user.upsert({
+        where: {
+            id: googleTokenData.sub,
+        },
+        update: {
+            email: googleTokenData.email,
+            name: googleTokenData.name,
+            token: googleData.refresh_token,
+        },
+        create: {
+            id: googleTokenData.sub,
+            email: googleTokenData.email,
+            name: googleTokenData.name,
+            token: googleData.refresh_token,
+        },
+    });
+    console.log("user", user);
 
-    let encoded = encodeURIComponent(Buffer.from(JSON.stringify(returnData)).toString("base64"));
-    res.redirect((isDevelopment ? "http://localhost:3000/complete/" : "/complete/") + encoded);
+    let encodedUserData = encodeURIComponent(Buffer.from(JSON.stringify({ ...user, picture: googleTokenData.picture })).toString("base64"));
+    res.redirect((isDevelopment ? "http://localhost:3000/complete/" : "/complete/") + encodedUserData);
 });
 
 app.post("/leds", (req, res, next) => {
