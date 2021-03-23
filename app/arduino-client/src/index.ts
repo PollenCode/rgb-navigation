@@ -1,5 +1,5 @@
 require("dotenv").config();
-import WebSocket from "ws";
+import { io } from "socket.io-client";
 import { SerialLedController } from "./communicate";
 import { LedControllerServerMessage } from "../../shared/Message";
 
@@ -10,15 +10,13 @@ if (!URL || !SERIAL_PORT || !BAUD_RATE) {
     process.exit(-1);
 }
 
-console.log(`opening port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
+console.log(`opening serial port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
 
 let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
 // setTimeout(() => arduino.sendEnableLine(0, 255, 0, 0, 30, 0, 10), 5000);
 // setTimeout(() => arduino.sendDisableLine(0), 15000);
 // setTimeout(() => arduino.sendEnableLine(1, 0, 255, 0, 0, 15, 5), 17000);
 // setTimeout(() => arduino.sendDisableLine(1), 25000);
-
-let socket: WebSocket | null = null;
 
 function processMessage(data: LedControllerServerMessage) {
     console.log("receive", data);
@@ -35,23 +33,8 @@ function processMessage(data: LedControllerServerMessage) {
     }
 }
 
-function connect() {
-    socket = new WebSocket(URL!);
-    socket.on("open", () => {
-        console.log("connection established");
-    });
-    socket.on("message", (e) => {
-        try {
-            processMessage(JSON.parse(e as string));
-        } catch (ex) {
-            console.error("could not process data", ex);
-        }
-    });
-    socket.on("close", () => {
-        console.log("connection closed");
-        // Try to reconnect...
-        setTimeout(connect, 5000);
-    });
-}
+let socket = io(URL!);
 
-connect();
+socket.on("led", (obj) => {
+    processMessage(obj);
+});
