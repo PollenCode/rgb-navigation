@@ -2,7 +2,7 @@ require("dotenv").config();
 import pcscCreator from "pcsclite";
 import { io } from "socket.io-client";
 
-if (!process.env.URL) {
+if (!process.env.URL || !process.env.TOKEN) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(-1);
 }
@@ -39,10 +39,10 @@ pcsc.on("reader", function (reader) {
                     // https://web.archive.org/web/20090623030155/http://cheef.ru/docs/HowTo/SW1SW2.info
                     if (err) return console.error("could not get uid", err);
                     if (data.length <= 2) return console.error("invalid data received from card");
-                    console.log("uid received", data);
+                    console.log("uid received", data.toString("base64"));
 
                     // Send to server
-                    socket.emit("nfcScan", { uuid: data });
+                    socket.emit("nfcScan", { uuid: data.toString("base64"), token: process.env.TOKEN! });
                 });
             });
         }

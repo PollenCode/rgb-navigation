@@ -1,5 +1,5 @@
 require("dotenv").config(); // Load .env file
-import express from "express";
+import express, { json } from "express";
 import http from "http";
 import https from "https";
 import { LedControllerServerMessage } from "../../shared/Message";
@@ -9,7 +9,7 @@ import fetch from "node-fetch";
 import jsonwebtoken from "jsonwebtoken";
 import { PrismaClient, User } from "@prisma/client";
 import { withUser } from "./middleware";
-import { createUserAccessToken, getOAuthUrl, validateDeviceAccessToken, validateUserAccessToken } from "./auth";
+import { createDeviceAccessToken, createUserAccessToken, getOAuthUrl, validateDeviceAccessToken, validateUserAccessToken } from "./auth";
 import { isDevelopment } from "./helpers";
 
 if (!process.env.NODE_ENV || !process.env.PORT || !process.env.JWT_SECRET) {
@@ -115,6 +115,12 @@ app.post("/leds", (req, res, next) => {
     });
 });
 
+if (isDevelopment) {
+    app.get("/deviceToken/:roomId", (req, res, next) => {
+        res.end(createDeviceAccessToken(req.params.roomId));
+    });
+}
+
 let server = http.createServer(app);
 let socket = new Server(server, { cors: { origin: "*" } });
 
@@ -145,18 +151,18 @@ socket.on("connection", (connection) => {
 
     // This event is submitted by any device that wants to listen for events in a room.
     // When subscribed, you will listen to the following room events: nfcAlreadyBound, nfcUnknownScanned, userShouldFollow
-    connection.on("subscribe", async ({ token }) => {
+    connection.on("subscribe", async ({ roomId }) => {
         // Validate data
-        if (typeof token !== "string") {
+        if (typeof roomId !== "string") {
             return;
         }
+        // let deviceToken = validateDeviceAccessToken(token);
+        // if (!deviceToken) {
+        //     return;
+        // }
 
-        let deviceToken = validateDeviceAccessToken(token);
-        if (!deviceToken) {
-            return;
-        }
-
-        connection.join(deviceToken.roomId);
+        console.log("subscribed to", roomId);
+        connection.join(roomId);
     });
 
     // This event is submitted by the nfc scanner, which scans a tag with unique id `uuid`.
@@ -164,6 +170,7 @@ socket.on("connection", (connection) => {
     connection.on("nfcScan", async ({ token, uuid }) => {
         // Validate data
         if (typeof token !== "string" || typeof uuid !== "string") {
+            console.warn("received invalid nfcScan data");
             return;
         }
 
@@ -171,6 +178,7 @@ socket.on("connection", (connection) => {
         // which also contains the room id it is located in.
         let deviceToken = validateDeviceAccessToken(token);
         if (!deviceToken) {
+            console.warn("could not verify nfc scan");
             return;
         }
         let currentlyBinding = roomsCurrentlyBinding[deviceToken.roomId];
@@ -186,6 +194,7 @@ socket.on("connection", (connection) => {
         if (currentlyBinding) {
             // Check if there is already someone bound to the nfc
             if (boundUser) {
+                console.warn("nfc already bound", uuid);
                 socket.in(deviceToken.roomId).emit("nfcAlreadyBound");
                 socket.in(currentlyBinding.socketId).emit("nfcAlreadyBound");
                 return;
@@ -200,6 +209,7 @@ socket.on("connection", (connection) => {
                 });
             }
         } else if (!boundUser) {
+            console.warn("unknown nfc scanned", uuid);
             socket.in(deviceToken.roomId).emit("nfcUnknownScanned");
             return;
         }
