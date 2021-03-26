@@ -14,7 +14,9 @@
   },
   "scripts": {
     "start": "nodemon --exec npx ts-node src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate deploy"
   },
   "devDependencies": {
     "@types/express": "^4.17.11",

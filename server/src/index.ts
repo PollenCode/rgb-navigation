@@ -29,7 +29,7 @@ if (isDevelopment) {
 app.get("/", async (req, res, next) => {
     res.redirect(getOAuthUrl());
 });
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static("public"));
 app.use("/api", apiRouter);
 
 if (isDevelopment) {
@@ -39,7 +39,7 @@ if (isDevelopment) {
 }
 
 app.use((req, res, next) => {
-    res.sendFile("index.html", { root: path.join(__dirname, "public") });
+    res.sendFile("index.html", { root: "public" });
 });
 
 let server = http.createServer(app);
