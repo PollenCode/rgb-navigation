@@ -17,9 +17,10 @@ Help visitors traverse corridors with RGB ledstrips.
 ## Development instructions
 
 Because all the projects (but `arduino`) are developed with TypeScript and NodeJS, you need to do the following to work with them:
-- Install NodeJS & npm, make sure they are available in path.
-- Optionally install yarn: `npm install -g yarn`
-- Every project has a start script which you can run using `npm run start` or `yarn start`. Make sure you cd to the project directory first. When running a project for the first time, use `npm install` or `yarn` to install the dependencies.
+
+-   Install NodeJS & npm, make sure they are available in path.
+-   Optionally install yarn: `npm install -g yarn`
+-   Every project has a start script which you can run using `npm run start` or `yarn start`. Make sure you cd to the project directory first. When running a project for the first time, use `npm install` or `yarn` to install the dependencies.
 
 ## License
 
