@@ -1,7 +1,7 @@
 #include <FastLED.h>
 
 #define MAX_LINES 32
-#define LED_COUNT 32
+#define LED_COUNT 50
 #define DATA_PIN 3
 
 struct Color
