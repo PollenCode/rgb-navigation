@@ -6,6 +6,7 @@ import { createDeviceAccessToken, getOAuthUrl } from "./auth";
 import { isDevelopment } from "./helpers";
 import { createSocketServer } from "./socketServer";
 import apiRouter from "./apiRouter";
+import path from "path";
 
 if (!process.env.NODE_ENV || !process.env.PORT || !process.env.JWT_SECRET) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
@@ -15,7 +16,6 @@ if (!process.env.NODE_ENV || !process.env.PORT || !process.env.JWT_SECRET) {
 let app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
 if (isDevelopment) {
     // Otherwise browsers block requests
     console.log("In development mode");
@@ -26,12 +26,10 @@ if (isDevelopment) {
         next();
     });
 }
-
 app.get("/", async (req, res, next) => {
     res.redirect(getOAuthUrl());
 });
-
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 app.use("/api", apiRouter);
 
 if (isDevelopment) {
