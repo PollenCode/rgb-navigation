@@ -24,7 +24,7 @@ router.get("/oauth/complete", async (req, res, next) => {
             code,
             client_id: process.env.OAUTH_CLIENT_ID,
             client_secret: process.env.OAUTH_CLIENT_SECRET,
-            redirect_uri: isDevelopment ? "http://localhost:3001/api/oauth/complete" : "/api/oauth/complete",
+            redirect_uri: isDevelopment ? "http://localhost:3001/api/oauth/complete" : process.env.OAUTH_REDIRECT,
             grant_type: "authorization_code",
         }),
     });

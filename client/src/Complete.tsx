@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { RouteComponentProps } from "react-router";
 import { Button } from "./components/Button";
+import { serverPath } from "./helpers";
 import { SocketContext } from "./socketContext";
 
 type Status = "bound" | "loading" | "waiting-for-others" | "scan" | "already-bound";
@@ -28,7 +29,7 @@ export function Complete(props: RouteComponentProps<{ token: string }>) {
 
     useEffect(() => {
         async function fetchUser() {
-            let res = await fetch("http://localhost:3001/api/user", {
+            let res = await fetch(serverPath + "/api/user", {
                 method: "POST",
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
@@ -98,7 +99,7 @@ export function Complete(props: RouteComponentProps<{ token: string }>) {
                 <Button
                     style={{ margin: "1em 0" }}
                     onClick={async () => {
-                        let res = await fetch("http://localhost:3001/api/unbind", {
+                        let res = await fetch(serverPath + "/api/unbind", {
                             method: "POST",
                             headers: { Authorization: `Bearer ${accessToken}` },
                         });

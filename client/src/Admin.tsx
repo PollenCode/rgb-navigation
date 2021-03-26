@@ -1,7 +1,7 @@
 import { useHistory } from "react-router";
 import { LedControllerServerMessage } from "../../shared/Message";
 import { Button } from "./components/Button";
-import { isDevelopment } from "./helpers";
+import { serverPath } from "./helpers";
 
 export function Admin() {
     const history = useHistory();
@@ -10,7 +10,8 @@ export function Admin() {
             <Button
                 style={{ margin: "0.5em" }}
                 onClick={() => {
-                    window.location.href = isDevelopment ? "http://localhost:3001/" : "/";
+                    // Server will redirect to oauth panel
+                    window.location.href = serverPath;
                 }}>
                 OAuth authenticate
             </Button>
@@ -33,7 +34,7 @@ export function Admin() {
                         endLed: 30,
                         startLed: 0,
                     };
-                    await fetch(isDevelopment ? "http://localhost:3001/api/leds" : "/api/leds", {
+                    await fetch(serverPath + "/api/leds", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(req),

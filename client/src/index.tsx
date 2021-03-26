@@ -3,10 +3,10 @@ import ReactDOM from "react-dom";
 import "./index.css";
 import { SocketContext } from "./socketContext";
 import { io } from "socket.io-client";
-import { isDevelopment } from "./helpers";
+import { serverPath } from "./helpers";
 import { Routes } from "./routes";
 
-let socket = io(isDevelopment ? "http://localhost:3001/" : "/");
+let socket = io(serverPath);
 
 ReactDOM.render(
     <React.StrictMode>

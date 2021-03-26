@@ -30,7 +30,7 @@ export function validateDeviceAccessToken(token: string) {
 
 export function getOAuthUrl() {
     let options = {
-        redirect_uri: `${isDevelopment ? "http://localhost:3001/api/oauth/complete" : "/api/oauth/complete"}`,
+        redirect_uri: `${isDevelopment ? "http://localhost:3001/api/oauth/complete" : process.env.OAUTH_REDIRECT}`,
         client_id: process.env.OAUTH_CLIENT_ID,
         access_type: "offline",
         response_type: "code",
