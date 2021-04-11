@@ -81,4 +81,7 @@ router.post("/unbind", withUser(), async (req, res, next) => {
     res.json({ status: "ok", user: user });
 });
 
+router.post("/leds", withUser(), async (req, res, next) => {
+    console.log(req.body);
+});
 export default router;
