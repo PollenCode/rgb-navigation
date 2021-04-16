@@ -31,7 +31,10 @@ router.get("/oauth/complete", async (req, res, next) => {
 
     if (!googleResponse.ok) {
         console.error("google returned token error", await googleResponse.text());
-        return res.status(400).json({ status: "error", error: "could not exchange tokens with google" });
+        return res.status(400).json({
+            status: "error",
+            error: "could not exchange tokens with google",
+        });
     }
 
     let googleData = await googleResponse.json();
@@ -85,3 +88,8 @@ router.post("/leds", withUser(), async (req, res, next) => {
     console.log(req.body);
 });
 export default router;
+
+router.get("/users", async (req, res, next) => {
+    let user = await prisma.user.findMany({});
+    res.json({ status: "ok", user });
+});

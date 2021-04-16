@@ -5,6 +5,7 @@ import { Complete } from "./Complete";
 import { serverPath } from "./helpers";
 import { Overview } from "./Overview";
 import { LedController } from "./LedController";
+import { UsersList } from "./Users";
 
 export function Routes() {
     return (
@@ -22,6 +23,7 @@ export function Routes() {
                 <Route path="/complete/:token" exact component={Complete} />
                 <Route path="/overview/:roomId" exact component={Overview} />
                 <Route path="/ledcontrol/:token" exact component={LedController} />
+                <Route path="/users" exact component={UsersList} />
                 <Redirect to="/" />
             </Switch>
         </Router>
