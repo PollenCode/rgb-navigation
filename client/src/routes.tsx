@@ -7,6 +7,7 @@ import { Overview } from "./Overview";
 import { LedController } from "./LedController";
 import { UsersList } from "./Users";
 import { AuthContext } from "./AuthContext";
+import { DGang } from "./pages/DGang";
 
 export function Routes() {
     const [auth, setAuth] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export function Routes() {
                 <Route path="/" exact component={Complete} />
                 <Route path="/admin" exact component={Admin} />
                 <Route path="/overview/:roomId" exact component={Overview} />
-                <Route path="/ledcontrol" exact component={LedController} />
+                <Route path="/admin/dgang" exact component={DGang} />
                 <Route path="/users" exact component={UsersList} />
                 <Redirect to="/" />
             </Switch>
