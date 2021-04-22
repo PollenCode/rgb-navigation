@@ -1,50 +1,82 @@
 import { LedControllerServerMessage } from "../../../shared/Message";
 import { serverPath } from "../helpers";
 import { Button } from "../components/Button";
-import { RouteComponentProps } from "react-router";
+import { AuthContext } from "../AuthContext";
+import { useContext } from "react";
 
-export function DGang(props: RouteComponentProps<{ token: string }>) {
-    let accessToken = decodeURIComponent(props.match.params.token);
+let accessToken: any;
+
+async function sendMessage(room: number){
+    let req: LedControllerServerMessage = {
+        type: "roomEffect",
+        room: room
+    };
+    await fetch(serverPath + "/api/leds", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(req),
+    });
+}
+
+export function DGang() {
+    accessToken = useContext(AuthContext);
     return (
-        <div className="flex items-center justify-center min-h-screen">
-            <Button
-                style={{ margin: "0.5em" }}
-                type="button"
-                onClick={async () => {
-                    let req: LedControllerServerMessage = {
-                        type: "setIdleEffect",
-                        effect: 0
-                    };
-                    await fetch(serverPath + "/api/leds", {
-                        method: "POST",
-                        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-                        body: JSON.stringify(req),
-                    });
-                }}>
-                Set effect
-            </Button>
-
-            <Button
-                style={{ margin: "0.5em" }}
-                type="button"
-                onClick={async () => {
-                    let req: LedControllerServerMessage = {
-                        type: "enableLine",
-                        r: 255,
-                        g: 0,
-                        b: 0,
-                        duration: 5,
-                        endLed: 30,
-                        startLed: 0,
-                    };
-                    await fetch(serverPath + "/api/leds", {
-                        method: "POST",
-                        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-                        body: JSON.stringify(req),
-                    });
-                }}>
-                Set color
-            </Button>
+        <div className="flex items-center flex-col min-h-screen justify-center">
+            <h1 className="text-4xl font-bold mb-8">D-Gang</h1>
+            <div className="flex items-center justify-center  flex-row">  
+                <div className="flex items-center flex-col ">  
+                    <Button
+                        style={{ margin: "0.5em" }}
+                        type="button"
+                        onClick={async () => {
+                            sendMessage(0);
+                        }}>
+                        Lokaal 1
+                    </Button>
+                    <Button
+                        style={{ margin: "0.5em" }}
+                        type="button"
+                        onClick={async () => {
+                            sendMessage(1);
+                        }}>
+                        Lokaal 2
+                    </Button>
+                    <Button
+                        style={{ margin: "0.5em" }}
+                        type="button"
+                        onClick={async () => {
+                            sendMessage(2);
+                        }}>
+                        Lokaal 3
+                    </Button>
+                </div>
+                <div className="flex items-center flex-col">
+                    <Button
+                        style={{ margin: "0.5em" }}
+                        type="button"
+                        onClick={async () => {
+                            sendMessage(3);
+                        }}>
+                        Lokaal 4
+                    </Button>
+                    <Button
+                        style={{ margin: "0.5em" }}
+                        type="button"
+                        onClick={async () => {
+                            sendMessage(4);
+                        }}>
+                        Lokaal 5
+                    </Button>
+                    <Button
+                        style={{ margin: "0.5em" }}
+                        type="button"
+                        onClick={async () => {
+                            sendMessage(5);
+                        }}>
+                        Lokaal 6
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }

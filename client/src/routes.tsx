@@ -8,6 +8,7 @@ import { LedController } from "./LedController";
 import { UsersList } from "./Users";
 import { AuthContext } from "./AuthContext";
 import { PageWrapper } from "./components/PageWrapper";
+import { DGang } from "./pages/DGang";
 
 export function Routes() {
     const [auth, setAuth] = useState<string | null>(null);
@@ -48,6 +49,7 @@ function AdminRouter() {
             <Route path="/admin" exact component={Admin} />
             <Route path="/admin/overview/:roomId" exact component={Overview} />
             <Route path="/admin/ledcontrol" exact component={LedController} />
+            <Route path="/admin/dgang" exact component={DGang} />
             <Route path="/admin/users" exact component={UsersList} />
             <Redirect to="/admin" />
         </PageWrapper>

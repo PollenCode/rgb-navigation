@@ -22,6 +22,9 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                     <ul className="w-full">
                         <SidebarButton name="Home" to="/admin" />
                         <SidebarButton name="Ledcontrol" to="/admin/ledcontrol" />
+                        <SidebarButton name="D-gang" to="/admin/dgang" />
+                        <SidebarButton name="Gebruikers" to="/admin/users" />
+                        <SidebarButton name="Realtime" to="/admin/overview/dgang" />
                     </ul>
                 </div>
                 <div className="flex-grow overflow-auto">{props.children}</div>

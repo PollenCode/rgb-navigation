@@ -16,6 +16,10 @@ code {
     monospace;
 } */
 
+body {
+  font-family: 'Rubik', sans-serif;
+}
+
 @keyframes blinking {
     0% {
         opacity: 0.1;
