@@ -118,7 +118,7 @@ export function createSocketServer(server: http.Server) {
     return socket;
 }
 
-export function sendArduino(){
+export function sendArduino(message : any){
     console.log('sendArduino')
-    socket.emit("usersShouldFollow", "oof");
+    socket.emit("usersShouldFollow", message);
 }

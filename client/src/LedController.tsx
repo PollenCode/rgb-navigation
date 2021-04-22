@@ -3,6 +3,7 @@ import { RouteComponentProps } from "react-router";
 import { serverPath } from "./helpers";
 import { LedControllerServerMessage } from "../../shared/Message";
 
+
 export function LedController(props: RouteComponentProps<{ token: string }>) {
     let accessToken = decodeURIComponent(props.match.params.token);
     return (
@@ -12,8 +13,8 @@ export function LedController(props: RouteComponentProps<{ token: string }>) {
                 type="button"
                 onClick={async () => {
                     let req: LedControllerServerMessage = {
-                        type: "setIdleEffect",
-                        effect: 0
+                        type: "roomEffect",
+                        room: 0
                     };
                     await fetch(serverPath + "/api/leds", {
                         method: "POST",
@@ -21,21 +22,15 @@ export function LedController(props: RouteComponentProps<{ token: string }>) {
                         body: JSON.stringify(req),
                     });
                 }}>
-                Set effect
+                Lokaal 1
             </Button>
-
             <Button
                 style={{ margin: "0.5em" }}
                 type="button"
                 onClick={async () => {
                     let req: LedControllerServerMessage = {
-                        type: "enableLine",
-                        r: 255,
-                        g: 0,
-                        b: 0,
-                        duration: 5,
-                        endLed: 30,
-                        startLed: 0,
+                        type: "roomEffect",
+                        room: 1
                     };
                     await fetch(serverPath + "/api/leds", {
                         method: "POST",
@@ -43,8 +38,74 @@ export function LedController(props: RouteComponentProps<{ token: string }>) {
                         body: JSON.stringify(req),
                     });
                 }}>
-                Set color
+                Lokaal 2
             </Button>
+            <Button
+                style={{ margin: "0.5em" }}
+                type="button"
+                onClick={async () => {
+                    let req: LedControllerServerMessage = {
+                        type: "roomEffect",
+                        room: 2
+                    };
+                    await fetch(serverPath + "/api/leds", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+                        body: JSON.stringify(req),
+                    });
+                }}>
+                Lokaal 3
+            </Button>
+            <Button
+                style={{ margin: "0.5em" }}
+                type="button"
+                onClick={async () => {
+                    let req: LedControllerServerMessage = {
+                        type: "roomEffect",
+                        room: 3
+                    };
+                    await fetch(serverPath + "/api/leds", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+                        body: JSON.stringify(req),
+                    });
+                }}>
+                Lokaal 4
+            </Button>
+            <Button
+                style={{ margin: "0.5em" }}
+                type="button"
+                onClick={async () => {
+                    let req: LedControllerServerMessage = {
+                        type: "roomEffect",
+                        room: 4
+                    };
+                    await fetch(serverPath + "/api/leds", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+                        body: JSON.stringify(req),
+                    });
+                }}>
+                Lokaal 5
+            </Button>
+            <Button
+                style={{ margin: "0.5em" }}
+                type="button"
+                onClick={async () => {
+                    let req: LedControllerServerMessage = {
+                        type: "roomEffect",
+                        room: 5
+                    };
+                    await fetch(serverPath + "/api/leds", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+                        body: JSON.stringify(req),
+                    });
+                }}>
+                Lokaal 6
+            </Button>
+
+
         </div>
     );
 }

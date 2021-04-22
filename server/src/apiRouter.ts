@@ -86,8 +86,8 @@ router.post("/unbind", withUser(), async (req, res, next) => {
 });
 
 router.post("/leds", withUser(), async (req, res, next) => {
-    console.log(req.body);
-    sendArduino();
+    let message = req.body;
+    sendArduino(message);
 });
 export default router;
 
