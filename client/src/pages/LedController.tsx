@@ -1,9 +1,9 @@
-import { Button } from "./components/Button";
+import { Button } from "../components/Button";
 import { RouteComponentProps } from "react-router";
-import { serverPath } from "./helpers";
-import { LedControllerServerMessage } from "../../shared/Message";
+import { serverPath } from "../helpers";
+import { LedControllerServerMessage } from "../../../shared/Message";
 import { useContext } from "react";
-import { AuthContext } from "./AuthContext";
+import { AuthContext } from "../AuthContext";
 
 export function LedController() {
     let accessToken = useContext(AuthContext);

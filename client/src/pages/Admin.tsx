@@ -1,7 +1,7 @@
 import { useHistory } from "react-router";
-import { LedControllerServerMessage } from "../../shared/Message";
-import { Button } from "./components/Button";
-import { serverPath } from "./helpers";
+import { LedControllerServerMessage } from "../../../shared/Message";
+import { Button } from "../components/Button";
+import { serverPath } from "../helpers";
 
 export function Admin() {
     const history = useHistory();

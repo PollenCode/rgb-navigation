@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { RouteComponentProps } from "react-router";
-import { SocketContext } from "./socketContext";
+import { SocketContext } from "../SocketContext";
 
 export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     let { socket } = useContext(SocketContext);

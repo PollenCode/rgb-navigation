@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
-import { SocketContext } from "./socketContext";
+import { SocketContext } from "./SocketContext";
 import { io } from "socket.io-client";
 import { serverPath } from "./helpers";
 import { Routes } from "./routes";

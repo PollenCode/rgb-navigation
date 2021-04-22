@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Switch, Route, Redirect, useHistory } from "react-router-dom";
-import { Admin } from "./Admin";
-import { Complete } from "./Complete";
+import { Admin } from "./pages/Admin";
+import { Complete } from "./pages/Complete";
 import { isDevelopment, serverPath } from "./helpers";
-import { Overview } from "./Overview";
-import { LedController } from "./LedController";
+import { Overview } from "./pages/Overview";
+import { LedController } from "./pages/LedController";
 import { UsersList } from "./Users";
 import { AuthContext } from "./AuthContext";
 import { PageWrapper } from "./components/PageWrapper";
