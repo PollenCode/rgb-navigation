@@ -2,14 +2,16 @@ import { Server } from "socket.io";
 import http from "http";
 import { validateDeviceAccessToken, validateUserAccessToken } from "./auth";
 import { PrismaClient } from ".prisma/client";
+import { Socket } from "node:dgram";
 
 let prisma = new PrismaClient();
 let roomsCurrentlyBinding: {
     [roomId: string]: { socketId: string; userId: string };
 } = {};
+let socket: Server
 
 export function createSocketServer(server: http.Server) {
-    let socket = new Server(server, { cors: { origin: "*" } });
+    socket = new Server(server, { cors: { origin: "*" } });
 
     socket.on("connection", (connection) => {
         // console.log("new connection", connection.id);
@@ -114,4 +116,9 @@ export function createSocketServer(server: http.Server) {
     });
 
     return socket;
+}
+
+export function sendArduino(){
+    console.log('sendArduino')
+    socket.emit("usersShouldFollow", "oof");
 }

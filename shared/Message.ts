@@ -18,4 +18,8 @@ export type LedControllerServerMessage =
           r: number;
           g: number;
           b: number;
-      };
+      }
+    | {
+        type: "roomEffect";
+        room: number;
+    }

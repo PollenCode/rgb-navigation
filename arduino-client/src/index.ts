@@ -14,6 +14,7 @@ console.log(`opening serial port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
 
 let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
 //setTimeout(() => arduino.sendEffect(1), 2000);
+//setTimeout(() => arduino.sendRoom(1, 1), 4000);
 //setTimeout(() => arduino.sendEnableLine(0, 0, 0, 255, 0, 50, 60), 2000);
 //setTimeout(() => arduino.sendEnableLine(0, 0, 255, 0, 0, 31, 8), 5000);
 // setTimeout(() => arduino.sendDisableLine(0), 15000);
@@ -37,6 +38,10 @@ function processMessage(data: LedControllerServerMessage) {
 
 let socket = io(URL!);
 
-socket.on("led", (obj) => {
-    processMessage(obj);
+socket.emit("subscribe", { roomId: "dgang"});
+
+socket.on("usersShouldFollow", (obj) => {
+
+    arduino.sendRoom(1, 2);
 });
+

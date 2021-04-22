@@ -12,6 +12,7 @@ export enum SerialPacketType {
     Effect = 1,
     EnableLine = 2,
     DisableLine = 3,
+    Room = 4,
 }
 
 export class SerialLedController {
@@ -62,5 +63,9 @@ export class SerialLedController {
     public sendDisableLine(id: number) {
         // console.log(`disable id=${id}`);
         this.port.write(Buffer.from([3, SerialPacketType.DisableLine, id]));
+    }
+
+    public sendRoom(id: number, room: number) {
+        this.port.write(Buffer.from([4, SerialPacketType.Room, id, room]));
     }
 }

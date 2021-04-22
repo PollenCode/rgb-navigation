@@ -5,6 +5,7 @@ import { withUser } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
 import { PrismaClient } from ".prisma/client";
 import fetch from "node-fetch";
+import { sendArduino } from "./socketServer";
 
 let router = Router();
 let prisma = new PrismaClient();
@@ -86,6 +87,7 @@ router.post("/unbind", withUser(), async (req, res, next) => {
 
 router.post("/leds", withUser(), async (req, res, next) => {
     console.log(req.body);
+    sendArduino();
 });
 export default router;
 
