@@ -66,7 +66,7 @@ router.get("/oauth/complete", async (req, res, next) => {
     });
 
     let accessToken = createUserAccessToken(user.id);
-    res.redirect((isDevelopment ? "http://localhost:3000/complete/" : "/complete/") + encodeURIComponent(accessToken));
+    res.redirect((isDevelopment ? "http://localhost:3000/?s=" : "/?s=") + encodeURIComponent(accessToken));
 });
 
 router.post("/user", withUser(), (req, res, next) => {

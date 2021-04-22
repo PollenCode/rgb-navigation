@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { RouteComponentProps } from "react-router";
+import { AuthContext } from "./AuthContext";
 import { Button } from "./components/Button";
 import { serverPath } from "./helpers";
 import { SocketContext } from "./socketContext";
@@ -21,8 +22,9 @@ function getTextForStatus(status: Status) {
     }
 }
 
-export function Complete(props: RouteComponentProps<{ token: string }>) {
-    let accessToken = decodeURIComponent(props.match.params.token);
+export function Complete() {
+    const auth = useContext(AuthContext);
+
     let [user, setUser] = useState<any>();
     let { socket } = useContext(SocketContext);
     let [status, setStatus] = useState<Status>("loading");
@@ -31,7 +33,7 @@ export function Complete(props: RouteComponentProps<{ token: string }>) {
         async function fetchUser() {
             let res = await fetch(serverPath + "/api/user", {
                 method: "POST",
-                headers: { Authorization: `Bearer ${accessToken}` },
+                headers: { Authorization: `Bearer ${auth}` },
             });
             let data = await res.json();
             if (data.status === "ok") {
@@ -39,11 +41,11 @@ export function Complete(props: RouteComponentProps<{ token: string }>) {
             }
         }
         fetchUser();
-    }, [accessToken]);
+    }, [auth]);
 
     useEffect(() => {
         function tryBind() {
-            socket.emit("bind", { roomId: "dgang", token: accessToken }, (res: any) => {
+            socket.emit("bind", { roomId: "dgang", token: auth }, (res: any) => {
                 if (res.status === "busy" || res.status === "error") {
                     console.log("bind is busy, trying again in 4 seconds", res);
                     setTimeout(tryBind, 3000 + Math.random() * 2000);
@@ -101,7 +103,7 @@ export function Complete(props: RouteComponentProps<{ token: string }>) {
                     onClick={async () => {
                         let res = await fetch(serverPath + "/api/unbind", {
                             method: "POST",
-                            headers: { Authorization: `Bearer ${accessToken}` },
+                            headers: { Authorization: `Bearer ${auth}` },
                         });
                         let data = await res.json();
                         if (data.status === "ok") {

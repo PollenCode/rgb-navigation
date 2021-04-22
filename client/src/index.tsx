@@ -5,14 +5,17 @@ import { SocketContext } from "./socketContext";
 import { io } from "socket.io-client";
 import { serverPath } from "./helpers";
 import { Routes } from "./routes";
+import { BrowserRouter } from "react-router-dom";
 
 let socket = io(serverPath);
 
 ReactDOM.render(
     <React.StrictMode>
-        <SocketContext.Provider value={{ socket }}>
-            <Routes />
-        </SocketContext.Provider>
+        <BrowserRouter>
+            <SocketContext.Provider value={{ socket }}>
+                <Routes />
+            </SocketContext.Provider>
+        </BrowserRouter>
     </React.StrictMode>,
     document.getElementById("root")
 );
