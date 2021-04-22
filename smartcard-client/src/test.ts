@@ -9,6 +9,11 @@ if (!process.env.URL || !process.env.TOKEN) {
 let socket = io(process.env.URL);
 let uuid = "asdfqtqwtejdasfklasdf";
 
+socket.on("connect", () => {
+    console.log("connected");
+});
+
 setTimeout(() => {
+    console.log("emit");
     socket.emit("nfcScan", { uuid: uuid, token: process.env.TOKEN! });
 }, 2000);
