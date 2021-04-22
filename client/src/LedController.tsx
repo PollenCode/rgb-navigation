@@ -2,10 +2,11 @@ import { Button } from "./components/Button";
 import { RouteComponentProps } from "react-router";
 import { serverPath } from "./helpers";
 import { LedControllerServerMessage } from "../../shared/Message";
+import { useContext } from "react";
+import { AuthContext } from "./AuthContext";
 
-
-export function LedController(props: RouteComponentProps<{ token: string }>) {
-    let accessToken = decodeURIComponent(props.match.params.token);
+export function LedController() {
+    let accessToken = useContext(AuthContext);
     return (
         <div className="flex items-center justify-center min-h-screen">
             <Button
@@ -14,7 +15,7 @@ export function LedController(props: RouteComponentProps<{ token: string }>) {
                 onClick={async () => {
                     let req: LedControllerServerMessage = {
                         type: "roomEffect",
-                        room: 0
+                        room: 0,
                     };
                     await fetch(serverPath + "/api/leds", {
                         method: "POST",
@@ -30,7 +31,7 @@ export function LedController(props: RouteComponentProps<{ token: string }>) {
                 onClick={async () => {
                     let req: LedControllerServerMessage = {
                         type: "roomEffect",
-                        room: 1
+                        room: 1,
                     };
                     await fetch(serverPath + "/api/leds", {
                         method: "POST",
@@ -46,7 +47,7 @@ export function LedController(props: RouteComponentProps<{ token: string }>) {
                 onClick={async () => {
                     let req: LedControllerServerMessage = {
                         type: "roomEffect",
-                        room: 2
+                        room: 2,
                     };
                     await fetch(serverPath + "/api/leds", {
                         method: "POST",
@@ -62,7 +63,7 @@ export function LedController(props: RouteComponentProps<{ token: string }>) {
                 onClick={async () => {
                     let req: LedControllerServerMessage = {
                         type: "roomEffect",
-                        room: 3
+                        room: 3,
                     };
                     await fetch(serverPath + "/api/leds", {
                         method: "POST",
@@ -78,7 +79,7 @@ export function LedController(props: RouteComponentProps<{ token: string }>) {
                 onClick={async () => {
                     let req: LedControllerServerMessage = {
                         type: "roomEffect",
-                        room: 4
+                        room: 4,
                     };
                     await fetch(serverPath + "/api/leds", {
                         method: "POST",
@@ -94,7 +95,7 @@ export function LedController(props: RouteComponentProps<{ token: string }>) {
                 onClick={async () => {
                     let req: LedControllerServerMessage = {
                         type: "roomEffect",
-                        room: 5
+                        room: 5,
                     };
                     await fetch(serverPath + "/api/leds", {
                         method: "POST",
@@ -104,8 +105,6 @@ export function LedController(props: RouteComponentProps<{ token: string }>) {
                 }}>
                 Lokaal 6
             </Button>
-
-
         </div>
     );
 }
