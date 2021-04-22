@@ -22,7 +22,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                 <div className="w-48 border-r flex-shrink-0">
                     <ul className="w-full">
                         <SidebarButton name="Home" to="/admin" />
-                        <SidebarButton name="Ledcontrol" to="/admin/ledcontrol" />
+                        <SidebarButton name="Idle Effects" to="/admin/idle" />
                         <SidebarButton name="D-gang" to="/admin/dgang" />
                         <SidebarButton name="Gebruikers" to="/admin/users" />
                         <SidebarButton name="Realtime" to="/admin/overview/dgang" />

@@ -4,7 +4,7 @@ import { Admin } from "./pages/Admin";
 import { Complete } from "./pages/Complete";
 import { isDevelopment, serverPath } from "./helpers";
 import { Overview } from "./pages/Overview";
-import { LedController } from "./pages/LedController";
+import { IdleEffects } from "./pages/IdleEffects";
 import { UsersList } from "./Users";
 import { AuthContext } from "./AuthContext";
 import { PageWrapper } from "./components/PageWrapper";
@@ -48,7 +48,7 @@ function AdminRouter() {
         <PageWrapper>
             <Route path="/admin" exact component={Admin} />
             <Route path="/admin/overview/:roomId" exact component={Overview} />
-            <Route path="/admin/ledcontrol" exact component={LedController} />
+            <Route path="/admin/idle" exact component={IdleEffects} />
             <Route path="/admin/dgang" exact component={DGang} />
             <Route path="/admin/users" exact component={UsersList} />
             <Redirect to="/admin" />
