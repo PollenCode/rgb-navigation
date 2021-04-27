@@ -23,29 +23,26 @@ function getTextForStatus(status: Status) {
 }
 
 export function Complete() {
-    const auth = useContext(AuthContext);
-
-    let [user, setUser] = useState<any>();
-    let { socket } = useContext(SocketContext);
+    const { auth, socket, setAuth, unbind } = useContext(AuthContext);
     let [status, setStatus] = useState<Status>("loading");
 
-    useEffect(() => {
-        async function fetchUser() {
-            let res = await fetch(serverPath + "/api/user", {
-                method: "POST",
-                headers: { Authorization: `Bearer ${auth}` },
-            });
-            let data = await res.json();
-            if (data.status === "ok") {
-                setUser(data.user);
-            }
-        }
-        fetchUser();
-    }, [auth]);
+    // useEffect(() => {
+    //     async function fetchUser() {
+    //         let res = await fetch(serverPath + "/api/user", {
+    //             method: "POST",
+    //             headers: { Authorization: `Bearer ${client}` },
+    //         });
+    //         let data = await res.json();
+    //         if (data.status === "ok") {
+    //             setUser(data.user);
+    //         }
+    //     }
+    //     fetchUser();
+    // }, [client]);
 
     useEffect(() => {
         function tryBind() {
-            socket.emit("bind", { roomId: "dgang", token: auth }, (res: any) => {
+            socket.emit("bind", { roomId: "dgang", token: auth!.accessToken }, (res: any) => {
                 if (res.status === "busy" || res.status === "error") {
                     console.log("bind is busy, trying again in 4 seconds", res);
                     setTimeout(tryBind, 3000 + Math.random() * 2000);
@@ -55,14 +52,14 @@ export function Complete() {
                 }
             });
         }
-        if (!user) {
+        if (!auth) {
             setStatus("loading");
-        } else if (user.identifier) {
+        } else if (auth.identifier) {
             setStatus("bound");
         } else {
             tryBind();
         }
-    }, [user]);
+    }, [auth]);
 
     useEffect(() => {
         async function onNfcAlreadyBound() {
@@ -70,7 +67,8 @@ export function Complete() {
             setTimeout(() => setStatus("scan"), 2000);
         }
         async function onNfcBound(data: any) {
-            setUser((user: any) => ({ ...user, identifier: data.identifier }));
+            setAuth({ ...auth!, identifier: data.identifier });
+            // setUser((user: any) => ({ ...user, identifier: data.identifier }));
             setStatus("bound");
         }
         async function onUserFollow() {
@@ -89,26 +87,20 @@ export function Complete() {
         };
     }, []);
 
-    if (!user) return null;
+    if (!auth) return null;
 
     return (
         <div className="items-center justify-center min-h-screen flex flex-col">
             <h1 className="text-3xl px-5 py-3 my-3 bg-green-500 text-white border rounded-lg">{getTextForStatus(status)}</h1>
-            <h2 className="text-lg font-semibold text-blue-700">{user.name}</h2>
-            <h3>{user.email}</h3>
-            {user.picture && <img className="rounded m-3" src={user.picture} alt="profile" />}
-            {user.identifier && (
+            <h2 className="text-lg font-semibold text-blue-700">{auth.name}</h2>
+            <h3>{auth.email}</h3>
+            {/* {auth.picture && <img className="rounded m-3" src={user.picture} alt="profile" />} */}
+            {auth.identifier && (
                 <Button
                     style={{ margin: "1em 0" }}
                     onClick={async () => {
-                        let res = await fetch(serverPath + "/api/unbind", {
-                            method: "POST",
-                            headers: { Authorization: `Bearer ${auth}` },
-                        });
-                        let data = await res.json();
-                        if (data.status === "ok") {
-                            setUser(data.user);
-                        }
+                        await unbind();
+                        setAuth({ ...auth!, identifier: null });
                     }}>
                     Verbreken
                 </Button>

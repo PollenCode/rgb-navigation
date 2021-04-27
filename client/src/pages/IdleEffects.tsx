@@ -5,22 +5,8 @@ import { LedControllerServerMessage } from "rgb-navigation-api";
 import { useContext } from "react";
 import { AuthContext } from "../AuthContext";
 
-let accessToken: any;
-
-async function sendMessage(effect: number) {
-    let req: LedControllerServerMessage = {
-        type: "setIdleEffect",
-        effect: effect,
-    };
-    await fetch(serverPath + "/api/leds", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify(req),
-    });
-}
-
 export function IdleEffects() {
-    accessToken = useContext(AuthContext);
+    let client = useContext(AuthContext);
     return (
         <div className="flex items-center flex-col min-h-screen justify-center">
             <h1 className="text-4xl font-bold mb-8">Idle Effecten</h1>
@@ -28,7 +14,7 @@ export function IdleEffects() {
                 style={{ margin: "0.5em" }}
                 type="button"
                 onClick={async () => {
-                    sendMessage(0);
+                    await client.sendIdleEffect(0);
                 }}>
                 Zwart
             </Button>
@@ -36,7 +22,7 @@ export function IdleEffects() {
                 style={{ margin: "0.5em" }}
                 type="button"
                 onClick={async () => {
-                    sendMessage(1);
+                    await client.sendIdleEffect(1);
                 }}>
                 Regenboog
             </Button>

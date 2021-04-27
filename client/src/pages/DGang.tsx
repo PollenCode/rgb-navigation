@@ -4,22 +4,8 @@ import { Button } from "../components/Button";
 import { AuthContext } from "../AuthContext";
 import { useContext } from "react";
 
-let accessToken: any;
-
-async function sendMessage(room: number) {
-    let req: LedControllerServerMessage = {
-        type: "roomEffect",
-        room: room,
-    };
-    await fetch(serverPath + "/api/leds", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify(req),
-    });
-}
-
 export function DGang() {
-    accessToken = useContext(AuthContext);
+    let client = useContext(AuthContext);
     return (
         <div className="flex items-center flex-col min-h-screen justify-center">
             <h1 className="text-4xl font-bold mb-8">D-Gang</h1>
@@ -29,7 +15,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            sendMessage(0);
+                            client.sendRoom(0);
                         }}>
                         Lokaal 1
                     </Button>
@@ -37,7 +23,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            sendMessage(1);
+                            client.sendRoom(1);
                         }}>
                         Lokaal 2
                     </Button>
@@ -45,7 +31,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            sendMessage(2);
+                            client.sendRoom(2);
                         }}>
                         Lokaal 3
                     </Button>
@@ -55,7 +41,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            sendMessage(3);
+                            client.sendRoom(3);
                         }}>
                         Lokaal 4
                     </Button>
@@ -63,7 +49,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            sendMessage(4);
+                            client.sendRoom(4);
                         }}>
                         Lokaal 5
                     </Button>
@@ -71,7 +57,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            sendMessage(5);
+                            client.sendRoom(5);
                         }}>
                         Lokaal 6
                     </Button>

@@ -8,7 +8,7 @@ export enum IdleLedEffect {
 export type LedControllerServerMessage =
     | {
           type: "setIdleEffect";
-          effect: IdleLedEffect;
+          effect: number;
       }
     | {
           type: "enableLine";

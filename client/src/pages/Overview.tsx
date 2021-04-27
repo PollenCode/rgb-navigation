@@ -1,9 +1,10 @@
 import React, { useContext, useEffect, useState } from "react";
 import { RouteComponentProps } from "react-router";
+import { AuthContext } from "../AuthContext";
 import { SocketContext } from "../SocketContext";
 
 export function Overview(props: RouteComponentProps<{ roomId: string }>) {
-    let { socket } = useContext(SocketContext);
+    let { socket } = useContext(AuthContext);
     let [messages, setMessages] = useState<string[]>([]);
 
     async function onNfcAlreadyBound() {
