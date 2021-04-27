@@ -1,3 +1,8 @@
-# RGB-Navigation
+---
+title: Home
+nav_order: 1
+---
 
-Dit is de documentatie
+# Home
+
+Welkom bij de RGB-Navigation documentatie.
