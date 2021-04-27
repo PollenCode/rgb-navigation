@@ -32,6 +32,7 @@ function processMessage(data: LedControllerServerMessage) {
             break;
         case "roomEffect":
             arduino.sendRoom(1, data.room);
+            break;
         default:
             console.warn(`received unknown message ${JSON.stringify(data)}`);
             break;
@@ -40,9 +41,8 @@ function processMessage(data: LedControllerServerMessage) {
 
 let socket = io(URL!);
 
-socket.emit("subscribe", { roomId: "dgang"});
+socket.emit("subscribe", { roomId: "dgang" });
 
 socket.on("usersShouldFollow", (obj) => {
     processMessage(obj);
 });
-
