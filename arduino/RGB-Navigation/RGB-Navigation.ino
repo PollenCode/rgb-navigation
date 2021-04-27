@@ -1,26 +1,10 @@
 #include <FastLED.h>
+#include "leds.h"
+#include "effects/black.c"
+#include "effects/rainbow.c"
 
-#define MAX_LINES 32
-#define LED_COUNT 50
 #define DATA_PIN 3
-
-struct Color
-{
-  uint8_t r, g, b;
-
-  Color(uint8_t r, uint8_t g, uint8_t b) : r(r), g(g), b(b) {}
-};
-
-// A route
-struct LineEffect
-{
-  uint16_t startLed;
-  uint16_t endLed;
-  uint64_t endTime;
-  Color color;
-
-  LineEffect(uint16_t startLed, uint16_t endLed, uint64_t endTime, Color color) : startLed(startLed), endLed(endLed), endTime(endTime), color(color) {}
-};
+#define MAX_LINES 32
 
 // Effect that is used when there are no routes currently displayed
 enum IdleEffect
@@ -31,9 +15,6 @@ enum IdleEffect
 
 IdleEffect idleEffect = Black;
 LineEffect *routes[MAX_LINES];
-
-CRGB leds[LED_COUNT];
-uint64_t counter = 0;
 
 void setColorLine(int start, int end, CRGB color);
 
@@ -173,25 +154,13 @@ void processPacket()
   }
 }
 
-void blackEffect()
-{
-  for (int i = 0; i < LED_COUNT; i++)
-  {
-    leds[i] = CRGB(20, 20, 20);
-  }
-}
-
-void rainbowEffect()
-{
-  for (int i = 0; i < LED_COUNT; i++)
-  {
-    leds[i] = CHSV(((counter / 8) + i) % 255, 255, 255);
-  }
-}
-
 void setColorLine(int start, int end, CRGB color)
 {
-  blackEffect();
+  for (int i = 0; i < LED_COUNT; i++)
+  {
+    leds[i] = CRGB(0, 0, 0);
+  }
+
   int dir = end > start ? 1 : -1;
   for (int i = start; i != end && i < LED_COUNT && i >= 0; i += dir)
   {
