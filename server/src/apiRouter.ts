@@ -91,7 +91,7 @@ router.post("/unbind", withUser(), async (req, res, next) => {
     res.json({ status: "ok", user: user });
 });
 
-router.get("/effects", withUser(), async (req, res, next) => {
+router.get("/effect", withUser(), async (req, res, next) => {
     let effects = await prisma.effect.findMany({
         select: {
             name: true,
@@ -140,14 +140,18 @@ router.delete("/effect/:id", withUser(), async (req, res, next) => {
 router.post("/effect", withUser(), async (req, res, next) => {
     let { code, name } = req.body;
 
-    await prisma.effect.upsert({
+    let existing = await prisma.effect.findUnique({
         where: {
-            name: name,
+            name,
         },
-        update: {
-            code: code,
-        },
-        create: {
+    });
+
+    if (existing) {
+        return res.status(400).end("effect with name already exists");
+    }
+
+    let effect = await prisma.effect.create({
+        data: {
             name: name,
             code: code,
             author: {
@@ -156,9 +160,62 @@ router.post("/effect", withUser(), async (req, res, next) => {
                 },
             },
         },
+        select: {
+            code: true,
+            name: true,
+            id: true,
+            author: {
+                select: {
+                    name: true,
+                    email: true,
+                },
+            },
+        },
     });
 
-    res.end();
+    res.json(effect);
+});
+
+router.patch("/effect", withUser(), async (req, res, next) => {
+    let { code, name, id } = req.body;
+
+    let existing = await prisma.effect.findUnique({
+        where: {
+            id: id,
+        },
+    });
+
+    if (!existing) {
+        return res.status(404).end();
+    }
+
+    if (existing.userId !== req.user.id) {
+        logger("user %d tried to update other user's effect (%s)", req.user.id, name);
+        return res.status(403).end();
+    }
+
+    let effect = await prisma.effect.update({
+        where: {
+            id: existing.id,
+        },
+        data: {
+            code: code,
+            name: name,
+        },
+        select: {
+            code: true,
+            name: true,
+            id: true,
+            author: {
+                select: {
+                    name: true,
+                    email: true,
+                },
+            },
+        },
+    });
+
+    res.json(effect);
 });
 
 router.get("/effect/:id", withUser(), async (req, res, next) => {

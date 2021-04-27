@@ -70,7 +70,7 @@ export class RGBClient extends TypedEmitter<Events> {
             return null;
         }
 
-        if (res.headers.get("Content-Type") === "application/json") {
+        if (res.headers.get("Content-Type")?.includes("application/json")) {
             return await res.json();
         }
     }
@@ -93,6 +93,26 @@ export class RGBClient extends TypedEmitter<Events> {
             room: room,
         };
         return await this.doFetch("/api/leds", "POST", req);
+    }
+
+    public async getEffects() {
+        return await this.doFetch("/api/effect", "GET");
+    }
+
+    public async getEffect(id: number) {
+        return await this.doFetch("/api/effect/" + id, "GET");
+    }
+
+    public async deleteEffect(id: number) {
+        return await this.doFetch("/api/effect/" + id, "DELETE");
+    }
+
+    public async createEffect(effect: { name: string; code: string }) {
+        return await this.doFetch("/api/effect", "POST", effect);
+    }
+
+    public async update(effect: { name: string; code: string; id: number }) {
+        return await this.doFetch("/api/effect", "PATCH", effect);
     }
 }
 

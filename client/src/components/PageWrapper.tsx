@@ -1,5 +1,5 @@
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faDotCircle, faHome, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faDotCircle, faFire, faHome, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useContext } from "react";
 import { NavLink } from "react-router-dom";
@@ -38,6 +38,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                 <div className="w-48 border-r flex-shrink-0">
                     <ul className="w-full">
                         <SidebarButton icon={faHome} name="Home" to="/admin" />
+                        <SidebarButton icon={faFire} name="Effects" to="/admin/effects" />
                         <SidebarButton name="Idle Effects" to="/admin/idle" />
                         <SidebarButton name="D-gang" to="/admin/dgang" />
                         <SidebarButton icon={faUsers} name="Gebruikers" to="/admin/users" />
