@@ -1,0 +1,5 @@
+remote_theme: pmarsceill/just-the-docs
+
+aux_links:
+    "GitHub":
+        - "https://github.com/PollenCode/rgb-navigation"
