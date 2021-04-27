@@ -9,14 +9,8 @@
 #define DATA_PIN 3
 #define MAX_LINES 32
 
-// Effect that is used when there are no routes currently displayed
-enum IdleEffect
-{
-  Black,
-  Rainbow
-};
-
-IdleEffect idleEffect = Rainbow;
+// Effect that is used when there are no routes currently displayed, see effects.h to see which effects cooresponds to a number
+unsigned char idleEffect = 0;
 LineEffect *routes[MAX_LINES];
 
 void setColorLine(int start, int end, CRGB color);
@@ -51,7 +45,7 @@ void processPacket()
   // Switch does not work for some reason??
   if (packetType == 1) // Set effect
   {
-    idleEffect = (IdleEffect)Serial.read();
+    idleEffect = Serial.read();
     Serial.print("Set idle effect ");
     Serial.println(idleEffect);
   }
@@ -232,7 +226,7 @@ void loop()
   if (!anyRoute)
   {
     // Draw idle effect if no routes are being drawn
-    playEffect(1);
+    playEffect(idleEffect);
   }
 
   FastLED.show();

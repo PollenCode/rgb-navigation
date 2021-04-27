@@ -1,5 +1,5 @@
 //
-// THIS FILE IS GENERATED, DO NOT TOUCH IT
+// THIS FILE IS GENERATED USING arduino-client, DO NOT TOUCH IT!!
 //
 
 #pragma once
@@ -16,7 +16,7 @@ void playEffect(unsigned char num)
 {
     switch (num)
     {
-    case 0:
+    case 1:
         effect_1();
         return;
 
