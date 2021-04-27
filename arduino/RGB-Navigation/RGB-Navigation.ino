@@ -133,7 +133,7 @@ void processPacket()
     }
 
     uint8_t room = Serial.read();
-    uint64_t endTime = millis() + 10 * 1000;
+    uint64_t endTime = millis() + 5 * 1000;
 
     switch (room) {
       case 0: routes[id] = new LineEffect(0, 5, endTime, Color(255, 0, 0));
