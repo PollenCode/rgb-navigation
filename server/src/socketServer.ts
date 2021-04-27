@@ -2,13 +2,13 @@ import { Server } from "socket.io";
 import http from "http";
 import { validateDeviceAccessToken, validateUserAccessToken } from "./auth";
 import { PrismaClient } from ".prisma/client";
-import { Socket } from "node:dgram";
+import { LedControllerServerMessage } from "rgb-navigation-api";
 
 let prisma = new PrismaClient();
 let roomsCurrentlyBinding: {
     [roomId: string]: { socketId: string; userId: string };
 } = {};
-let socket: Server
+let socket: Server;
 
 export function createSocketServer(server: http.Server) {
     socket = new Server(server, { cors: { origin: "*" } });
@@ -118,7 +118,7 @@ export function createSocketServer(server: http.Server) {
     return socket;
 }
 
-export function sendArduino(message : any){
-    console.log('sendArduino')
+export function sendArduino(message: LedControllerServerMessage) {
+    console.log("sendArduino");
     socket.emit("usersShouldFollow", message);
 }

@@ -11,7 +11,8 @@
     "jsonwebtoken": "^8.5.1",
     "node-fetch": "^2.6.1",
     "querystring": "^0.2.1",
-    "socket.io": "^4.0.0"
+    "socket.io": "^4.0.0",
+    "rgb-navigation-api": "link:../api"
   },
   "scripts": {
     "start": "nodemon --exec npx ts-node src/index.ts",

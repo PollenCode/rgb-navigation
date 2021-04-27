@@ -33,6 +33,9 @@ function processMessage(data: LedControllerServerMessage) {
         case "roomEffect":
             arduino.sendRoom(1, data.room);
             break;
+        case "customEffect":
+            console.log("build", data.id);
+            break;
         default:
             console.warn(`received unknown message ${JSON.stringify(data)}`);
             break;

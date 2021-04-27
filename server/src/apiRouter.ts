@@ -252,6 +252,15 @@ router.get("/effect/:id", withUser(), async (req, res, next) => {
     res.json(effect);
 });
 
+router.post("/effect/build/:id", async (req, res, next) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+        return res.status(400).end();
+    }
+    sendArduino({ type: "customEffect", id: id });
+    res.end();
+});
+
 router.post("/leds", withUser(), async (req, res, next) => {
     let message = req.body;
     console.log(message);

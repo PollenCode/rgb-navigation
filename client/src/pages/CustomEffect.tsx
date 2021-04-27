@@ -5,7 +5,7 @@ import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
 import Editor, { DiffEditor, useMonaco, loader } from "@monaco-editor/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronLeft, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faChevronLeft, faSave, faTimes, faUpload } from "@fortawesome/free-solid-svg-icons";
 
 interface Effect {
     name: string;
@@ -116,6 +116,13 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
         setLoading(false);
     }
 
+    async function build() {
+        setLoading(true);
+        await client.buildEffect(effect!.id);
+        await new Promise((res) => setTimeout(res, 1000));
+        setLoading(false);
+    }
+
     return (
         <div className="h-full overflow-hidden relative">
             <Prompt when={effect.code !== code && !readOnly} message="Ben je zeker dat je wilt weg gaan? Je hebt onopgeslagen aanpassingen." />
@@ -135,6 +142,11 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
                         </span>
                     )} */}
                 {readOnly && <span className="text-xs text-gray-400 ml-1">(Aleen lezen)</span>}
+                {effect && !readOnly && (
+                    <Button style={{ minWidth: "120px", marginRight: "0.3em" }} loading={loading} icon={faUpload} disabled={loading} onClick={build}>
+                        Upload
+                    </Button>
+                )}
                 {effect && !readOnly && (
                     <Button style={{ minWidth: "120px" }} loading={loading} icon={faSave} disabled={loading || effect.code === code} onClick={save}>
                         Save
