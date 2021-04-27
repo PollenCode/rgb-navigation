@@ -1,4 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
+import { RouteComponentProps } from "react-router";
+import { Link } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
 
@@ -12,16 +14,18 @@ interface Effect {
     };
 }
 
-function CustomEffect(props: { effect: Effect }) {
+function CustomEffectItem(props: { effect: Effect }) {
     return (
-        <li className="border-b last:border-0 text-gray-700 py-2 px-4 hover:bg-blue-100 transition cursor-pointer">
-            <span className="font-semibold">{props.effect.name}</span>
-            {props.effect.author && (
-                <span className="ml-1.5 text-sm text-gray-400" title={props.effect.author.email}>
-                    (door {props.effect.author.name})
-                </span>
-            )}
-        </li>
+        <Link to={`/admin/effects/${props.effect.id}`}>
+            <li className="border-b last:border-0 text-gray-700 py-2 px-4 hover:bg-blue-100 transition cursor-pointer">
+                <span className="font-semibold">{props.effect.name}</span>
+                {props.effect.author && (
+                    <span className="ml-1.5 text-sm text-gray-400" title={props.effect.author.email}>
+                        (door {props.effect.author.name})
+                    </span>
+                )}
+            </li>
+        </Link>
     );
 }
 
@@ -37,7 +41,7 @@ void effect() {
 
 `;
 
-export function CustomEffects() {
+export function CustomEffectsPage() {
     const client = useContext(AuthContext);
     const [effects, setEffects] = useState<Effect[] | undefined>();
 
@@ -65,10 +69,25 @@ export function CustomEffects() {
                 </Button>
                 <ul className="mt-4 border-collapse border rounded overflow-hidden">
                     {effects.map((e) => (
-                        <CustomEffect key={e.id} effect={e} />
+                        <CustomEffectItem key={e.id} effect={e} />
                     ))}
                 </ul>
             </div>
+        </div>
+    );
+}
+
+export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
+    const client = useContext(AuthContext);
+    const [effect, setEffect] = useState<Effect>();
+
+    useEffect(() => {
+        client.getEffect(parseInt(props.match.params.id)).then(setEffect);
+    }, []);
+
+    return (
+        <div className="p-4">
+            <pre>{JSON.stringify(effect, null, 2)}</pre>
         </div>
     );
 }
