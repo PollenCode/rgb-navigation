@@ -4,7 +4,7 @@ import { SerialLedController } from "./communicate";
 import fetch from "node-fetch";
 global.fetch = fetch as any;
 import { LedControllerServerMessage, RGBClient } from "rgb-navigation-api";
-import { createProject } from "./build";
+import { buildProject, createProject } from "./build";
 
 // Read from .env file
 const { URL, SERIAL_PORT, BAUD_RATE } = process.env;
@@ -40,8 +40,11 @@ async function processMessage(data: LedControllerServerMessage) {
         case "customEffect":
             let effects = await client.getEffects(true);
             console.log("build", data.id);
-            await createProject("output/arduino" + new Date().getTime(), effects);
+            let dest = "output/arduino" + new Date().getTime();
+            await createProject(dest, effects);
             console.log("synced");
+            await buildProject(dest);
+            console.log("built");
             break;
         default:
             console.warn(`received unknown message ${JSON.stringify(data)}`);
