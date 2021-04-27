@@ -10,35 +10,37 @@ import { AuthContext } from "./AuthContext";
 import { PageWrapper } from "./components/PageWrapper";
 import { DGang } from "./pages/DGang";
 
+const client = new RGBClient();
+
 export function Routes() {
-    const client = useMemo(() => new RGBClient(), []);
+    const query = new URLSearchParams(window.location.search);
     const [auth, setAuth] = useState<Auth | undefined>(undefined);
     const history = useHistory();
 
     useEffect(() => {
         client.on("auth", setAuth);
+
+        if (query.has("s")) {
+            client.setAuth(JSON.parse(atob(query.get("s")!)));
+        } else if (localStorage.getItem("s")) {
+            client.setAuth(JSON.parse(localStorage.getItem("s")!));
+        } else {
+            // Redirect to oauth
+            window.location.href = serverPath;
+        }
+
         return () => {
             client.off("auth", setAuth);
         };
     }, []);
 
-    // useEffect(() => {
-    //     const query = new URLSearchParams(window.location.search);
-    //     let token = query.get("s") || localStorage.getItem("s");
-    //     if (!token) {
-    //         // Redirect to auth
-    //         window.location.href = serverPath;
-    //     } else {
-    //         setAuth(token);
-    //         localStorage.setItem("s", token);
-    //         // Remove query string
-    //         history.push(history.location.pathname);
-    //     }
-    // }, []);
-
-    // if (!auth) {
-    //     return null;
-    // }
+    useEffect(() => {
+        if (auth) {
+            localStorage.setItem("s", JSON.stringify(auth, null, 2));
+        } else {
+            localStorage.removeItem("s");
+        }
+    }, [auth]);
 
     return (
         <AuthContext.Provider value={client}>

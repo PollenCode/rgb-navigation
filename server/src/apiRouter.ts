@@ -67,8 +67,14 @@ router.get("/oauth/complete", async (req, res, next) => {
         },
     });
 
-    let accessToken = createUserAccessToken(user.id);
-    res.redirect((isDevelopment ? "http://localhost:3000/?s=" : "/?s=") + encodeURIComponent(accessToken));
+    let resp = {
+        name: user.name,
+        id: user.id,
+        email: user.email,
+        identifier: user.identifier,
+        accessToken: createUserAccessToken(user.id),
+    };
+    res.redirect((isDevelopment ? "http://localhost:3000/oauth?s=" : "/oauth?s=") + Buffer.from(JSON.stringify(resp)).toString("base64"));
 });
 
 router.post("/user", withUser(), (req, res, next) => {

@@ -22,7 +22,6 @@ export class RGBClient extends TypedEmitter<Events> {
     public auth?: Auth;
 
     constructor(auth?: Auth) {
-        console.trace("new instance");
         super();
         this.socket = io(serverPath);
         this.setAuth(auth);
