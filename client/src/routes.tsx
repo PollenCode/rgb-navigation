@@ -63,12 +63,14 @@ export function Routes() {
 function AdminRouter() {
     return (
         <PageWrapper>
-            <Route path="/admin" exact component={Admin} />
-            <Route path="/admin/overview/:roomId" exact component={Overview} />
-            <Route path="/admin/idle" exact component={IdleEffects} />
-            <Route path="/admin/dgang" exact component={DGang} />
-            <Route path="/admin/users" exact component={UsersList} />
-            <Redirect to="/admin" />
+            <Switch>
+                <Route path="/admin" exact component={Admin} />
+                <Route path="/admin/overview/:roomId" exact component={Overview} />
+                <Route path="/admin/idle" exact component={IdleEffects} />
+                <Route path="/admin/dgang" exact component={DGang} />
+                <Route path="/admin/users" exact component={UsersList} />
+                <Redirect to="/admin" />
+            </Switch>
         </PageWrapper>
     );
 }
