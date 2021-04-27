@@ -88,6 +88,7 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
     const [code, setCode] = useState<string>();
     const [output, setOutput] = useState<[boolean, string][]>([]);
     const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState<{ percent: number; status: string }>({ percent: 0, status: "" });
     const history = useHistory();
     const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
 
@@ -95,12 +96,12 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
         client.getEffect(parseInt(props.match.params.id)).then(setEffect);
 
         function onArduinoBuild(data: ArduinoBuildMessage) {
-            console.log("onArduinoBuild", data);
             if (data.type === "stderr") {
                 setOutput((output) => [...output, [true, data.data]]);
             } else if (data.type === "stdout") {
                 setOutput((output) => [...output, [false, data.data]]);
             } else if (data.type === "status") {
+                setStatus(data);
                 setLoading(data.percent < 1);
             }
         }
@@ -116,7 +117,6 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
 
     useEffect(() => {
         if (effect) setCode(effect.code);
-        // setOutput(JSON.stringify(effect, null, 2));
     }, [effect]);
 
     if (!effect) {
@@ -137,6 +137,7 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
     }
 
     async function build() {
+        setStatus({ percent: 0, status: "Uploaden" });
         setOutput([]);
         setLoading(true);
         await client.buildEffect(effect!.id);
@@ -185,6 +186,13 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
                     </Button>
                 )}
             </div>
+            <div className="relative" style={{ maxHeight: status.percent >= 1 || status.percent <= 0 ? "0" : "100px", transition: "2000ms" }}>
+                <div
+                    style={{ width: status.percent * 100 + "%", transition: status.percent <= 0 ? "0ms" : "1000ms" }}
+                    className="bg-blue-500 h-full text-sm px-2 pt-0.5 text-white font-semibold">
+                    {status.status}
+                </div>
+            </div>
             <div className="h-full relative overflow-hidden fade-in">
                 <Editor defaultLanguage="cpp" theme="vs-dark" value={code} onChange={(ev) => setCode(ev)} />
             </div>
@@ -196,7 +204,12 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
                             <FontAwesomeIcon icon={faTimes} />
                         </span>
                     </h2>
-                    <pre className="px-4 py-2 max-h-96 overflow-auto">
+                    <pre
+                        className="px-4 py-2 max-h-96 overflow-auto"
+                        ref={(pre) => {
+                            // Scroll to bottom automatically
+                            if (pre) pre.scrollTop = pre.scrollHeight;
+                        }}>
                         {output.map((e, i) => (
                             <p key={i} className={`${e[0] ? "text-red-600" : "text-white"}`}>
                                 {e[1]}

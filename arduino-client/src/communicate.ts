@@ -18,20 +18,14 @@ export enum SerialPacketType {
 export class SerialLedController {
     private port: SerialPort;
 
-    // private async disconnect() {
-    //     await new Promise((res) => this.port.close(res));
-    // }
-
-    // private async reconnect() {
-    //     this.port.resume();
-    // }
-
-    public pause() {
-        this.port.pause();
+    public async pause() {
+        await new Promise((res) => this.port.close(res));
     }
 
     public resume() {
-        this.port.resume();
+        this.port = new SerialPort(this.port.path, { baudRate: this.port.baudRate });
+        this.port.on("error", this.errorHandler);
+        this.port.on("data", this.dataHandler);
     }
 
     constructor(serialPath: string, baudRate: number) {

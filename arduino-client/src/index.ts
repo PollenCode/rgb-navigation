@@ -55,7 +55,7 @@ export function buildProject(destination: string, upload = false): Promise<boole
 async function build() {
     client.emitArduinoBuild({ type: "status", percent: 0, status: "Starten" });
 
-    arduino.pause();
+    await arduino.pause();
     let effects = await client.getEffects(true);
 
     client.emitArduinoBuild({ type: "status", percent: 0.15, status: "Project aanmaken" });
@@ -67,7 +67,7 @@ async function build() {
 
     await buildProject(dest, true);
 
-    arduino.resume();
+    await arduino.resume();
 
     client.emitArduinoBuild({ type: "status", percent: 1, status: "Klaar" });
 }
