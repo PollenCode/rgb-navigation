@@ -67,18 +67,16 @@ router.get("/oauth/complete", async (req, res, next) => {
         },
     });
 
-    let resp = {
-        name: user.name,
-        id: user.id,
-        email: user.email,
-        identifier: user.identifier,
-        accessToken: createUserAccessToken(user.id),
-    };
-    res.redirect((isDevelopment ? "http://localhost:3000/oauth?s=" : "/oauth?s=") + Buffer.from(JSON.stringify(resp)).toString("base64"));
+    res.redirect((isDevelopment ? "http://localhost:3000/oauth?s=" : "/oauth?s=") + createUserAccessToken(user.id));
 });
 
-router.post("/user", withUser(), (req, res, next) => {
-    res.json({ status: "ok", user: req.user });
+router.get("/user", withUser(), (req, res, next) => {
+    res.json({
+        name: req.user.name,
+        identifier: req.user.identifier,
+        id: req.user.id,
+        email: req.user.email,
+    });
 });
 
 router.post("/unbind", withUser(), async (req, res, next) => {

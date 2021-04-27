@@ -5,8 +5,7 @@ import { LedControllerServerMessage } from "./message";
 export const isDevelopment = process.env.NODE_ENV === "development";
 export const serverPath = isDevelopment ? "http://localhost:3001" : "";
 
-export interface Auth {
-    accessToken: string;
+export interface User {
     id: string;
     name: string;
     email: string;
@@ -14,28 +13,48 @@ export interface Auth {
 }
 
 interface Events {
-    auth: (auth: Auth | undefined) => void;
+    auth: (auth: User | undefined, accessToken: string | undefined) => void;
 }
 
 export class RGBClient extends TypedEmitter<Events> {
     public socket;
-    public auth?: Auth;
+    public accessToken?: string;
+    public user?: User;
 
-    constructor(auth?: Auth) {
+    constructor(token?: string) {
         super();
         this.socket = io(serverPath);
-        this.setAuth(auth);
+        this.setAccessToken(token);
     }
 
-    public setAuth(auth: Auth | undefined) {
-        this.auth = auth;
-        this.emit("auth", auth);
+    public async setAccessToken(token: string | undefined) {
+        this.accessToken = token;
+        if (token) {
+            // Try to get the user
+            let res = await fetch(serverPath + "/api/user", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (res.ok) {
+                this.setUser(await res.json());
+            } else {
+                this.setUser(undefined);
+            }
+        } else {
+            this.setUser(undefined);
+        }
+    }
+
+    public setUser(user: User | undefined) {
+        this.user = user;
+        this.emit("auth", user, this.accessToken);
     }
 
     private async doFetch(path: string, method: string, body?: any) {
         let init: RequestInit = { method, headers: {} };
-        if (this.auth) {
-            (init.headers as any)["Authorization"] = `Bearer ${this.auth.accessToken}`;
+        if (this.accessToken) {
+            (init.headers as any)["Authorization"] = `Bearer ${this.accessToken}`;
         }
         if (body) {
             init.body = JSON.stringify(body);
@@ -46,7 +65,7 @@ export class RGBClient extends TypedEmitter<Events> {
 
         if (res.status === 401) {
             // Unauthorized, need to refresh token
-            this.setAuth(undefined);
+            this.setAccessToken(undefined);
             return null;
         }
 
