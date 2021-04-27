@@ -1,13 +1,17 @@
 import io from "socket.io-client";
+import { TypedEmitter } from "tiny-typed-emitter";
 
 export const isDevelopment = process.env.NODE_ENV === "development";
 export const serverPath = isDevelopment ? "http://localhost:3001" : "";
 
-class RgbNavigationClient {
+interface Events {}
+
+export class RGBNavigationClient extends TypedEmitter<Events> {
     private socket;
 
     constructor() {
-        this.socket = io();
+        super();
+        this.socket = io(serverPath);
     }
 }
 

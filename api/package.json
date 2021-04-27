@@ -13,6 +13,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "socket.io-client": "^4.0.1"
+    "socket.io-client": "^4.0.1",
+    "tiny-typed-emitter": "^2.0.3"
   }
 }
