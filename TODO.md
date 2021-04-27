@@ -7,3 +7,4 @@ rate limiting
 admin users
 validation
 responsive adminpanel
+dark theme

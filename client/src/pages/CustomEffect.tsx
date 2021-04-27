@@ -3,6 +3,7 @@ import { RouteComponentProps } from "react-router";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
+import Editor, { DiffEditor, useMonaco, loader } from "@monaco-editor/react";
 
 interface Effect {
     name: string;
@@ -80,14 +81,26 @@ export function CustomEffectsPage() {
 export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
     const client = useContext(AuthContext);
     const [effect, setEffect] = useState<Effect>();
+    const [code, setCode] = useState<string>();
 
     useEffect(() => {
         client.getEffect(parseInt(props.match.params.id)).then(setEffect);
     }, []);
 
+    useEffect(() => {
+        if (effect) setCode(effect.code);
+    }, [effect]);
+
+    if (!effect) {
+        return <p>loading...</p>;
+    }
+
     return (
-        <div className="p-4">
-            <pre>{JSON.stringify(effect, null, 2)}</pre>
+        <div className="h-full overflow-hidden">
+            <div className="py-2 px-4 border-b font-semibold text-gray-600">{effect.name}</div>
+            <div className="h-full relative overflow-hidden">
+                <Editor defaultLanguage="cpp" theme="vs-dark" value={code} onChange={(ev) => setCode(ev)} />
+            </div>
         </div>
     );
 }
