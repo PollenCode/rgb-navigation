@@ -4,11 +4,12 @@ import { SerialLedController } from "./communicate";
 import fetch from "node-fetch";
 global.fetch = fetch as any;
 import { LedControllerServerMessage, RGBClient } from "rgb-navigation-api";
-import { buildProject, createProject } from "./build";
+import { createProject } from "./build";
+import { spawn } from "child_process";
 
 // Read from .env file
-const { URL, SERIAL_PORT, BAUD_RATE } = process.env;
-if (!URL || !SERIAL_PORT || !BAUD_RATE) {
+const { SERIAL_PORT, BAUD_RATE } = process.env;
+if (!SERIAL_PORT || !BAUD_RATE) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(-1);
 }
@@ -25,6 +26,52 @@ let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
 // setTimeout(() => arduino.sendEnableLine(1, 0, 255, 0, 0, 15, 5), 17000);
 // setTimeout(() => arduino.sendDisableLine(1), 25000);
 
+const BOARD_TYPE = "arduino:avr:uno";
+
+export function buildProject(destination: string, upload = false): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+        let args = ["compile"];
+        if (upload) args.push("--upload");
+        args.push("-b", BOARD_TYPE, "-p", process.env.SERIAL_PORT!, destination);
+
+        let c = spawn(`/usr/local/bin/arduino-cli`, args);
+
+        c.stdout.on("data", (data) => {
+            client.emitArduinoBuild({ type: "stdout", data: data.toString() });
+            console.log("| " + data);
+        });
+
+        c.stderr.on("data", (data) => {
+            client.emitArduinoBuild({ type: "stderr", data: data.toString() });
+            console.log("! " + data);
+        });
+
+        c.on("exit", (code) => {
+            resolve(code === 0);
+        });
+    });
+}
+
+async function build() {
+    client.emitArduinoBuild({ type: "status", percent: 0, status: "Starten" });
+
+    arduino.pause();
+    let effects = await client.getEffects(true);
+
+    client.emitArduinoBuild({ type: "status", percent: 0.15, status: "Project aanmaken" });
+
+    let dest = "output/arduino" + new Date().getTime();
+    await createProject(dest, effects);
+
+    client.emitArduinoBuild({ type: "status", percent: 0.3, status: "Compileren" });
+
+    await buildProject(dest, true);
+
+    arduino.resume();
+
+    client.emitArduinoBuild({ type: "status", percent: 1, status: "Klaar" });
+}
+
 async function processMessage(data: LedControllerServerMessage) {
     console.log("receive", data);
     switch (data.type) {
@@ -38,13 +85,8 @@ async function processMessage(data: LedControllerServerMessage) {
             arduino.sendRoom(1, data.room);
             break;
         case "customEffect":
-            let effects = await client.getEffects(true);
             console.log("build", data.id);
-            let dest = "output/arduino" + new Date().getTime();
-            await createProject(dest, effects);
-            console.log("synced");
-            await buildProject(dest);
-            console.log("built");
+            await build();
             break;
         default:
             console.warn(`received unknown message ${JSON.stringify(data)}`);
@@ -52,10 +94,8 @@ async function processMessage(data: LedControllerServerMessage) {
     }
 }
 
-let socket = io(URL!);
+client.socket.emit("subscribe", { roomId: "dgang" });
 
-socket.emit("subscribe", { roomId: "dgang" });
-
-socket.on("usersShouldFollow", (obj) => {
+client.socket.on("usersShouldFollow", (obj: any) => {
     processMessage(obj);
 });

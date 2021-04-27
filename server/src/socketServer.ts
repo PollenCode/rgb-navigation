@@ -113,6 +113,15 @@ export function createSocketServer(server: http.Server) {
                 }
             }
         });
+
+        connection.on("arduinoSubscribe", (data) => {
+            if (data) connection.join("arduino");
+            else connection.leave("arduino");
+        });
+
+        connection.on("arduinoBuild", (data) => {
+            socket.in("arduino").emit("arduinoBuild", data);
+        });
     });
 
     return socket;

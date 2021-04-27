@@ -67,22 +67,3 @@ export async function createProject(destination: string, effects: { name: string
     await createEffectScripts(path.join(destination, "effects"), effects);
     await generateEffectsHeaderScript(path.join(destination, "effects.h"), effects);
 }
-
-export function buildProject(destination: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-        let process = spawn(`/usr/local/bin/arduino-cli`, ["compile", "--upload", "-b", "arduino:avr:uno", "-p", "/dev/ttyUSB0", destination]);
-
-        process.stdout.on("data", (data) => {
-            console.log("| " + data);
-        });
-
-        process.stderr.on("data", (data) => {
-            console.log("! " + data);
-        });
-
-        process.on("exit", (code) => {
-            console.log("process exited", code);
-            resolve();
-        });
-    });
-}

@@ -266,10 +266,12 @@ router.post("/leds", withUser(), async (req, res, next) => {
     let message = req.body;
     console.log(message);
     sendArduino(message);
+    res.end();
 });
-export default router;
 
 router.get("/users", async (req, res, next) => {
     let user = await prisma.user.findMany({});
     res.json({ status: "ok", user });
 });
+
+export default router;

@@ -1,6 +1,6 @@
 import io from "socket.io-client";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { LedControllerServerMessage } from "./message";
+import { ArduinoBuildMessage, LedControllerServerMessage } from "./message";
 
 export const isDevelopment = process.env.NODE_ENV === "development";
 export const serverPath = isDevelopment ? "http://localhost:3001" : "";
@@ -117,6 +117,10 @@ export class RGBClient extends TypedEmitter<Events> {
 
     public async buildEffect(id: number) {
         return await this.doFetch("/api/effect/build/" + id, "POST");
+    }
+
+    public async emitArduinoBuild(message: ArduinoBuildMessage) {
+        this.socket.emit("arduinoBuild", message);
     }
 }
 

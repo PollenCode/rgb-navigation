@@ -5,7 +5,8 @@ import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
 import Editor, { DiffEditor, useMonaco, loader } from "@monaco-editor/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronLeft, faSave, faTimes, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faChevronLeft, faMagic, faSave, faTimes, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { ArduinoBuildMessage } from "rgb-navigation-api";
 
 interface Effect {
     name: string;
@@ -85,13 +86,32 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
     const client = useContext(AuthContext);
     const [effect, setEffect] = useState<Effect>();
     const [code, setCode] = useState<string>();
-    const [output, setOutput] = useState<string>();
+    const [output, setOutput] = useState<[boolean, string][]>([]);
     const [loading, setLoading] = useState(false);
     const history = useHistory();
     const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
 
     useEffect(() => {
         client.getEffect(parseInt(props.match.params.id)).then(setEffect);
+
+        function onArduinoBuild(data: ArduinoBuildMessage) {
+            console.log("onArduinoBuild", data);
+            if (data.type === "stderr") {
+                setOutput((output) => [...output, [true, data.data]]);
+            } else if (data.type === "stdout") {
+                setOutput((output) => [...output, [false, data.data]]);
+            } else if (data.type === "status") {
+                setLoading(data.percent < 1);
+            }
+        }
+
+        client.socket.on("arduinoBuild", onArduinoBuild);
+        client.socket.emit("arduinoSubscribe", true);
+
+        return () => {
+            client.socket.off("arduinoBuild", onArduinoBuild);
+            client.socket.emit("arduinoSubscribe", false);
+        };
     }, []);
 
     useEffect(() => {
@@ -117,8 +137,15 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
     }
 
     async function build() {
+        setOutput([]);
         setLoading(true);
         await client.buildEffect(effect!.id);
+        await new Promise((res) => setTimeout(res, 1000));
+    }
+
+    async function activate() {
+        setLoading(true);
+        await client.sendIdleEffect(effect!.id);
         await new Promise((res) => setTimeout(res, 1000));
         setLoading(false);
     }
@@ -142,6 +169,11 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
                         </span>
                     )} */}
                 {readOnly && <span className="text-xs text-gray-400 ml-1">(Aleen lezen)</span>}
+                {effect && (
+                    <Button style={{ marginRight: "0.3em" }} loading={loading} icon={faMagic} disabled={loading} onClick={activate}>
+                        Activeer
+                    </Button>
+                )}
                 {effect && !readOnly && (
                     <Button style={{ minWidth: "120px", marginRight: "0.3em" }} loading={loading} icon={faUpload} disabled={loading} onClick={build}>
                         Upload
@@ -156,15 +188,21 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
             <div className="h-full relative overflow-hidden fade-in">
                 <Editor defaultLanguage="cpp" theme="vs-dark" value={code} onChange={(ev) => setCode(ev)} />
             </div>
-            {output && (
+            {output.length && (
                 <div className="absolute bottom-0 right-0 w-full border-t bg-black bg-opacity-10 text-white" style={{ backdropFilter: "blur(8px)" }}>
                     <h2 className="font-bold px-4 py-2 flex">
-                        Compiler output
-                        <span className="ml-auto cursor-pointer" onClick={() => setOutput(undefined)}>
+                        Output
+                        <span className="ml-auto cursor-pointer" onClick={() => setOutput([])}>
                             <FontAwesomeIcon icon={faTimes} />
                         </span>
                     </h2>
-                    <pre className="px-4 py-2">{output}</pre>
+                    <pre className="px-4 py-2 max-h-96 overflow-auto">
+                        {output.map((e, i) => (
+                            <p key={i} className={`${e[0] ? "text-red-600" : "text-white"}`}>
+                                {e[1]}
+                            </p>
+                        ))}
+                    </pre>
                 </div>
             )}
         </div>

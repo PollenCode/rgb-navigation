@@ -1,9 +1,7 @@
-interface ScanMessage {}
-
-export enum IdleLedEffect {
-    Black = 0,
-    Rainbow = 1,
-}
+export type ArduinoBuildMessage =
+    | { type: "stdout"; data: string }
+    | { type: "stderr"; data: string }
+    | { type: "status"; percent: number; status: string };
 
 export type LedControllerServerMessage =
     | {
