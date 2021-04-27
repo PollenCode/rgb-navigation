@@ -1,16 +1,16 @@
 import { Button } from "../components/Button";
 import { RouteComponentProps } from "react-router";
 import { serverPath } from "../helpers";
-import { LedControllerServerMessage } from "../../../shared/Message";
+import { LedControllerServerMessage } from "rgb-navigation-api";
 import { useContext } from "react";
 import { AuthContext } from "../AuthContext";
 
-let accessToken : any;
+let accessToken: any;
 
-async function sendMessage(effect: number){
+async function sendMessage(effect: number) {
     let req: LedControllerServerMessage = {
         type: "setIdleEffect",
-        effect: effect
+        effect: effect,
     };
     await fetch(serverPath + "/api/leds", {
         method: "POST",
@@ -28,7 +28,7 @@ export function IdleEffects() {
                 style={{ margin: "0.5em" }}
                 type="button"
                 onClick={async () => {
-                 sendMessage(0);
+                    sendMessage(0);
                 }}>
                 Zwart
             </Button>
@@ -36,8 +36,8 @@ export function IdleEffects() {
                 style={{ margin: "0.5em" }}
                 type="button"
                 onClick={async () => {
-                sendMessage(1);
-            }}>
+                    sendMessage(1);
+                }}>
                 Regenboog
             </Button>
         </div>

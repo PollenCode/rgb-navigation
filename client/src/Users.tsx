@@ -1,7 +1,7 @@
 import { Button } from "./components/Button";
 import { RouteComponentProps } from "react-router";
 import { serverPath } from "./helpers";
-import { LedControllerServerMessage } from "../../shared/Message";
+import { LedControllerServerMessage } from "rgb-navigation-api";
 import { useEffect, useState } from "react";
 
 export function UsersList() {

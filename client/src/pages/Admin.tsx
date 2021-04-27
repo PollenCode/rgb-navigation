@@ -1,5 +1,5 @@
 import { useHistory } from "react-router";
-import { LedControllerServerMessage } from "../../../shared/Message";
+import { LedControllerServerMessage } from "rgb-navigation-api";
 import { Button } from "../components/Button";
 import { serverPath } from "../helpers";
 

@@ -1,4 +1,4 @@
-import { LedControllerServerMessage } from "../../../shared/Message";
+import { LedControllerServerMessage } from "rgb-navigation-api";
 import { serverPath } from "../helpers";
 import { Button } from "../components/Button";
 import { AuthContext } from "../AuthContext";
@@ -6,10 +6,10 @@ import { useContext } from "react";
 
 let accessToken: any;
 
-async function sendMessage(room: number){
+async function sendMessage(room: number) {
     let req: LedControllerServerMessage = {
         type: "roomEffect",
-        room: room
+        room: room,
     };
     await fetch(serverPath + "/api/leds", {
         method: "POST",
@@ -23,8 +23,8 @@ export function DGang() {
     return (
         <div className="flex items-center flex-col min-h-screen justify-center">
             <h1 className="text-4xl font-bold mb-8">D-Gang</h1>
-            <div className="flex items-center justify-center  flex-row">  
-                <div className="flex items-center flex-col ">  
+            <div className="flex items-center justify-center  flex-row">
+                <div className="flex items-center flex-col ">
                     <Button
                         style={{ margin: "0.5em" }}
                         type="button"

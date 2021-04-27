@@ -1046,6 +1046,10 @@ responselike@^1.0.2:
   dependencies:
     lowercase-keys "^1.0.0"
 
+"rgb-navigation-api@link:../api":
+  version "0.0.0"
+  uid ""
+
 safe-buffer@^5.0.1, safe-buffer@~5.2.0:
   version "5.2.1"
   resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.2.1.tgz#1eaf9fa9bdb1fdd4ec75f58f9cdb4e6b7827eec6"

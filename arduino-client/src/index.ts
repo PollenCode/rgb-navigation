@@ -1,7 +1,7 @@
 require("dotenv").config();
 import { io } from "socket.io-client";
 import { SerialLedController } from "./communicate";
-import { LedControllerServerMessage } from "../../api/Message";
+import { LedControllerServerMessage } from "rgb-navigation-api";
 
 // Read from .env file
 const { URL, SERIAL_PORT, BAUD_RATE } = process.env;
