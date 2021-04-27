@@ -28,6 +28,7 @@ export class RGBClient extends TypedEmitter<Events> {
     }
 
     public async setAccessToken(token: string | undefined) {
+        console.log("set");
         this.accessToken = token;
         if (token) {
             // Try to get the user

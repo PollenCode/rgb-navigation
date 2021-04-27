@@ -21,8 +21,6 @@ export function Routes() {
         function onAuth(user: User | undefined, token?: string) {
             setUser(user);
 
-            console.log("onauth", token, user);
-
             if (token) {
                 localStorage.setItem("s", token);
             } else {
@@ -46,6 +44,10 @@ export function Routes() {
             client.off("auth", onAuth);
         };
     }, []);
+
+    if (!user) {
+        return <p>logged out, refresh the page to log in</p>;
+    }
 
     return (
         <AuthContext.Provider value={client}>
