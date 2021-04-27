@@ -11,11 +11,21 @@ generator client {
 }
 
 model User {
-  id         String  @id @default(uuid())
-  name       String
-  email      String
+  id           String   @id @default(uuid())
+  name         String
+  email        String
   // NFC unique id
-  identifier String? @unique
+  identifier   String?  @unique
   // Auth token for google or kuleuven
-  token      String?
+  token        String?
+  ownedEffects Effect[]
+}
+
+// A custom arduino effect
+model Effect {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  code   String
+  author User?   @relation(fields: [userId], references: [id])
+  userId String?
 }
