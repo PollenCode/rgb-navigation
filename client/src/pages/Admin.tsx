@@ -1,7 +1,7 @@
 import { useHistory } from "react-router";
 import { LedControllerServerMessage } from "rgb-navigation-api";
 import { Button } from "../components/Button";
-import { serverPath } from "../helpers";
+import { serverPath } from "rgb-navigation-api";
 
 export function Admin() {
     const history = useHistory();

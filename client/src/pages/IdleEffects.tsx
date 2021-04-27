@@ -1,6 +1,6 @@
 import { Button } from "../components/Button";
 import { RouteComponentProps } from "react-router";
-import { serverPath } from "../helpers";
+import { serverPath } from "rgb-navigation-api";
 import { LedControllerServerMessage } from "rgb-navigation-api";
 import { useContext } from "react";
 import { AuthContext } from "../AuthContext";

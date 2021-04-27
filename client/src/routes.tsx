@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Switch, Route, Redirect, useHistory } from "react-router-dom";
 import { Admin } from "./pages/Admin";
 import { Complete } from "./pages/Complete";
-import { isDevelopment, serverPath } from "./helpers";
+import { serverPath } from "rgb-navigation-api";
 import { Overview } from "./pages/Overview";
 import { IdleEffects } from "./pages/IdleEffects";
 import { UsersList } from "./Users";

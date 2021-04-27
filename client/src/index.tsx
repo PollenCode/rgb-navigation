@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 import "./index.css";
 import { SocketContext } from "./SocketContext";
 import { io } from "socket.io-client";
-import { serverPath } from "./helpers";
+import { serverPath } from "rgb-navigation-api";
 import { Routes } from "./routes";
 import { BrowserRouter } from "react-router-dom";
 

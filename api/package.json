@@ -4,10 +4,15 @@
   "main": "dist/index.js",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^15.0.0",
+    "@types/socket.io-client": "^1.4.36",
     "typescript": "^4.2.4"
   },
   "scripts": {
     "start": "tsc --watch",
     "build": "tsc"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.0.1"
   }
 }

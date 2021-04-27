@@ -1,5 +1,5 @@
 import { LedControllerServerMessage } from "rgb-navigation-api";
-import { serverPath } from "../helpers";
+import { serverPath } from "rgb-navigation-api";
 import { Button } from "../components/Button";
 import { AuthContext } from "../AuthContext";
 import { useContext } from "react";

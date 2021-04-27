@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { RouteComponentProps } from "react-router";
 import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
-import { serverPath } from "../helpers";
+import { serverPath } from "rgb-navigation-api";
 import { SocketContext } from "../SocketContext";
 
 type Status = "bound" | "loading" | "waiting-for-others" | "scan" | "already-bound";
