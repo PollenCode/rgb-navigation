@@ -13,7 +13,7 @@ enum IdleEffect
   Rainbow
 };
 
-IdleEffect idleEffect = Black;
+IdleEffect idleEffect = Rainbow;
 LineEffect *routes[MAX_LINES];
 
 void setColorLine(int start, int end, CRGB color);
