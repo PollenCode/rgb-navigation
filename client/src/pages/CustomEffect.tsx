@@ -5,7 +5,7 @@ import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
 import Editor, { DiffEditor, useMonaco, loader } from "@monaco-editor/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronLeft, faMagic, faSave, faTimes, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faChevronLeft, faEye, faMagic, faPen, faSave, faTimes, faUpload, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { ArduinoBuildMessage } from "rgb-navigation-api";
 
 interface Effect {
@@ -19,18 +19,47 @@ interface Effect {
     };
 }
 
-function CustomEffectItem(props: { effect: Effect }) {
+function CustomEffectItemButton(props: {
+    icon?: IconDefinition;
+    children?: React.ReactNode;
+    style?: React.CSSProperties;
+    onClick?: (ev: React.MouseEvent) => void;
+}) {
     return (
-        <Link to={`/admin/effects/${props.effect.id}`}>
-            <li className="border-b last:border-0 text-gray-700 py-2 px-4 hover:bg-blue-100 transition cursor-pointer">
-                <span className="font-semibold">{props.effect.name}</span>
-                {props.effect.author && (
-                    <span className="ml-1.5 text-sm text-gray-400" title={props.effect.author.email}>
-                        (door {props.effect.author.name})
-                    </span>
-                )}
-            </li>
-        </Link>
+        <button
+            className="bg-gray-100 rounded py-1 px-2 text-blue-600 font-semibold text-sm hover:bg-opacity-100"
+            style={props.style}
+            onClick={props.onClick}>
+            <span className="hidden md:inline">{props.children}</span>
+            {props.icon && <FontAwesomeIcon className="ml-1" icon={props.icon} />}
+        </button>
+    );
+}
+
+function CustomEffectItem(props: { effect: Effect }) {
+    const client = useContext(AuthContext);
+    const history = useHistory();
+    const readOnly = !client.user || !props.effect.author || client.user.id !== props.effect.author.id;
+    return (
+        <li
+            className="border-b last:border-0 text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center"
+            onClick={() => client.sendIdleEffect(props.effect.id)}>
+            <span className="font-semibold py-2 pl-4">{props.effect.name}</span>
+            {props.effect.author && (
+                <span className="ml-1.5 text-sm text-gray-400 py-2" title={props.effect.author.email}>
+                    (door {props.effect.author.name})
+                </span>
+            )}
+            <CustomEffectItemButton
+                icon={readOnly ? faEye : faPen}
+                style={{ marginLeft: "auto", marginRight: "0.4em" }}
+                onClick={(ev) => {
+                    ev.stopPropagation();
+                    history.push(`/admin/effects/${props.effect.id}`);
+                }}>
+                {readOnly ? "Bekijken" : "Aanpassen"}
+            </CustomEffectItemButton>
+        </li>
     );
 }
 
@@ -38,9 +67,14 @@ const DEFAULT_CODE = `
 
 #include "../leds.h"
 
+// This function will run in a loop
 void effect() {
 
-    // Your effect code here.
+    // Example effect: set all leds to white
+    for (int i = 0; i < LED_COUNT; i++)
+    {
+        leds[i] = CRGB(255, 255, 255);
+    }
 
 }
 
@@ -49,6 +83,7 @@ void effect() {
 export function CustomEffectsPage() {
     const client = useContext(AuthContext);
     const [effects, setEffects] = useState<Effect[] | undefined>();
+    const history = useHistory();
 
     useEffect(() => {
         client.getEffects().then(setEffects);
@@ -67,6 +102,7 @@ export function CustomEffectsPage() {
                         if (!name) return;
                         let newEffect = await client.createEffect({ code: DEFAULT_CODE, name: name });
                         setEffects([...effects, newEffect]);
+                        history.push(`/admin/effects/${newEffect.id}`);
                     }}>
                     Nieuw effect maken
                 </Button>
@@ -135,8 +171,9 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
     }
 
     async function build() {
-        setStatus({ percent: 0, status: "Uploaden" });
         setOutput([]);
+        setStatus({ percent: 0, status: "Uploaden" });
+        await save();
         setLoading(true);
         await client.buildEffect(effect!.id);
         await new Promise((res) => setTimeout(res, 1000));
