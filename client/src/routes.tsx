@@ -4,12 +4,11 @@ import { Admin } from "./pages/Admin";
 import { Complete } from "./pages/Complete";
 import { User, RGBClient, serverPath } from "rgb-navigation-api";
 import { Overview } from "./pages/Overview";
-import { IdleEffects } from "./pages/IdleEffects";
 import { UsersList } from "./Users";
 import { AuthContext } from "./AuthContext";
 import { PageWrapper } from "./components/PageWrapper";
 import { DGang } from "./pages/DGang";
-import { CustomEffectPage, CustomEffectsPage } from "./pages/CustomEffect";
+import { EffectEdit, Effects } from "./pages/Effects";
 
 const client = new RGBClient();
 
@@ -67,9 +66,8 @@ function AdminRouter() {
             <Switch>
                 <Route path="/admin" exact component={Admin} />
                 <Route path="/admin/overview/:roomId" exact component={Overview} />
-                <Route path="/admin/idle" exact component={IdleEffects} />
-                <Route path="/admin/effects/:id" exact component={CustomEffectPage} />
-                <Route path="/admin/effects" exact component={CustomEffectsPage} />
+                <Route path="/admin/effects/:id" exact component={EffectEdit} />
+                <Route path="/admin/effects" exact component={Effects} />
                 <Route path="/admin/dgang" exact component={DGang} />
                 <Route path="/admin/users" exact component={UsersList} />
                 <Redirect to="/admin" />

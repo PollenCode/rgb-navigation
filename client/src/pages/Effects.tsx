@@ -19,7 +19,7 @@ interface Effect {
     };
 }
 
-function CustomEffectItemButton(props: {
+function EffectListItemButton(props: {
     icon?: IconDefinition;
     children?: React.ReactNode;
     style?: React.CSSProperties;
@@ -36,7 +36,7 @@ function CustomEffectItemButton(props: {
     );
 }
 
-function CustomEffectItem(props: { effect: Effect }) {
+function EffectListItem(props: { effect: Effect }) {
     const client = useContext(AuthContext);
     const history = useHistory();
     const readOnly = !client.user || !props.effect.author || client.user.id !== props.effect.author.id;
@@ -50,7 +50,7 @@ function CustomEffectItem(props: { effect: Effect }) {
                     (door {props.effect.author.name})
                 </span>
             )}
-            <CustomEffectItemButton
+            <EffectListItemButton
                 icon={readOnly ? faEye : faPen}
                 style={{ marginLeft: "auto", marginRight: "0.4em" }}
                 onClick={(ev) => {
@@ -58,7 +58,7 @@ function CustomEffectItem(props: { effect: Effect }) {
                     history.push(`/admin/effects/${props.effect.id}`);
                 }}>
                 {readOnly ? "Bekijken" : "Aanpassen"}
-            </CustomEffectItemButton>
+            </EffectListItemButton>
         </li>
     );
 }
@@ -79,7 +79,7 @@ void loop() {
 
 `;
 
-export function CustomEffectsPage() {
+export function Effects() {
     const client = useContext(AuthContext);
     const [effects, setEffects] = useState<Effect[] | undefined>();
     const history = useHistory();
@@ -107,7 +107,7 @@ export function CustomEffectsPage() {
                 </Button>
                 <ul className="mt-4 border-collapse border rounded overflow-hidden">
                     {effects.map((e) => (
-                        <CustomEffectItem key={e.id} effect={e} />
+                        <EffectListItem key={e.id} effect={e} />
                     ))}
                 </ul>
             </div>
@@ -115,7 +115,7 @@ export function CustomEffectsPage() {
     );
 }
 
-export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
+export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
     const client = useContext(AuthContext);
     const [effect, setEffect] = useState<Effect>();
     const [code, setCode] = useState<string>();

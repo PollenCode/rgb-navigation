@@ -39,7 +39,6 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                     <ul className="w-full">
                         <SidebarButton icon={faHome} name="Home" to="/admin" />
                         <SidebarButton icon={faFire} name="Effects" to="/admin/effects" />
-                        <SidebarButton name="Idle Effects" to="/admin/idle" />
                         <SidebarButton name="D-gang" to="/admin/dgang" />
                         <SidebarButton icon={faUsers} name="Gebruikers" to="/admin/users" />
                         <SidebarButton icon={faDotCircle} name="Realtime" to="/admin/overview/dgang" />
