@@ -98,6 +98,7 @@ router.get("/effect", withUser(), async (req, res, next) => {
             id: true,
             author: {
                 select: {
+                    id: true,
                     name: true,
                     email: true,
                 },
@@ -166,6 +167,7 @@ router.post("/effect", withUser(), async (req, res, next) => {
             id: true,
             author: {
                 select: {
+                    id: true,
                     name: true,
                     email: true,
                 },
@@ -208,6 +210,7 @@ router.patch("/effect", withUser(), async (req, res, next) => {
             id: true,
             author: {
                 select: {
+                    id: true,
                     name: true,
                     email: true,
                 },
@@ -234,6 +237,7 @@ router.get("/effect/:id", withUser(), async (req, res, next) => {
             id: true,
             author: {
                 select: {
+                    id: true,
                     name: true,
                     email: true,
                 },

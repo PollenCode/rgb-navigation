@@ -111,7 +111,7 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect", "POST", effect);
     }
 
-    public async update(effect: { name: string; code: string; id: number }) {
+    public async updateEffect(effect: { name: string; code: string; id: number }) {
         return await this.doFetch("/api/effect", "PATCH", effect);
     }
 }
