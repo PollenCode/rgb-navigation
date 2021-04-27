@@ -91,11 +91,12 @@ router.post("/unbind", withUser(), async (req, res, next) => {
     res.json({ status: "ok", user: user });
 });
 
-router.get("/effect", withUser(), async (req, res, next) => {
+router.get("/effect", async (req, res, next) => {
     let effects = await prisma.effect.findMany({
         select: {
             name: true,
             id: true,
+            code: req.query.code === "true" ? true : false,
             author: {
                 select: {
                     id: true,

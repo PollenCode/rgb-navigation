@@ -1,6 +1,8 @@
 require("dotenv").config();
 import { io } from "socket.io-client";
 import { SerialLedController } from "./communicate";
+import fetch from "node-fetch";
+global.fetch = fetch as any;
 import { LedControllerServerMessage, RGBClient } from "rgb-navigation-api";
 import { createProject } from "./build";
 
@@ -36,10 +38,10 @@ async function processMessage(data: LedControllerServerMessage) {
             arduino.sendRoom(1, data.room);
             break;
         case "customEffect":
-            let effects = await client.getEffects();
-            createProject("arduino" + new Date().getTime(), effects);
-
+            let effects = await client.getEffects(true);
             console.log("build", data.id);
+            await createProject("output/arduino" + new Date().getTime(), effects);
+            console.log("synced");
             break;
         default:
             console.warn(`received unknown message ${JSON.stringify(data)}`);
