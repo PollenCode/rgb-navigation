@@ -10,7 +10,7 @@
 #define MAX_LINES 32
 
 // Effect that is used when there are no routes currently displayed, see effects.h to see which effects cooresponds to a number
-unsigned char idleEffect = 0;
+unsigned char idleEffect = DEFAULT_EFFECT;
 LineEffect *routes[MAX_LINES];
 
 void setColorLine(int start, int end, CRGB color);

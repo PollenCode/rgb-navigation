@@ -67,8 +67,7 @@ const DEFAULT_CODE = `
 
 #include "../leds.h"
 
-// This function will run in a loop
-void effect() {
+void loop() {
 
     // Example effect: set all leds to white
     for (int i = 0; i < LED_COUNT; i++)

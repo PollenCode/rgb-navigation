@@ -4,13 +4,13 @@
 
 #pragma once
 
-#define effect effect_0
+#define loop effect_0
 #include "effects/black.h"
-#undef effect
+#undef loop
 
-#define effect effect_1
+#define loop effect_1
 #include "effects/rainbow.h"
-#undef effect
+#undef loop
 
 void playEffect(unsigned char num)
 {
@@ -25,3 +25,5 @@ void playEffect(unsigned char num)
         return;
     }
 }
+
+#define DEFAULT_EFFECT 1

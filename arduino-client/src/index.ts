@@ -52,7 +52,7 @@ export function buildProject(destination: string, upload = false): Promise<boole
     });
 }
 
-async function build() {
+async function rebuild(defaultEffectId: number) {
     client.emitArduinoBuild({ type: "status", percent: 0, status: "Starten" });
 
     await arduino.pause();
@@ -61,7 +61,7 @@ async function build() {
     client.emitArduinoBuild({ type: "status", percent: 0.15, status: "Project aanmaken" });
 
     let dest = "output/arduino" + new Date().getTime();
-    await createProject(dest, effects);
+    await createProject(dest, effects, defaultEffectId);
 
     client.emitArduinoBuild({ type: "status", percent: 0.3, status: "Compileren" });
 
@@ -85,8 +85,7 @@ async function processMessage(data: LedControllerServerMessage) {
             arduino.sendRoom(1, data.room);
             break;
         case "customEffect":
-            console.log("build", data.id);
-            await build();
+            await rebuild(data.id);
             break;
         default:
             console.warn(`received unknown message ${JSON.stringify(data)}`);
