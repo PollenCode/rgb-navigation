@@ -1,6 +1,6 @@
 #include "../leds.h"
 
-void rainbowEffect()
+void effect()
 {
     for (int i = 0; i < LED_COUNT; i++)
     {

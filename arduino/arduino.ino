@@ -1,7 +1,10 @@
 #include <FastLED.h>
 #include "leds.h"
-#include "effects/black.c"
-#include "effects/rainbow.c"
+#include "effects.h"
+
+// What is effects.h? Effects.h is generated using arduino-client and contains all the possible effects.
+//                    When an effect is added to the effects folder, this file can easily be regenerated without modifying the arduino.ino file.
+// What is leds.h? Leds.h contains variables and functions and can be used here, and in effects
 
 #define DATA_PIN 3
 #define MAX_LINES 32
@@ -229,10 +232,7 @@ void loop()
   if (!anyRoute)
   {
     // Draw idle effect if no routes are being drawn
-    if (idleEffect == Black)
-      blackEffect();
-    else if (idleEffect == Rainbow)
-      rainbowEffect();
+    playEffect(1);
   }
 
   FastLED.show();
