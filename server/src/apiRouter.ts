@@ -6,9 +6,11 @@ import jsonwebtoken from "jsonwebtoken";
 import { PrismaClient } from ".prisma/client";
 import fetch from "node-fetch";
 import { sendArduino } from "./socketServer";
+import debug from "debug";
 
-let router = Router();
-let prisma = new PrismaClient();
+const logger = debug("rgb:router");
+const router = Router();
+const prisma = new PrismaClient();
 
 router.get("/oauth/complete", async (req, res, next) => {
     let code = req.query.code;
@@ -83,6 +85,106 @@ router.post("/unbind", withUser(), async (req, res, next) => {
         },
     });
     res.json({ status: "ok", user: user });
+});
+
+router.get("/effects", withUser(), async (req, res, next) => {
+    let effects = await prisma.effect.findMany({
+        select: {
+            name: true,
+            id: true,
+            author: {
+                select: {
+                    name: true,
+                    email: true,
+                },
+            },
+        },
+    });
+    res.json(effects);
+});
+
+router.delete("/effect/:id", withUser(), async (req, res, next) => {
+    let id = parseInt(req.params.id);
+    if (isNaN(id)) {
+        return res.status(400).end();
+    }
+
+    let effect = await prisma.effect.findUnique({
+        where: {
+            id: id,
+        },
+    });
+
+    if (!effect) {
+        logger("user %d tried to delete effect that doesn't exist (%s)", req.user!.id, name);
+        return res.status(404).end();
+    }
+    if (effect.userId !== req.user!.id) {
+        logger("user %d tried to delete effect that isn't his", req.user.id, name);
+        return res.status(403).end();
+    }
+
+    await prisma.effect.delete({
+        where: {
+            id: effect.id,
+        },
+    });
+
+    res.end();
+});
+
+router.post("/effect", withUser(), async (req, res, next) => {
+    let { code, name } = req.body;
+
+    await prisma.effect.upsert({
+        where: {
+            name: name,
+        },
+        update: {
+            code: code,
+        },
+        create: {
+            name: name,
+            code: code,
+            author: {
+                connect: {
+                    id: req.user!.id,
+                },
+            },
+        },
+    });
+
+    res.end();
+});
+
+router.get("/effect/:id", withUser(), async (req, res, next) => {
+    let id = parseInt(req.params.id);
+    if (isNaN(id)) {
+        return res.status(400).end();
+    }
+
+    let effect = await prisma.effect.findUnique({
+        where: {
+            id: id,
+        },
+        select: {
+            code: true,
+            name: true,
+            id: true,
+            author: {
+                select: {
+                    name: true,
+                    email: true,
+                },
+            },
+        },
+    });
+
+    if (!effect) {
+        return res.status(404).end();
+    }
+
+    res.json(effect);
 });
 
 router.post("/leds", withUser(), async (req, res, next) => {
