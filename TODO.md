@@ -6,3 +6,4 @@ documentatie (iedereen)
 rate limiting
 admin users
 validation
+responsive adminpanel

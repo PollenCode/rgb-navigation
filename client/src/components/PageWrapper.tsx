@@ -1,11 +1,19 @@
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { faDotCircle, faHome, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useContext } from "react";
 import { NavLink } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
 
-function SidebarButton(props: { name: string; to: string }) {
+function SidebarButton(props: { name: string; to: string; icon?: IconDefinition }) {
     return (
         <li>
-            <NavLink activeClassName="bg-blue-100 transition" exact to={props.to} className="py-2 px-4 block hover:bg-gray-50 transition">
+            <NavLink
+                activeClassName="bg-blue-100 transition text-blue-600"
+                exact
+                to={props.to}
+                className="py-2 px-4 block hover:bg-gray-50 transition text-gray-700">
+                {props.icon && <FontAwesomeIcon className="mr-1.5 opacity-60" icon={props.icon} />}
                 {props.name}
             </NavLink>
         </li>
@@ -29,11 +37,11 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
             <div className="flex flex-grow overflow-hidden">
                 <div className="w-48 border-r flex-shrink-0">
                     <ul className="w-full">
-                        <SidebarButton name="Home" to="/admin" />
+                        <SidebarButton icon={faHome} name="Home" to="/admin" />
                         <SidebarButton name="Idle Effects" to="/admin/idle" />
                         <SidebarButton name="D-gang" to="/admin/dgang" />
-                        <SidebarButton name="Gebruikers" to="/admin/users" />
-                        <SidebarButton name="Realtime" to="/admin/overview/dgang" />
+                        <SidebarButton icon={faUsers} name="Gebruikers" to="/admin/users" />
+                        <SidebarButton icon={faDotCircle} name="Realtime" to="/admin/overview/dgang" />
                     </ul>
                 </div>
                 <div className="flex-grow overflow-auto">{props.children}</div>
