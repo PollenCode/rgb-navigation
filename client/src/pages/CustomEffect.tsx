@@ -54,8 +54,6 @@ export function CustomEffectsPage() {
         client.getEffects().then(setEffects);
     }, []);
 
-    console.log("effects", effects);
-
     if (!effects) {
         return null;
     }
@@ -164,12 +162,11 @@ export function CustomEffectPage(props: RouteComponentProps<{ id: string }>) {
                     className="font-semibold min-w-0 flex-grow"
                     onBlur={(ev) => updateName(ev.target.value)}
                 />
-                {/* {effect.author && (
-                        <span className="ml-1 text-sm text-gray-400" title={effect.author.email}>
-                            (door {effect.author.name})
-                        </span>
-                    )} */}
-                {readOnly && <span className="text-xs text-gray-400 ml-1">(Aleen lezen)</span>}
+                {readOnly && effect.author && (
+                    <span className=" text-gray-400 mr-4" title={effect.author.email}>
+                        (Door {effect.author.name}, aleen lezen)
+                    </span>
+                )}
                 {effect && (
                     <Button style={{ marginRight: "0.3em" }} loading={loading} icon={faMagic} disabled={loading} onClick={activate}>
                         Activeer

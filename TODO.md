@@ -8,3 +8,4 @@ admin users
 validation
 responsive adminpanel
 dark theme
+save current idle effect in eeprom
