@@ -35,6 +35,8 @@ LineEffect *routes[MAX_LINES];
 CRGB leds[LED_COUNT];
 uint64_t counter = 0;
 
+void setColorLine(int start, int end, CRGB color);
+
 void setup()
 {
   // Increasing the baud rate will cause corruption and inconsistency
@@ -118,7 +120,8 @@ void processPacket()
       Serial.println(id);
     }
   }
-  else if (packetType == 4) {
+  else if (packetType == 4)
+  {
     uint8_t id = Serial.read();
     if (id >= MAX_LINES)
     {
@@ -135,26 +138,32 @@ void processPacket()
     uint8_t room = Serial.read();
     uint64_t endTime = millis() + 5 * 1000;
 
-    switch (room) {
-      case 0: routes[id] = new LineEffect(0, 5, endTime, Color(255, 0, 0));
-        Serial.print("Room 1");
-        break;
-      case 1: routes[id] = new LineEffect(0, 10, endTime, Color(255, 0, 0));
-        Serial.print("Room 2");
-        break;
-      case 2: routes[id] = new LineEffect(0, 15, endTime, Color(255, 0, 0));
-        Serial.print("Room 3");
-        break;
-      case 3: routes[id] = new LineEffect(0, 20, endTime, Color(255, 0, 0));
-        Serial.print("Room 4");
-        break;
-      case 4: routes[id] = new LineEffect(0, 25, endTime, Color(255, 0, 0));
-        Serial.print("Room 5");
-        break;
-      case 5: routes[id] = new LineEffect(0, 30, endTime, Color(255, 0, 0));
-        Serial.print("Room 6");
-        break;
-
+    switch (room)
+    {
+    case 0:
+      routes[id] = new LineEffect(0, 5, endTime, Color(255, 0, 0));
+      Serial.print("Room 1");
+      break;
+    case 1:
+      routes[id] = new LineEffect(0, 10, endTime, Color(255, 0, 0));
+      Serial.print("Room 2");
+      break;
+    case 2:
+      routes[id] = new LineEffect(0, 15, endTime, Color(255, 0, 0));
+      Serial.print("Room 3");
+      break;
+    case 3:
+      routes[id] = new LineEffect(0, 20, endTime, Color(255, 0, 0));
+      Serial.print("Room 4");
+      break;
+    case 4:
+      routes[id] = new LineEffect(0, 25, endTime, Color(255, 0, 0));
+      Serial.print("Room 5");
+      break;
+    case 5:
+      routes[id] = new LineEffect(0, 30, endTime, Color(255, 0, 0));
+      Serial.print("Room 6");
+      break;
     }
   }
   else
@@ -189,7 +198,6 @@ void setColorLine(int start, int end, CRGB color)
     leds[i] = color;
   }
 }
-
 
 void loop()
 {
