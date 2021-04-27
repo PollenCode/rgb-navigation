@@ -27,3 +27,6 @@ export type LedControllerServerMessage =
           type: "customEffect";
           id: number;
       };
+
+// !! Does your change here not reflect in other projects?
+// Make sure to run `yarn start` in this folder (api) to build this package each time you change something
