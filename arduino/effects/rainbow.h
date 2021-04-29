@@ -2,10 +2,6 @@
 
 uint64_t counter = 0;
 
-void setup()
-{
-}
-
 void loop()
 {
     for (int i = 0; i < LED_COUNT; i++)

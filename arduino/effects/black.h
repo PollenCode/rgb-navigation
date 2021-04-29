@@ -1,9 +1,5 @@
 #include "../leds.h"
 
-void setup()
-{
-}
-
 void loop()
 {
     for (int i = 0; i < LED_COUNT; i++)
