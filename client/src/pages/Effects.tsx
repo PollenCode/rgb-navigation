@@ -5,7 +5,7 @@ import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
 import Editor, { DiffEditor, useMonaco, loader } from "@monaco-editor/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronLeft, faEye, faMagic, faPen, faSave, faTimes, faUpload, IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import { faChevronLeft, faEye, faMagic, faPen, faSave, faTimes, faTrash, faUpload, IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { ArduinoBuildMessage } from "rgb-navigation-api";
 
 interface Effect {
@@ -187,6 +187,14 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
         setLoading(false);
     }
 
+    async function deleteEffect() {
+        if (window.confirm(`Ben je zeker dat je effect '${effect!.name}' wilt verwijderen?`)) {
+            setLoading(true);
+            await client.deleteEffect(effect!.id);
+            history.goBack();
+        }
+    }
+
     return (
         <div className="h-full overflow-hidden relative">
             <Prompt when={effect.code !== code && !readOnly} message="Ben je zeker dat je wilt weg gaan? Je hebt onopgeslagen aanpassingen." />
@@ -211,13 +219,23 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                     </Button>
                 )}
                 {effect && !readOnly && (
-                    <Button style={{ minWidth: "120px", marginRight: "0.3em" }} loading={loading} icon={faUpload} disabled={loading} onClick={build}>
+                    <Button style={{ marginRight: "0.3em" }} loading={loading} icon={faUpload} disabled={loading} onClick={build}>
                         Upload
                     </Button>
                 )}
                 {effect && !readOnly && (
-                    <Button style={{ minWidth: "120px" }} loading={loading} icon={faSave} disabled={loading || effect.code === code} onClick={save}>
+                    <Button
+                        style={{ marginRight: "0.3em" }}
+                        loading={loading}
+                        icon={faSave}
+                        disabled={loading || effect.code === code}
+                        onClick={save}>
                         Save
+                    </Button>
+                )}
+                {effect && !readOnly && (
+                    <Button danger loading={loading} icon={faTrash} disabled={loading} onClick={deleteEffect}>
+                        Verwijder
                     </Button>
                 )}
             </div>
