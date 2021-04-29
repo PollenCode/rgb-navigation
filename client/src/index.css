@@ -38,3 +38,19 @@ body {
         transform: scale(1) translateY(0);
     }
 }
+
+.pop-in {
+    transform-origin: center center;
+    animation: pop-in 500ms;
+}
+
+@keyframes pop-in {
+    0% {
+        opacity: 0.1;
+        transform: scale(0.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

@@ -5,13 +5,26 @@ import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
 import Editor, { DiffEditor, useMonaco, loader } from "@monaco-editor/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronLeft, faEye, faMagic, faPen, faSave, faTimes, faTrash, faUpload, IconDefinition } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCheck,
+    faCheckCircle,
+    faChevronLeft,
+    faEye,
+    faMagic,
+    faPen,
+    faSave,
+    faTimes,
+    faTrash,
+    faUpload,
+    IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
 import { ArduinoBuildMessage } from "rgb-navigation-api";
 
 interface Effect {
     name: string;
     code: string;
     id: number;
+    active?: boolean;
     author?: {
         id: string;
         name: string;
@@ -36,15 +49,22 @@ function EffectListItemButton(props: {
     );
 }
 
-function EffectListItem(props: { effect: Effect }) {
+function EffectListItem(props: { effect: Effect; onClick?: () => void }) {
     const client = useContext(AuthContext);
     const history = useHistory();
     const readOnly = !client.user || !props.effect.author || client.user.id !== props.effect.author.id;
     return (
         <li
-            className="border-b last:border-0 text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center"
-            onClick={() => client.sendIdleEffect(props.effect.id)}>
-            <span className="font-semibold py-2 pl-4">{props.effect.name}</span>
+            className={`border-b last:border-0 text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center ${
+                props.effect.active ? "bg-blue-50" : ""
+            }`}
+            onClick={props.onClick}>
+            {props.effect.active && (
+                <span className="text-blue-600 text-lg overflow-hidden pl-3.5">
+                    <FontAwesomeIcon className="pop-in" icon={faCheckCircle} />
+                </span>
+            )}
+            <span className={`font-semibold py-2 pl-3.5 ${props.effect.active ? "text-blue-600" : ""}`}>{props.effect.name}</span>
             {props.effect.author && (
                 <span className="ml-1.5 text-sm text-gray-400 py-2" title={props.effect.author.email}>
                     (door {props.effect.author.name})
@@ -109,7 +129,14 @@ export function Effects() {
                 </Button>
                 <ul className="mt-4 border-collapse border rounded overflow-hidden">
                     {effects.map((e) => (
-                        <EffectListItem key={e.id} effect={e} />
+                        <EffectListItem
+                            key={e.id}
+                            effect={e}
+                            onClick={async () => {
+                                await client.sendIdleEffect(e.id);
+                                setEffects((effects) => effects!.map((t) => ({ ...t, active: t.id === e.id })));
+                            }}
+                        />
                     ))}
                 </ul>
             </div>

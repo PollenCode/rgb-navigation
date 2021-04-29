@@ -80,11 +80,7 @@ export class RGBClient extends TypedEmitter<Events> {
     }
 
     public async sendIdleEffect(effect: number) {
-        let req: LedControllerServerMessage = {
-            type: "setIdleEffect",
-            effect: effect,
-        };
-        return await this.doFetch("/api/leds", "POST", req);
+        return await this.doFetch("/api/active-effect/" + effect, "POST");
     }
 
     public async sendRoom(room: number) {

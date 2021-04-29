@@ -8,6 +8,19 @@ const logger = debug("rgb:effects");
 const router = Router();
 const prisma = new PrismaClient();
 
+let activeEffectId = -1;
+
+router.post("/active-effect/:id", async (req, res, next) => {
+    let id = parseInt(req.params.id);
+    if (isNaN(id)) {
+        return res.status(400).end();
+    }
+
+    activeEffectId = id;
+    sendArduino({ type: "setIdleEffect", effect: id });
+    res.end();
+});
+
 router.get("/effect", async (req, res, next) => {
     let effects = await prisma.effect.findMany({
         select: {
@@ -23,7 +36,7 @@ router.get("/effect", async (req, res, next) => {
             },
         },
     });
-    res.json(effects);
+    res.json(effects.map((e) => ({ ...e, active: activeEffectId === e.id })));
 });
 
 router.delete("/effect/:id", withUser(), async (req, res, next) => {

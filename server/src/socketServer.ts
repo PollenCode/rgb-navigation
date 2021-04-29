@@ -129,5 +129,5 @@ export function createSocketServer(server: http.Server) {
 
 export function sendArduino(message: LedControllerServerMessage) {
     console.log("sendArduino");
-    socket.emit("usersShouldFollow", message);
+    socket.emit("ledController", message);
 }
