@@ -12,6 +12,11 @@
 #include "effects/rainbow.h"
 #undef loop
 
+void setupEffect(unsigned char num)
+{
+    // do not remove
+}
+
 void playEffect(unsigned char num)
 {
     switch (num)

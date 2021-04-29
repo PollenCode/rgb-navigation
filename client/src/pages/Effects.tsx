@@ -65,7 +65,9 @@ function EffectListItem(props: { effect: Effect }) {
 
 const DEFAULT_CODE = `
 
-#include "../leds.h"
+void setup() {
+    // Do your setup logic here, do not remove this function if you don't need it
+}
 
 void loop() {
 

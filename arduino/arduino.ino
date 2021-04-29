@@ -37,6 +37,7 @@ void setup()
   }
 
   Serial.println("Ready");
+  setupEffect(idleEffect);
 }
 
 void processPacket()
@@ -48,6 +49,7 @@ void processPacket()
     idleEffect = Serial.read();
     Serial.print("Set idle effect ");
     Serial.println(idleEffect);
+    setupEffect(idleEffect);
   }
   else if (packetType == 2 || packetType == 3) // Enable/disable line
   {

@@ -23,11 +23,27 @@ async function generateEffectsHeaderScript(destination: string, effects: { name:
         let effectFileName = getFileNameFor(effect.name);
         let effectFunctionName = getFunctionNameFor(effect.name);
 
-        await writeStream.write(`#define loop ${effectFunctionName}\n`);
+        await writeStream.write(`#define loop ${effectFunctionName}loop\n`);
+        await writeStream.write(`#define setup ${effectFunctionName}setup\n`);
         await writeStream.write(`#include "effects/${effectFileName}"\n`);
     }
 
     await writeStream.write("#undef loop\n\n");
+    await writeStream.write("#undef setup\n\n");
+
+    await writeStream.write("void setupEffect(unsigned char num) {\n");
+    await writeStream.write("\tswitch(num) {\n");
+    for (let i = 0; i < effects.length; i++) {
+        let effect = effects[i];
+        let effectFunctionName = getFunctionNameFor(effect.name);
+
+        if (i === 0) await writeStream.write(`\tdefault:\n`);
+        await writeStream.write(`\tcase ${effect.id}:\n`);
+        await writeStream.write(`\t\t${effectFunctionName}setup();\n`);
+        await writeStream.write(`\t\treturn;\n`);
+    }
+    await writeStream.write("\t}\n");
+    await writeStream.write("}\n\n");
 
     await writeStream.write("void playEffect(unsigned char num) {\n");
     await writeStream.write("\tswitch(num) {\n");
@@ -37,7 +53,7 @@ async function generateEffectsHeaderScript(destination: string, effects: { name:
 
         if (i === 0) await writeStream.write(`\tdefault:\n`);
         await writeStream.write(`\tcase ${effect.id}:\n`);
-        await writeStream.write(`\t\t${effectFunctionName}();\n`);
+        await writeStream.write(`\t\t${effectFunctionName}loop();\n`);
         await writeStream.write(`\t\treturn;\n`);
     }
     await writeStream.write("\t}\n");
