@@ -34,7 +34,7 @@ export function buildProject(destination: string, upload = false): Promise<boole
         if (upload) args.push("--upload");
         args.push("-b", BOARD_TYPE, "-p", process.env.SERIAL_PORT!, destination);
 
-        let c = spawn(`/usr/local/bin/arduino-cli`, args);
+        let c = spawn(process.env.ARDUINO_CLI!, args);
 
         c.stdout.on("data", (data) => {
             client.emitArduinoBuild({ type: "stdout", data: data.toString() });
