@@ -10,6 +10,8 @@ function getFunctionNameFor(name: string) {
     return name.replace(/[^a-z0-9]+/gi, "").toLowerCase() + "effect";
 }
 
+let variablesRegex = /([a-z0-9_]+)\s+([a-z0-9_]+)\s*(;|=)/gi;
+
 async function generateEffectsHeaderScript(destination: string, effects: { name: string; code: string; id: number }[], defaultEffectId: number) {
     let writeStream = await fs.open(destination, "w");
     await writeStream.write("//\n");
@@ -25,10 +27,16 @@ async function generateEffectsHeaderScript(destination: string, effects: { name:
 
         await writeStream.write(`#define loop ${effectFunctionName}loop\n`);
         await writeStream.write(`#define setup ${effectFunctionName}setup\n`);
+
+        let variables = Array.from(effect.code.matchAll(variablesRegex));
+        await writeStream.write(variables.map((e) => `#define ${e[2]} ${e[2]}_${i}`).join("\n") + "\n");
+
         await writeStream.write(`#include "effects/${effectFileName}"\n`);
+
+        await writeStream.write(variables.map((e) => `#undef ${e[2]}`).join("\n") + "\n");
     }
 
-    await writeStream.write("#undef loop\n\n");
+    await writeStream.write("#undef loop\n");
     await writeStream.write("#undef setup\n\n");
 
     await writeStream.write("void setupEffect(unsigned char num) {\n");

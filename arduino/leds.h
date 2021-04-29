@@ -1,6 +1,8 @@
 #pragma once
 
 #define LED_COUNT 50
+#define NUM_LEDS LED_COUNT
+
 #include <FastLED.h>
 
 struct Color
@@ -22,4 +24,3 @@ struct LineEffect
 };
 
 CRGB leds[LED_COUNT];
-uint64_t counter = 0;

@@ -12,6 +12,7 @@
 // Effect that is used when there are no routes currently displayed, see effects.h to see which effects cooresponds to a number
 unsigned char idleEffect = DEFAULT_EFFECT;
 LineEffect *routes[MAX_LINES];
+uint32_t counter = 0;
 
 void setColorLine(int start, int end, CRGB color);
 
