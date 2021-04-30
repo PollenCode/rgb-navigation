@@ -7,18 +7,21 @@ import { isDevelopment } from "./helpers";
 import { createSocketServer } from "./socketServer";
 import apiRouter from "./apiRouter";
 import path from "path";
+import fs from "fs";
+import debug from "debug";
+
+const logger = debug("rgb:server");
 
 if (!process.env.NODE_ENV || !process.env.PORT || !process.env.JWT_SECRET) {
     console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(1);
 }
 
-let app = express();
+const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 if (isDevelopment) {
-    // Otherwise browsers block requests
-    console.log("In development mode");
+    // Bypass cors during development
     app.use((req, res, next) => {
         res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
         res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -41,9 +44,37 @@ app.use((req, res, next) => {
     res.sendFile("index.html", { root: "public" });
 });
 
-let server = http.createServer(app);
-createSocketServer(server);
+if (isDevelopment) {
+    if (!process.env.PORT) {
+        logger("missing PORT environment variable");
+        process.exit(-1);
+    }
+    let port = parseInt(process.env.PORT);
+    let httpServer = http.createServer(app);
+    httpServer.listen(port);
+    createSocketServer(httpServer);
+    logger("development port open at %d", port);
+} else {
+    if (!process.env.SSL_KEY_FILE || !process.env.SSL_CERT_FILE || !process.env.SSL_CA_FILE) {
+        logger("could not find ssl environment variables, SSL_CA_FILE, SSL_KEY_FILE or SSL_CERT_FILE");
+        process.exit(-1);
+    }
+    let httpsServer = https.createServer(
+        {
+            key: fs.readFileSync(process.env.SSL_KEY_FILE),
+            cert: fs.readFileSync(process.env.SSL_CERT_FILE),
+            ca: fs.readFileSync(process.env.SSL_CA_FILE),
+        },
+        app
+    );
+    httpsServer.listen(443);
+    createSocketServer(httpsServer);
+    logger("listening for https on port 443");
 
-let port = parseInt(process.env.PORT);
-server.listen(port);
-console.log(`Server started on port ${port}`);
+    let httpServer = express();
+    httpServer.use((req, res) => {
+        res.redirect("https://" + req.headers.host + req.url);
+    });
+    httpServer.listen(80);
+    logger("listening for http on port 80");
+}
