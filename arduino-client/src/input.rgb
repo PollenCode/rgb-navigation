@@ -6,8 +6,6 @@
 
 #number = 100
 
-r = $ + #number;
-g = 255;
-b = 255;
-
-#number++
+r = i + #number
+g = 255
+b = 255

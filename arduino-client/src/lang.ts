@@ -74,8 +74,79 @@ async function compileFile(fileName: string) {
     compile(await fs.readFile(fileName, "utf-8"));
 }
 
-function expectValue() {
-    return false;
+class SumToken {
+    constructor(public op1: any, public op2: any, public isPlus: boolean) {}
+}
+
+function expectSum(lex: Lexer): SumToken | ReferenceToken | ValueToken | undefined {
+    let save = lex.position;
+    let operand1 = expectValue(lex);
+    if (!operand1) {
+        lex.position = save;
+        return;
+    }
+
+    let isPlus;
+    if (lex.string("+")) {
+        isPlus = true;
+    } else if (lex.string("-")) {
+        isPlus = false;
+    } else {
+        return operand1;
+    }
+
+    lex.readWhitespace();
+
+    let operand2 = expectSum(lex);
+    if (!operand2) {
+        throw new Error(`Expected second operand for sum at ${lex.lineColumn()}`);
+    }
+
+    return new SumToken(operand1, operand2, isPlus);
+}
+
+class ReferenceToken {
+    constructor(public varName: string) {}
+}
+
+function expectReference(lex: Lexer) {
+    let save = lex.position;
+
+    let isStatic = lex.string("#");
+
+    let varName = lex.readSymbol();
+    if (!varName || "0123456789".includes(varName[0])) {
+        lex.position = save;
+        return;
+    }
+
+    lex.readWhitespace();
+
+    return new ReferenceToken(varName);
+}
+
+class ValueToken {
+    constructor(public value: string) {}
+}
+
+function expectValue(lex: Lexer) {
+    let ref = expectReference(lex);
+    if (ref) {
+        return ref;
+    }
+
+    let value = lex.read("0123456789");
+    if (!value) {
+        return;
+    }
+
+    lex.readWhitespace();
+
+    return new ValueToken(value);
+}
+
+class AssignmentToken {
+    constructor(public varName: string, public value: any) {}
 }
 
 function expectAssignment(lex: Lexer) {
@@ -84,43 +155,58 @@ function expectAssignment(lex: Lexer) {
     let isStatic = lex.string("#");
 
     let varName = lex.readSymbol();
-    if (varName.length <= 0) {
+    if (!varName) {
         lex.position = save;
-        return false;
+        return;
     }
 
     lex.readWhitespace();
 
     if (!lex.string("=")) {
         lex.position = save;
-        console.log("no =");
-        return false;
+        return;
     }
 
     lex.readWhitespace();
 
-    if (!expectValue()) {
-        throw new Error("Value was expected after value declaration");
+    let value = expectSum(lex);
+    if (!value) {
+        throw new Error(`Value was expected after value declaration at ${lex.lineColumn()}`);
     }
 
     lex.readWhitespace();
 
-    return true;
+    return new AssignmentToken(varName, value);
+}
+
+class BlockToken {
+    constructor(public statements: any[]) {}
+}
+
+function expectBlock(lex: Lexer) {
+    let statements: any[] = [];
+
+    while (lex.position < lex.buffer.length) {
+        let s = expectAssignment(lex);
+        if (!s) {
+            throw new Error(`Expected statement at ${lex.lineColumn()}`);
+        }
+        statements.push(s);
+        lex.string(";");
+        lex.readWhitespace();
+    }
+
+    return new BlockToken(statements);
 }
 
 async function compile(input: string) {
     // input = await preprocess(input);
 
     let lex = new Lexer(input);
-
     lex.readWhitespace();
-    console.log(lex.buffer[lex.position]);
 
-    while (lex.position < lex.buffer.length) {
-        if (!expectAssignment(lex)) {
-            throw new Error(`Expected assignment at ${lex.lineColumn()}`);
-        }
-    }
+    let res = expectBlock(lex);
+    console.log(res);
 
     // logger(lex.readWhitespace().length);
     // logger(lex.string("#number"));
