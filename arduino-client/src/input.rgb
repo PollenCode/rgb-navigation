@@ -6,6 +6,6 @@
 
 #number = 100
 
-r = i + #number + 123
-g = 255
+r = i + #number - 123; a = 100 * 10 % yikes
+g = 255 
 b = 255

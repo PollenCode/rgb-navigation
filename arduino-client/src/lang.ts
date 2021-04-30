@@ -78,15 +78,15 @@ interface Token {
     toString(): string;
 }
 
-class SumToken implements Token {
-    constructor(public op1: any, public op2: any, public isPlus: boolean) {}
+class MulToken implements Token {
+    constructor(public op1: any, public op2: any, public type: "%" | "/" | "*") {}
 
     toString() {
-        return `${this.op1} ${this.isPlus ? "+" : "-"} ${this.op2}`;
+        return `${this.op1} ${this.type} ${this.op2}`;
     }
 }
 
-function expectSum(lex: Lexer): SumToken | ReferenceToken | ValueToken | undefined {
+function expectMul(lex: Lexer): MulToken | ReferenceToken | ValueToken | undefined {
     let save = lex.position;
     let operand1 = expectValue(lex);
     if (!operand1) {
@@ -94,11 +94,13 @@ function expectSum(lex: Lexer): SumToken | ReferenceToken | ValueToken | undefin
         return;
     }
 
-    let isPlus;
-    if (lex.string("+")) {
-        isPlus = true;
-    } else if (lex.string("-")) {
-        isPlus = false;
+    let type: "%" | "/" | "*";
+    if (lex.string("*")) {
+        type = "*";
+    } else if (lex.string("/")) {
+        type = "/";
+    } else if (lex.string("%")) {
+        type = "%";
     } else {
         return operand1;
     }
@@ -110,7 +112,42 @@ function expectSum(lex: Lexer): SumToken | ReferenceToken | ValueToken | undefin
         throw new Error(`Expected second operand for sum at ${lex.lineColumn()}`);
     }
 
-    return new SumToken(operand1, operand2, isPlus);
+    return new MulToken(operand1, operand2, type);
+}
+
+class SumToken implements Token {
+    constructor(public op1: any, public op2: any, public type: "+" | "-") {}
+
+    toString() {
+        return `${this.op1} ${this.type ? "+" : "-"} ${this.op2}`;
+    }
+}
+
+function expectSum(lex: Lexer): SumToken | MulToken | ReferenceToken | ValueToken | undefined {
+    let save = lex.position;
+    let operand1 = expectMul(lex);
+    if (!operand1) {
+        lex.position = save;
+        return;
+    }
+
+    let type: "+" | "-";
+    if (lex.string("+")) {
+        type = "+";
+    } else if (lex.string("-")) {
+        type = "-";
+    } else {
+        return operand1;
+    }
+
+    lex.readWhitespace();
+
+    let operand2 = expectSum(lex);
+    if (!operand2) {
+        throw new Error(`Expected second operand for sum at ${lex.lineColumn()}`);
+    }
+
+    return new SumToken(operand1, operand2, type);
 }
 
 class ReferenceToken implements Token {
@@ -230,6 +267,7 @@ async function compile(input: string) {
     lex.readWhitespace();
 
     let res = expectBlock(lex);
+    console.log(res);
     console.log(res.toString());
 
     // logger(lex.readWhitespace().length);
