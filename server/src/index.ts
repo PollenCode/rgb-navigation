@@ -27,9 +27,7 @@ if (isDevelopment) {
         next();
     });
 }
-app.get("/", async (req, res, next) => {
-    res.redirect(getOAuthUrl());
-});
+
 app.use(express.static("public"));
 app.use("/api", apiRouter);
 

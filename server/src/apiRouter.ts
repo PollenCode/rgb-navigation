@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createUserAccessToken } from "./auth";
+import { createUserAccessToken, getOAuthUrl } from "./auth";
 import { isDevelopment } from "./helpers";
 import { withUser } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
@@ -14,6 +14,10 @@ const router = Router();
 const prisma = new PrismaClient();
 
 router.use(effectRouter);
+
+router.get("/oauth", async (req, res, next) => {
+    res.redirect(getOAuthUrl());
+});
 
 router.get("/oauth/complete", async (req, res, next) => {
     let code = req.query.code;

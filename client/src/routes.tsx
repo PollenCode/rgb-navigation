@@ -37,7 +37,7 @@ export function Routes() {
             client.setAccessToken(localStorage.getItem("s")!);
         } else {
             // Redirect to oauth
-            window.location.href = serverPath;
+            window.location.href = serverPath + "/api/oauth";
         }
 
         return () => {

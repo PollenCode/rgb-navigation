@@ -1,19 +1,24 @@
 #/bin/bash -e
 
 rm -rf build
-mkdir build
+mkdir build build/server
+
+cd api
+yarn build
+cd ..
 
 cd client
 yarn build
 cd ..
-cp -r client/build build/public
+cp -r client/build build/server/public
 
-cp -r server/prisma build
-cp server/package.json build
-cp server/.env.example build/.env
+cp -r server/prisma build/server
+cp server/package.json build/server
+cp server/.env.example build/server/.env
 
 cd server
 yarn build
 cd ..
 
-cp -r server/dist build/src
+cp -r api build/api
+cp -r server/dist build/server/src
