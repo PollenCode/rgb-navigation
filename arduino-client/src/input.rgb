@@ -1,7 +1,8 @@
 
 // i bevat de hoeveelste led
 // max bevat de max led
-// ledstrip descriptor language
+// ledstrip descriptor language f
+//
 
 #number = 100
 
