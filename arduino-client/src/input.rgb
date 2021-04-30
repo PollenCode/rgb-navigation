@@ -1,0 +1,12 @@
+
+// i bevat de hoeveelste led
+// max bevat de max led
+// ledstrip descriptor language
+
+#number = 100
+
+r = $ + #number;
+g = 255;
+b = 255;
+
+#number++

@@ -8,6 +8,7 @@
     "build": "tsc"
   },
   "devDependencies": {
+    "@types/debug": "^4.1.5",
     "@types/node": "^14.14.31",
     "@types/node-fetch": "^2.5.10",
     "@types/serialport": "^8.0.1",
@@ -16,6 +17,7 @@
     "typescript": "^4.2.2"
   },
   "dependencies": {
+    "debug": "^4.3.1",
     "dotenv": "^8.2.0",
     "node-fetch": "^2.6.1",
     "rgb-navigation-api": "link:../api",

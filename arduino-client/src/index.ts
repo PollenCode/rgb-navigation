@@ -93,6 +93,10 @@ async function processMessage(data: LedControllerServerMessage) {
     }
 }
 
+client.socket.on("connect", () => {
+    console.log("connected");
+});
+
 client.socket.emit("subscribe", { roomId: "dgang" });
 
 client.socket.on("ledController", (obj: any) => {
