@@ -74,8 +74,16 @@ async function compileFile(fileName: string) {
     compile(await fs.readFile(fileName, "utf-8"));
 }
 
-class SumToken {
+interface Token {
+    toString(): string;
+}
+
+class SumToken implements Token {
     constructor(public op1: any, public op2: any, public isPlus: boolean) {}
+
+    toString() {
+        return `${this.op1} ${this.isPlus ? "+" : "-"} ${this.op2}`;
+    }
 }
 
 function expectSum(lex: Lexer): SumToken | ReferenceToken | ValueToken | undefined {
@@ -105,8 +113,12 @@ function expectSum(lex: Lexer): SumToken | ReferenceToken | ValueToken | undefin
     return new SumToken(operand1, operand2, isPlus);
 }
 
-class ReferenceToken {
+class ReferenceToken implements Token {
     constructor(public varName: string) {}
+
+    toString() {
+        return `var:${this.varName}`;
+    }
 }
 
 function expectReference(lex: Lexer) {
@@ -125,8 +137,12 @@ function expectReference(lex: Lexer) {
     return new ReferenceToken(varName);
 }
 
-class ValueToken {
+class ValueToken implements Token {
     constructor(public value: string) {}
+
+    toString() {
+        return `val:${this.value}`;
+    }
 }
 
 function expectValue(lex: Lexer) {
@@ -145,8 +161,12 @@ function expectValue(lex: Lexer) {
     return new ValueToken(value);
 }
 
-class AssignmentToken {
+class AssignmentToken implements Token {
     constructor(public varName: string, public value: any) {}
+
+    toString() {
+        return `var:${this.varName} = ${this.value}`;
+    }
 }
 
 function expectAssignment(lex: Lexer) {
@@ -179,12 +199,16 @@ function expectAssignment(lex: Lexer) {
     return new AssignmentToken(varName, value);
 }
 
-class BlockToken {
-    constructor(public statements: any[]) {}
+class BlockToken implements Token {
+    constructor(public statements: Token[]) {}
+
+    toString() {
+        return this.statements.map((e) => e.toString()).join("\n");
+    }
 }
 
 function expectBlock(lex: Lexer) {
-    let statements: any[] = [];
+    let statements: Token[] = [];
 
     while (lex.position < lex.buffer.length) {
         let s = expectAssignment(lex);
@@ -206,7 +230,7 @@ async function compile(input: string) {
     lex.readWhitespace();
 
     let res = expectBlock(lex);
-    console.log(res);
+    console.log(res.toString());
 
     // logger(lex.readWhitespace().length);
     // logger(lex.string("#number"));
