@@ -42,7 +42,7 @@ async function compile(input: string) {
 
     let res = expectBlock(context);
     res.setTypes();
-    console.log(res);
+    // console.log(res);
     console.log(res.context.vars);
 
     // console.log(res.toString());

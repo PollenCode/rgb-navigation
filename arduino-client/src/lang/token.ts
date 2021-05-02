@@ -3,6 +3,10 @@ import { Lexer } from "./lexer";
 import { CodeWriter } from "./target";
 import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType } from "./types";
 
+interface Location {
+    address: number;
+}
+
 export abstract class Token {
     readonly context: CompilerContext;
     readonly position: number;
@@ -15,7 +19,10 @@ export abstract class Token {
 
     abstract toString(): string;
     abstract setTypes(): void;
-    emit(target: CodeWriter) {}
+
+    emit(target: CodeWriter): Location | undefined {
+        return;
+    }
 }
 
 export class MulToken extends Token {
@@ -51,6 +58,10 @@ export class MulToken extends Token {
 
     toString() {
         return `${this.op1} ${this.operator} ${this.op2}`;
+    }
+
+    emit(code: CodeWriter) {
+        return undefined;
     }
 }
 
@@ -111,6 +122,59 @@ export class SumToken extends Token {
 
     toString() {
         return `${this.op1} ${this.operator ? "+" : "-"} ${this.op2}`;
+    }
+
+    emit(code: CodeWriter) {
+        if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
+            if (this.op1.type.constantValue !== undefined) {
+                // addconst t2, n
+                let a2 = this.op2.emit(code)!;
+                switch (this.op1.type.size) {
+                    case 1:
+                        code.addConst8(a2.address, this.op1.type.constantValue);
+                        break;
+                    case 2:
+                        code.addConst16(a2.address, this.op1.type.constantValue);
+                        break;
+                    case 4:
+                        code.addConst32(a2.address, this.op1.type.constantValue);
+                        break;
+                }
+                return a2;
+            } else if (this.op2.type.constantValue !== undefined) {
+                // addconst t1, n
+                let a1 = this.op1.emit(code)!;
+                switch (this.op1.type.size) {
+                    case 1:
+                        code.addConst8(a1.address, this.op2.type.constantValue);
+                        break;
+                    case 2:
+                        code.addConst16(a1.address, this.op2.type.constantValue);
+                        break;
+                    case 4:
+                        code.addConst32(a1.address, this.op2.type.constantValue);
+                        break;
+                }
+                return a1;
+            } else {
+                // add t1, t2
+                let a1 = this.op1.emit(code)!;
+                let a2 = this.op2.emit(code)!;
+                switch (this.op1.type.size) {
+                    case 1:
+                        code.add(a1.address, a2.address);
+                        break;
+                    case 2:
+                        code.add(a1.address, a2.address);
+                        break;
+                    case 4:
+                        code.add(a1.address, a2.address);
+                        break;
+                }
+            }
+        } else {
+            throw new Error(`Add/sub ${this.op1.type.name} and ${this.op2.type.name} not implemented`);
+        }
     }
 }
 

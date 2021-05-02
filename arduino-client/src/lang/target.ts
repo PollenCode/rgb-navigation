@@ -50,6 +50,12 @@ export enum OpCode {
     ModConst8 = 0x0d,
     ModConst16 = 0x0e,
     ModConst32 = 0x0f,
+
+    Add = 0x31,
+    Sub = 0x32,
+    Mul = 0x33,
+    Div = 0x34,
+    Mod = 0x35,
 }
 
 export class CodeWriter extends BinaryWriter {
@@ -69,5 +75,11 @@ export class CodeWriter extends BinaryWriter {
         this.write8(OpCode.AddConst32);
         this.write16(dest);
         this.write32(num);
+    }
+
+    add(dest: number, src: number) {
+        this.write8(OpCode.Add);
+        this.write16(dest);
+        this.write16(src);
     }
 }
