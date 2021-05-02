@@ -43,6 +43,8 @@ async function compile(input: string) {
     let res = expectBlock(context);
     res.resultingType();
     console.log(res);
+    console.log(res.context.vars);
+
     // console.log(res.toString());
     // console.log(context.vars);
 

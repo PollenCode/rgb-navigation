@@ -1,6 +1,7 @@
 import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
-import { Type, VOID, INT, FLOAT, VoidType } from "./types";
+import { CodeWriter } from "./target";
+import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType } from "./types";
 
 export abstract class Token {
     readonly context: CompilerContext;
@@ -13,7 +14,7 @@ export abstract class Token {
 
     abstract toString(): string;
     abstract resultingType(): Type;
-    emit() {}
+    emit(target: CodeWriter) {}
 }
 
 export class MulToken extends Token {
@@ -22,8 +23,24 @@ export class MulToken extends Token {
     }
 
     resultingType(): Type {
-        if (this.op1.resultingType().name === "float" || this.op2.resultingType().name === "float") return FLOAT;
-        else return INT;
+        let t1 = this.op1.resultingType();
+        let t2 = this.op2.resultingType();
+        if (t1 instanceof NumberType && t2 instanceof NumberType) {
+            switch (this.type) {
+                case "*":
+                    return t1.mul(t2);
+                case "/":
+                    return t1.div(t2);
+                case "%":
+                    return t1.mod(t2);
+                default:
+                    throw new Error("Unimplemented");
+            }
+        } else {
+            throw new Error(
+                `Can only modulus/multiply/divide number values at ${this.context.lex.lineColumn(this.position)} (${t1.name}, ${t2.name})`
+            );
+        }
     }
 
     toString() {
@@ -66,8 +83,20 @@ export class SumToken extends Token {
     }
 
     resultingType(): Type {
-        if (this.op1.resultingType().name === "float" || this.op2.resultingType().name === "float") return FLOAT;
-        else return INT;
+        let t1 = this.op1.resultingType();
+        let t2 = this.op2.resultingType();
+        if (t1 instanceof NumberType && t2 instanceof NumberType) {
+            switch (this.type) {
+                case "+":
+                    return t1.add(t2);
+                case "-":
+                    return t1.sub(t2);
+                default:
+                    throw new Error("Unimplemented");
+            }
+        } else {
+            throw new Error(`Can only add/substract number values at ${this.context.lex.lineColumn(this.position)} (${t1.name}, ${t2.name})`);
+        }
     }
 
     toString() {
@@ -142,7 +171,7 @@ export class ValueToken extends Token {
     }
 
     resultingType(): Type {
-        return INT;
+        return new IntType(parseInt(this.value));
     }
 
     toString() {
@@ -179,10 +208,19 @@ export class AssignmentToken extends Token {
             let v = this.context.vars.get(this.varName)!;
             // isAssignable(type, v.type)
             if (v instanceof VoidType) throw new Error(`Cannot assign void to ${v.type} at ${this.context.lex.lineColumn(this.position)}`);
+
+            if (v.type instanceof NumberType) {
+                v.type.constantValue = undefined;
+            }
         } else {
             let location = this.context.currentVarLocation;
             this.context.currentVarLocation += type.size;
-            this.context.vars.set(this.varName, { location, name: this.varName, static: this.isStatic, type: type });
+            this.context.vars.set(this.varName, {
+                location,
+                name: this.varName,
+                static: this.isStatic,
+                type: type,
+            });
         }
         return type;
     }
