@@ -4,7 +4,4 @@
 // ledstrip descriptor language f
 //
 
-i = 123
-a = i + 100
-i = 0
-b = 1 ? i : 10
+i = ((1) ? (5 - 10 * 10) : (10))
