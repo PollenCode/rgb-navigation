@@ -25,6 +25,62 @@ export abstract class Token {
     }
 }
 
+export class TernaryToken extends Token {
+    constructor(context: CompilerContext, position: number, public op: Token, public trueOp: Token, public falseOp: Token) {
+        super(context, position);
+    }
+
+    toString(): string {
+        throw new Error("Method not implemented.");
+    }
+
+    setTypes(): void {
+        this.op.setTypes();
+        this.trueOp.setTypes();
+        this.falseOp.setTypes();
+        if (this.op.type instanceof NumberType && this.op.type.constantValue !== undefined) {
+            this.type = this.op.type.constantValue ? this.trueOp.type : this.falseOp.type;
+        } else {
+            this.type = this.trueOp.type;
+        }
+    }
+}
+
+function expectTernary(c: CompilerContext): TernaryToken | SumToken | MulToken | ReferenceToken | ValueToken | undefined {
+    let op = expectSum(c);
+    if (!op) {
+        return;
+    }
+
+    let position = c.lex.position;
+    if (!c.lex.string("?")) {
+        c.lex.position = position;
+        return op;
+    }
+
+    c.lex.readWhitespace();
+
+    let trueOp = expectTernary(c);
+    if (!trueOp) {
+        throw new Error(`Expected something after ?, at ${c.lex.lineColumn(position)}`);
+    }
+
+    if (!c.lex.string(":")) {
+        throw new Error(`Expected : after ?, at ${c.lex.lineColumn(position)}`);
+    }
+
+    c.lex.readWhitespace();
+
+    let falseOp = expectTernary(c);
+    if (!falseOp) {
+        throw new Error(`Expected something after :, at ${c.lex.lineColumn(position)}`);
+    }
+
+    c.lex.readWhitespace();
+
+    return new TernaryToken(c, position, op, trueOp, falseOp);
+}
+
 export class MulToken extends Token {
     constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public operator: "%" | "/" | "*") {
         super(context, position);
@@ -86,9 +142,9 @@ export function expectMul(c: CompilerContext): MulToken | ReferenceToken | Value
 
     c.lex.readWhitespace();
 
-    let operand2 = expectSum(c);
+    let operand2 = expectMul(c);
     if (!operand2) {
-        throw new Error(`Expected second operand for sum at ${c.lex.lineColumn()}`);
+        throw new Error(`Expected second operand for multiplication at ${c.lex.lineColumn()}`);
     }
 
     return new MulToken(c, position, operand1, operand2, type);
@@ -322,7 +378,7 @@ export function expectAssignment(c: CompilerContext) {
 
     c.lex.readWhitespace();
 
-    let value = expectSum(c);
+    let value = expectTernary(c);
     if (!value) {
         throw new Error(`Value was expected after value declaration at ${c.lex.lineColumn()}`);
     }
