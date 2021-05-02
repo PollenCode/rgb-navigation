@@ -13,6 +13,7 @@ export abstract class Token {
 
     abstract toString(): string;
     abstract resultingType(): Type;
+    emit() {}
 }
 
 export class MulToken extends Token {
@@ -179,9 +180,8 @@ export class AssignmentToken extends Token {
             // isAssignable(type, v.type)
             if (v instanceof VoidType) throw new Error(`Cannot assign void to ${v.type} at ${this.context.lex.lineColumn(this.position)}`);
         } else {
-            let size = 4;
             let location = this.context.currentVarLocation;
-            this.context.currentVarLocation += size;
+            this.context.currentVarLocation += type.size;
             this.context.vars.set(this.varName, { location, name: this.varName, static: this.isStatic, type: type });
         }
         return type;

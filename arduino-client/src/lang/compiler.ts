@@ -4,6 +4,7 @@ import debug from "debug";
 import { Lexer } from "./lexer";
 import { expectBlock } from "./token";
 import { Type } from "./types";
+import { BinaryWriter } from "./target";
 
 const logger = debug("rgb:lang");
 
@@ -53,3 +54,11 @@ async function compile(input: string) {
 }
 
 compileFile("src/input.rgb");
+
+let writer = new BinaryWriter(2);
+writer.write(0x10);
+writer.write(0x20);
+writer.write(0x30);
+writer.write(0x40);
+writer.write(0x50);
+console.log(writer.buffer.toString("hex"));
