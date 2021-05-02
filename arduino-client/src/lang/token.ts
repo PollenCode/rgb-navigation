@@ -1,3 +1,4 @@
+import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
 
 export interface Token {
@@ -12,30 +13,30 @@ export class MulToken implements Token {
     }
 }
 
-export function expectMul(lex: Lexer): MulToken | ReferenceToken | ValueToken | undefined {
-    let save = lex.position;
-    let operand1 = expectValue(lex);
+export function expectMul(c: CompilerContext): MulToken | ReferenceToken | ValueToken | undefined {
+    let save = c.lex.position;
+    let operand1 = expectValue(c);
     if (!operand1) {
-        lex.position = save;
+        c.lex.position = save;
         return;
     }
 
     let type: "%" | "/" | "*";
-    if (lex.string("*")) {
+    if (c.lex.string("*")) {
         type = "*";
-    } else if (lex.string("/")) {
+    } else if (c.lex.string("/")) {
         type = "/";
-    } else if (lex.string("%")) {
+    } else if (c.lex.string("%")) {
         type = "%";
     } else {
         return operand1;
     }
 
-    lex.readWhitespace();
+    c.lex.readWhitespace();
 
-    let operand2 = expectSum(lex);
+    let operand2 = expectSum(c);
     if (!operand2) {
-        throw new Error(`Expected second operand for sum at ${lex.lineColumn()}`);
+        throw new Error(`Expected second operand for sum at ${c.lex.lineColumn()}`);
     }
 
     return new MulToken(operand1, operand2, type);
@@ -49,28 +50,28 @@ export class SumToken implements Token {
     }
 }
 
-export function expectSum(lex: Lexer): SumToken | MulToken | ReferenceToken | ValueToken | undefined {
-    let save = lex.position;
-    let operand1 = expectMul(lex);
+export function expectSum(c: CompilerContext): SumToken | MulToken | ReferenceToken | ValueToken | undefined {
+    let save = c.lex.position;
+    let operand1 = expectMul(c);
     if (!operand1) {
-        lex.position = save;
+        c.lex.position = save;
         return;
     }
 
     let type: "+" | "-";
-    if (lex.string("+")) {
+    if (c.lex.string("+")) {
         type = "+";
-    } else if (lex.string("-")) {
+    } else if (c.lex.string("-")) {
         type = "-";
     } else {
         return operand1;
     }
 
-    lex.readWhitespace();
+    c.lex.readWhitespace();
 
-    let operand2 = expectSum(lex);
+    let operand2 = expectSum(c);
     if (!operand2) {
-        throw new Error(`Expected second operand for sum at ${lex.lineColumn()}`);
+        throw new Error(`Expected second operand for sum at ${c.lex.lineColumn()}`);
     }
 
     return new SumToken(operand1, operand2, type);
@@ -84,18 +85,18 @@ export class ReferenceToken implements Token {
     }
 }
 
-export function expectReference(lex: Lexer) {
-    let save = lex.position;
+export function expectReference(c: CompilerContext) {
+    let save = c.lex.position;
 
-    let isStatic = lex.string("#");
+    let isStatic = c.lex.string("#");
 
-    let varName = lex.readSymbol();
+    let varName = c.lex.readSymbol();
     if (!varName || "0123456789".includes(varName[0])) {
-        lex.position = save;
+        c.lex.position = save;
         return;
     }
 
-    lex.readWhitespace();
+    c.lex.readWhitespace();
 
     return new ReferenceToken(varName);
 }
@@ -108,18 +109,18 @@ export class ValueToken implements Token {
     }
 }
 
-export function expectValue(lex: Lexer) {
-    let ref = expectReference(lex);
+export function expectValue(c: CompilerContext) {
+    let ref = expectReference(c);
     if (ref) {
         return ref;
     }
 
-    let value = lex.read("0123456789");
+    let value = c.lex.read("0123456789");
     if (!value) {
         return;
     }
 
-    lex.readWhitespace();
+    c.lex.readWhitespace();
 
     return new ValueToken(value);
 }
@@ -132,32 +133,32 @@ export class AssignmentToken implements Token {
     }
 }
 
-export function expectAssignment(lex: Lexer) {
-    let save = lex.position;
+export function expectAssignment(c: CompilerContext) {
+    let save = c.lex.position;
 
-    let isStatic = lex.string("#");
+    let isStatic = c.lex.string("#");
 
-    let varName = lex.readSymbol();
+    let varName = c.lex.readSymbol();
     if (!varName) {
-        lex.position = save;
+        c.lex.position = save;
         return;
     }
 
-    lex.readWhitespace();
+    c.lex.readWhitespace();
 
-    if (!lex.string("=")) {
-        lex.position = save;
+    if (!c.lex.string("=")) {
+        c.lex.position = save;
         return;
     }
 
-    lex.readWhitespace();
+    c.lex.readWhitespace();
 
-    let value = expectSum(lex);
+    let value = expectSum(c);
     if (!value) {
-        throw new Error(`Value was expected after value declaration at ${lex.lineColumn()}`);
+        throw new Error(`Value was expected after value declaration at ${c.lex.lineColumn()}`);
     }
 
-    lex.readWhitespace();
+    c.lex.readWhitespace();
 
     return new AssignmentToken(varName, value);
 }
@@ -170,17 +171,17 @@ export class BlockToken implements Token {
     }
 }
 
-export function expectBlock(lex: Lexer) {
+export function expectBlock(c: CompilerContext) {
     let statements: Token[] = [];
 
-    while (lex.position < lex.buffer.length) {
-        let s = expectAssignment(lex);
+    while (c.lex.position < c.lex.buffer.length) {
+        let s = expectAssignment(c);
         if (!s) {
-            throw new Error(`Expected statement at ${lex.lineColumn()}`);
+            throw new Error(`Expected statement at ${c.lex.lineColumn()}`);
         }
         statements.push(s);
-        lex.string(";");
-        lex.readWhitespace();
+        c.lex.string(";");
+        c.lex.readWhitespace();
     }
 
     return new BlockToken(statements);
