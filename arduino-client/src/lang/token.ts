@@ -106,7 +106,11 @@ export class ReferenceToken extends Token {
     }
 
     resultingType(): BuiltinType {
-        return this.context.vars.get(this.varName)!.type;
+        if (!this.context.vars.has(this.varName)) {
+            throw new Error(`Unknown var '${this.varName}' at ${this.context.lex.lineColumn(this.position)}`);
+        } else {
+            return this.context.vars.get(this.varName)!.type;
+        }
     }
 
     toString() {
@@ -163,12 +167,20 @@ export function expectValue(c: CompilerContext) {
 }
 
 export class AssignmentToken extends Token {
-    constructor(context: CompilerContext, position: number, public varName: string, public value: Token) {
+    constructor(context: CompilerContext, position: number, public varName: string, public value: Token, public isStatic: boolean) {
         super(context, position);
     }
 
     resultingType(): BuiltinType {
-        return this.value.resultingType();
+        let type = this.value.resultingType();
+        if (this.context.vars.has(this.varName)) {
+            let v = this.context.vars.get(this.varName)!;
+            // isAssignable(type, v.type)
+            if (type === "void") throw new Error(`Cannot assign void to ${v.type} at ${this.context.lex.lineColumn(this.position)}`);
+        } else {
+            this.context.vars.set(this.varName, { name: this.varName, static: this.isStatic, type: type });
+        }
+        return type;
     }
 
     toString() {
@@ -203,11 +215,7 @@ export function expectAssignment(c: CompilerContext) {
 
     c.lex.readWhitespace();
 
-    let existing = c.vars.get(varName);
-    if (c.vars.has(varName)) {
-    }
-
-    return new AssignmentToken(c, position, varName, value);
+    return new AssignmentToken(c, position, varName, value, isStatic);
 }
 
 export class BlockToken extends Token {
@@ -216,6 +224,7 @@ export class BlockToken extends Token {
     }
 
     resultingType(): BuiltinType {
+        this.statements.forEach((e) => e.resultingType());
         return "void";
     }
 

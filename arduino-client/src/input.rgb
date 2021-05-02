@@ -4,8 +4,9 @@
 // ledstrip descriptor language f
 //
 
+i = 0
 #number = 100
 
-r = i + #number - 123; a = 100 * 10 % yikes
+r = i + #number - 123; a = 100 * 10
 g = 255 
 b = 255

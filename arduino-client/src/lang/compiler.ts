@@ -37,8 +37,10 @@ async function compile(input: string) {
     let context = new CompilerContext(input);
 
     let res = expectBlock(context);
+    res.resultingType();
     console.log(res);
     console.log(res.toString());
+    console.log(context.vars);
 
     // logger(lex.readWhitespace().length);
     // logger(lex.string("#number"));
