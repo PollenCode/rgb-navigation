@@ -6,6 +6,7 @@ import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType } from "./types";
 export abstract class Token {
     readonly context: CompilerContext;
     readonly position: number;
+    type!: Type;
 
     constructor(context: CompilerContext, position: number) {
         this.context = context;
@@ -13,38 +14,43 @@ export abstract class Token {
     }
 
     abstract toString(): string;
-    abstract resultingType(): Type;
+    abstract setTypes(): void;
     emit(target: CodeWriter) {}
 }
 
 export class MulToken extends Token {
-    constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public type: "%" | "/" | "*") {
+    constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public operator: "%" | "/" | "*") {
         super(context, position);
     }
 
-    resultingType(): Type {
-        let t1 = this.op1.resultingType();
-        let t2 = this.op2.resultingType();
-        if (t1 instanceof NumberType && t2 instanceof NumberType) {
-            switch (this.type) {
+    setTypes(): void {
+        this.op1.setTypes();
+        this.op2.setTypes();
+        if (this.op1.type instanceof NumberType && this.op2.type instanceof NumberType) {
+            switch (this.operator) {
                 case "*":
-                    return t1.mul(t2);
+                    this.type = this.op1.type.mul(this.op2.type);
+                    break;
                 case "/":
-                    return t1.div(t2);
+                    this.type = this.op1.type.div(this.op2.type);
+                    break;
                 case "%":
-                    return t1.mod(t2);
+                    this.type = this.op1.type.mod(this.op2.type);
+                    break;
                 default:
                     throw new Error("Unimplemented");
             }
         } else {
             throw new Error(
-                `Can only modulus/multiply/divide number values at ${this.context.lex.lineColumn(this.position)} (${t1.name}, ${t2.name})`
+                `Can only modulus/multiply/divide number values at ${this.context.lex.lineColumn(this.position)} (${this.op1.type.name}, ${
+                    this.op2.type.name
+                })`
             );
         }
     }
 
     toString() {
-        return `${this.op1} ${this.type} ${this.op2}`;
+        return `${this.op1} ${this.operator} ${this.op2}`;
     }
 }
 
@@ -78,29 +84,33 @@ export function expectMul(c: CompilerContext): MulToken | ReferenceToken | Value
 }
 
 export class SumToken extends Token {
-    constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public type: "+" | "-") {
+    constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public operator: "+" | "-") {
         super(context, position);
     }
 
-    resultingType(): Type {
-        let t1 = this.op1.resultingType();
-        let t2 = this.op2.resultingType();
-        if (t1 instanceof NumberType && t2 instanceof NumberType) {
-            switch (this.type) {
+    setTypes(): void {
+        this.op1.setTypes();
+        this.op2.setTypes();
+        if (this.op1.type instanceof NumberType && this.op2.type instanceof NumberType) {
+            switch (this.operator) {
                 case "+":
-                    return t1.add(t2);
+                    this.type = this.op1.type.add(this.op2.type);
+                    break;
                 case "-":
-                    return t1.sub(t2);
+                    this.type = this.op1.type.sub(this.op2.type);
+                    break;
                 default:
                     throw new Error("Unimplemented");
             }
         } else {
-            throw new Error(`Can only add/substract number values at ${this.context.lex.lineColumn(this.position)} (${t1.name}, ${t2.name})`);
+            throw new Error(
+                `Can only add/substract number values at ${this.context.lex.lineColumn(this.position)} (${this.op1.type.name}, ${this.op2.type.name})`
+            );
         }
     }
 
     toString() {
-        return `${this.op1} ${this.type ? "+" : "-"} ${this.op2}`;
+        return `${this.op1} ${this.operator ? "+" : "-"} ${this.op2}`;
     }
 }
 
@@ -136,11 +146,11 @@ export class ReferenceToken extends Token {
         super(context, position);
     }
 
-    resultingType(): Type {
+    setTypes(): void {
         if (!this.context.vars.has(this.varName)) {
             throw new Error(`Unknown var '${this.varName}' at ${this.context.lex.lineColumn(this.position)}`);
         } else {
-            return this.context.vars.get(this.varName)!.type;
+            this.type = this.context.vars.get(this.varName)!.type;
         }
     }
 
@@ -170,8 +180,8 @@ export class ValueToken extends Token {
         super(context, position);
     }
 
-    resultingType(): Type {
-        return new IntType(parseInt(this.value));
+    setTypes(): void {
+        this.type = new IntType(parseInt(this.value));
     }
 
     toString() {
@@ -202,29 +212,27 @@ export class AssignmentToken extends Token {
         super(context, position);
     }
 
-    resultingType(): Type {
-        let type = this.value.resultingType();
+    setTypes(): void {
+        this.value.setTypes();
         if (this.context.vars.has(this.varName)) {
             let v = this.context.vars.get(this.varName)!;
             // isAssignable(type, v.type)
             if (v instanceof VoidType) throw new Error(`Cannot assign void to ${v.type} at ${this.context.lex.lineColumn(this.position)}`);
 
-            if (v.type instanceof NumberType) {
-                v.type.constantValue = undefined;
-            }
+            // Update type, can contain new constant value
+            v.type = this.value.type;
         } else {
             let location = this.context.currentVarLocation;
-            this.context.currentVarLocation += type.size;
+            this.context.currentVarLocation += this.value.type.size;
             this.context.vars.set(this.varName, {
                 location,
                 name: this.varName,
                 static: this.isStatic,
-                type: type,
+                type: this.value.type,
             });
         }
-        return type;
+        this.type = this.value.type;
     }
-
     toString() {
         return `var:${this.varName} = ${this.value}`;
     }
@@ -265,9 +273,9 @@ export class BlockToken extends Token {
         super(context, position);
     }
 
-    resultingType(): Type {
-        this.statements.forEach((e) => e.resultingType());
-        return VOID;
+    setTypes(): void {
+        this.statements.forEach((e) => e.setTypes());
+        this.type = VOID;
     }
 
     toString() {

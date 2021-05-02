@@ -41,7 +41,7 @@ async function compile(input: string) {
     let context = new CompilerContext(input);
 
     let res = expectBlock(context);
-    res.resultingType();
+    res.setTypes();
     console.log(res);
     console.log(res.context.vars);
 
