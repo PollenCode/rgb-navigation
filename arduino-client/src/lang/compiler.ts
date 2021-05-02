@@ -2,7 +2,7 @@ require("dotenv").config();
 import fs from "fs/promises";
 import debug from "debug";
 import { Lexer } from "./lexer";
-import { expectBlock } from "./token";
+import { BuiltinType, expectBlock } from "./token";
 
 const logger = debug("rgb:lang");
 
@@ -14,7 +14,7 @@ async function compileFile(fileName: string) {
 interface Variable {
     static: boolean;
     name: string;
-    type: "int";
+    type: BuiltinType;
 }
 
 export class CompilerContext {

@@ -1,12 +1,19 @@
 import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
 
+export type BuiltinType = "int" | "float" | "void";
+
 export interface Token {
     toString(): string;
+    resultingType(context: CompilerContext): BuiltinType;
 }
 
 export class MulToken implements Token {
-    constructor(public op1: any, public op2: any, public type: "%" | "/" | "*") {}
+    constructor(public op1: Token, public op2: Token, public type: "%" | "/" | "*") {}
+
+    resultingType(context: CompilerContext): BuiltinType {
+        return this.op1.resultingType(context) === "float" || this.op2.resultingType(context) === "float" ? "float" : "int";
+    }
 
     toString() {
         return `${this.op1} ${this.type} ${this.op2}`;
@@ -43,7 +50,11 @@ export function expectMul(c: CompilerContext): MulToken | ReferenceToken | Value
 }
 
 export class SumToken implements Token {
-    constructor(public op1: any, public op2: any, public type: "+" | "-") {}
+    constructor(public op1: Token, public op2: Token, public type: "+" | "-") {}
+
+    resultingType(context: CompilerContext): BuiltinType {
+        return this.op1.resultingType(context) === "float" || this.op2.resultingType(context) === "float" ? "float" : "int";
+    }
 
     toString() {
         return `${this.op1} ${this.type ? "+" : "-"} ${this.op2}`;
@@ -80,6 +91,10 @@ export function expectSum(c: CompilerContext): SumToken | MulToken | ReferenceTo
 export class ReferenceToken implements Token {
     constructor(public varName: string) {}
 
+    resultingType(context: CompilerContext): BuiltinType {
+        return context.vars.get(this.varName)!.type;
+    }
+
     toString() {
         return `var:${this.varName}`;
     }
@@ -104,6 +119,10 @@ export function expectReference(c: CompilerContext) {
 export class ValueToken implements Token {
     constructor(public value: string) {}
 
+    resultingType(context: CompilerContext): BuiltinType {
+        return "int";
+    }
+
     toString() {
         return `val:${this.value}`;
     }
@@ -126,7 +145,11 @@ export function expectValue(c: CompilerContext) {
 }
 
 export class AssignmentToken implements Token {
-    constructor(public varName: string, public value: any) {}
+    constructor(public varName: string, public value: Token) {}
+
+    resultingType(context: CompilerContext): BuiltinType {
+        return this.value.resultingType(context);
+    }
 
     toString() {
         return `var:${this.varName} = ${this.value}`;
@@ -160,11 +183,19 @@ export function expectAssignment(c: CompilerContext) {
 
     c.lex.readWhitespace();
 
+    let existing = c.vars.get(varName);
+    if (c.vars.has(varName)) {
+    }
+
     return new AssignmentToken(varName, value);
 }
 
 export class BlockToken implements Token {
     constructor(public statements: Token[]) {}
+
+    resultingType(context: CompilerContext): BuiltinType {
+        return "void";
+    }
 
     toString() {
         return this.statements.map((e) => e.toString()).join("\n");
