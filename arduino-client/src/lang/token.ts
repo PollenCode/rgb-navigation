@@ -1,84 +1,10 @@
-require("dotenv").config();
-import fs from "fs/promises";
-import debug from "debug";
+import { Lexer } from "./lexer";
 
-const WHITESPACE = "\n\r\t ";
-const SYMBOL = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
-
-class Lexer {
-    buffer: string;
-    position: number = 0;
-
-    constructor(buffer: string) {
-        this.buffer = buffer;
-    }
-
-    read(allowed: string) {
-        let saved = [];
-        while (allowed.includes(this.buffer[this.position])) {
-            saved.push(this.buffer[this.position]);
-            this.position++;
-        }
-        return saved.join("");
-    }
-
-    readWhitespace() {
-        for (; ; this.position++) {
-            if (WHITESPACE.includes(this.buffer[this.position])) {
-                continue;
-            }
-            if (this.buffer[this.position] === "/" && this.buffer[this.position + 1] === "/") {
-                // Comment
-                this.position += 2;
-                while (this.buffer[this.position] !== "\n" && this.position < this.buffer.length) {
-                    this.position++;
-                }
-                continue;
-            }
-            break;
-        }
-    }
-
-    readSymbol() {
-        return this.read(SYMBOL);
-    }
-
-    lineColumn(position: number = this.position) {
-        let lines = this.buffer.split("\n");
-        for (let c = 0, l = 0, i = 0; l < lines.length; c++, i++) {
-            if (c >= lines[l].length) {
-                c = -1;
-                l++;
-            }
-            if (i >= position) {
-                return [l + 1, c + 1];
-            }
-        }
-        return [0, 0];
-    }
-
-    string(str: string) {
-        for (let i = 0; i < str.length; i++) {
-            if (this.buffer[this.position + i] !== str[i]) {
-                return false;
-            }
-        }
-        this.position += str.length;
-        return true;
-    }
-}
-
-const logger = debug("rgb:lang");
-
-async function compileFile(fileName: string) {
-    compile(await fs.readFile(fileName, "utf-8"));
-}
-
-interface Token {
+export interface Token {
     toString(): string;
 }
 
-class MulToken implements Token {
+export class MulToken implements Token {
     constructor(public op1: any, public op2: any, public type: "%" | "/" | "*") {}
 
     toString() {
@@ -86,7 +12,7 @@ class MulToken implements Token {
     }
 }
 
-function expectMul(lex: Lexer): MulToken | ReferenceToken | ValueToken | undefined {
+export function expectMul(lex: Lexer): MulToken | ReferenceToken | ValueToken | undefined {
     let save = lex.position;
     let operand1 = expectValue(lex);
     if (!operand1) {
@@ -115,7 +41,7 @@ function expectMul(lex: Lexer): MulToken | ReferenceToken | ValueToken | undefin
     return new MulToken(operand1, operand2, type);
 }
 
-class SumToken implements Token {
+export class SumToken implements Token {
     constructor(public op1: any, public op2: any, public type: "+" | "-") {}
 
     toString() {
@@ -123,7 +49,7 @@ class SumToken implements Token {
     }
 }
 
-function expectSum(lex: Lexer): SumToken | MulToken | ReferenceToken | ValueToken | undefined {
+export function expectSum(lex: Lexer): SumToken | MulToken | ReferenceToken | ValueToken | undefined {
     let save = lex.position;
     let operand1 = expectMul(lex);
     if (!operand1) {
@@ -150,7 +76,7 @@ function expectSum(lex: Lexer): SumToken | MulToken | ReferenceToken | ValueToke
     return new SumToken(operand1, operand2, type);
 }
 
-class ReferenceToken implements Token {
+export class ReferenceToken implements Token {
     constructor(public varName: string) {}
 
     toString() {
@@ -158,7 +84,7 @@ class ReferenceToken implements Token {
     }
 }
 
-function expectReference(lex: Lexer) {
+export function expectReference(lex: Lexer) {
     let save = lex.position;
 
     let isStatic = lex.string("#");
@@ -174,7 +100,7 @@ function expectReference(lex: Lexer) {
     return new ReferenceToken(varName);
 }
 
-class ValueToken implements Token {
+export class ValueToken implements Token {
     constructor(public value: string) {}
 
     toString() {
@@ -182,7 +108,7 @@ class ValueToken implements Token {
     }
 }
 
-function expectValue(lex: Lexer) {
+export function expectValue(lex: Lexer) {
     let ref = expectReference(lex);
     if (ref) {
         return ref;
@@ -198,7 +124,7 @@ function expectValue(lex: Lexer) {
     return new ValueToken(value);
 }
 
-class AssignmentToken implements Token {
+export class AssignmentToken implements Token {
     constructor(public varName: string, public value: any) {}
 
     toString() {
@@ -206,7 +132,7 @@ class AssignmentToken implements Token {
     }
 }
 
-function expectAssignment(lex: Lexer) {
+export function expectAssignment(lex: Lexer) {
     let save = lex.position;
 
     let isStatic = lex.string("#");
@@ -236,7 +162,7 @@ function expectAssignment(lex: Lexer) {
     return new AssignmentToken(varName, value);
 }
 
-class BlockToken implements Token {
+export class BlockToken implements Token {
     constructor(public statements: Token[]) {}
 
     toString() {
@@ -244,7 +170,7 @@ class BlockToken implements Token {
     }
 }
 
-function expectBlock(lex: Lexer) {
+export function expectBlock(lex: Lexer) {
     let statements: Token[] = [];
 
     while (lex.position < lex.buffer.length) {
@@ -259,22 +185,3 @@ function expectBlock(lex: Lexer) {
 
     return new BlockToken(statements);
 }
-
-async function compile(input: string) {
-    // input = await preprocess(input);
-
-    let lex = new Lexer(input);
-    lex.readWhitespace();
-
-    let res = expectBlock(lex);
-    console.log(res);
-    console.log(res.toString());
-
-    // logger(lex.readWhitespace().length);
-    // logger(lex.string("#number"));
-    // lex.readWhitespace();
-    // logger(lex.string("="));
-    // logger(lex.readSymbol());
-}
-
-compileFile("src/input.rgb");
