@@ -2,7 +2,8 @@ require("dotenv").config();
 import fs from "fs/promises";
 import debug from "debug";
 import { Lexer } from "./lexer";
-import { BuiltinType, expectBlock } from "./token";
+import { expectBlock } from "./token";
+import { Type } from "./types";
 
 const logger = debug("rgb:lang");
 
@@ -14,11 +15,13 @@ async function compileFile(fileName: string) {
 interface Variable {
     static: boolean;
     name: string;
-    type: BuiltinType;
+    type: Type;
+    location: number;
 }
 
 export class CompilerContext {
     lex: Lexer;
+    currentVarLocation: number = 0;
     vars: Map<string, Variable>;
 
     constructor(input: string) {

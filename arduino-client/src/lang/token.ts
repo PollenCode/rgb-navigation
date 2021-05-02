@@ -1,7 +1,6 @@
 import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
-
-export type BuiltinType = "int" | "float" | "void";
+import { Type, VOID, INT, FLOAT, VoidType } from "./types";
 
 export abstract class Token {
     readonly context: CompilerContext;
@@ -13,7 +12,7 @@ export abstract class Token {
     }
 
     abstract toString(): string;
-    abstract resultingType(): BuiltinType;
+    abstract resultingType(): Type;
 }
 
 export class MulToken extends Token {
@@ -21,8 +20,9 @@ export class MulToken extends Token {
         super(context, position);
     }
 
-    resultingType(): BuiltinType {
-        return this.op1.resultingType() === "float" || this.op2.resultingType() === "float" ? "float" : "int";
+    resultingType(): Type {
+        if (this.op1.resultingType().name === "float" || this.op2.resultingType().name === "float") return FLOAT;
+        else return INT;
     }
 
     toString() {
@@ -64,8 +64,9 @@ export class SumToken extends Token {
         super(context, position);
     }
 
-    resultingType(): BuiltinType {
-        return this.op1.resultingType() === "float" || this.op2.resultingType() === "float" ? "float" : "int";
+    resultingType(): Type {
+        if (this.op1.resultingType().name === "float" || this.op2.resultingType().name === "float") return FLOAT;
+        else return INT;
     }
 
     toString() {
@@ -105,7 +106,7 @@ export class ReferenceToken extends Token {
         super(context, position);
     }
 
-    resultingType(): BuiltinType {
+    resultingType(): Type {
         if (!this.context.vars.has(this.varName)) {
             throw new Error(`Unknown var '${this.varName}' at ${this.context.lex.lineColumn(this.position)}`);
         } else {
@@ -139,8 +140,8 @@ export class ValueToken extends Token {
         super(context, position);
     }
 
-    resultingType(): BuiltinType {
-        return "int";
+    resultingType(): Type {
+        return INT;
     }
 
     toString() {
@@ -171,14 +172,17 @@ export class AssignmentToken extends Token {
         super(context, position);
     }
 
-    resultingType(): BuiltinType {
+    resultingType(): Type {
         let type = this.value.resultingType();
         if (this.context.vars.has(this.varName)) {
             let v = this.context.vars.get(this.varName)!;
             // isAssignable(type, v.type)
-            if (type === "void") throw new Error(`Cannot assign void to ${v.type} at ${this.context.lex.lineColumn(this.position)}`);
+            if (v instanceof VoidType) throw new Error(`Cannot assign void to ${v.type} at ${this.context.lex.lineColumn(this.position)}`);
         } else {
-            this.context.vars.set(this.varName, { name: this.varName, static: this.isStatic, type: type });
+            let size = 4;
+            let location = this.context.currentVarLocation;
+            this.context.currentVarLocation += size;
+            this.context.vars.set(this.varName, { location, name: this.varName, static: this.isStatic, type: type });
         }
         return type;
     }
@@ -223,9 +227,9 @@ export class BlockToken extends Token {
         super(context, position);
     }
 
-    resultingType(): BuiltinType {
+    resultingType(): Type {
         this.statements.forEach((e) => e.resultingType());
-        return "void";
+        return VOID;
     }
 
     toString() {
