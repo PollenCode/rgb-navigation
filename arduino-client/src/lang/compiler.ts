@@ -4,7 +4,7 @@ import debug from "debug";
 import { Lexer } from "./lexer";
 import { expectBlock } from "./token";
 import { Type } from "./types";
-import { BinaryWriter } from "./target";
+import { BinaryWriter, CodeWriter } from "./target";
 
 const logger = debug("rgb:lang");
 
@@ -43,8 +43,8 @@ async function compile(input: string) {
     let res = expectBlock(context);
     res.resultingType();
     console.log(res);
-    console.log(res.toString());
-    console.log(context.vars);
+    // console.log(res.toString());
+    // console.log(context.vars);
 
     // logger(lex.readWhitespace().length);
     // logger(lex.string("#number"));
@@ -55,10 +55,8 @@ async function compile(input: string) {
 
 compileFile("src/input.rgb");
 
-let writer = new BinaryWriter(2);
-writer.write(0x10);
-writer.write(0x20);
-writer.write(0x30);
-writer.write(0x40);
-writer.write(0x50);
-console.log(writer.buffer.toString("hex"));
+let code = new CodeWriter(1);
+
+code.addConst16(0xff, 56);
+
+logger(code.buffer.toString("hex"));
