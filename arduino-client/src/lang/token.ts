@@ -3,16 +3,26 @@ import { Lexer } from "./lexer";
 
 export type BuiltinType = "int" | "float" | "void";
 
-export interface Token {
-    toString(): string;
-    resultingType(context: CompilerContext): BuiltinType;
+export abstract class Token {
+    readonly context: CompilerContext;
+    readonly position: number;
+
+    constructor(context: CompilerContext, position: number) {
+        this.context = context;
+        this.position = position;
+    }
+
+    abstract toString(): string;
+    abstract resultingType(): BuiltinType;
 }
 
-export class MulToken implements Token {
-    constructor(public op1: Token, public op2: Token, public type: "%" | "/" | "*") {}
+export class MulToken extends Token {
+    constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public type: "%" | "/" | "*") {
+        super(context, position);
+    }
 
-    resultingType(context: CompilerContext): BuiltinType {
-        return this.op1.resultingType(context) === "float" || this.op2.resultingType(context) === "float" ? "float" : "int";
+    resultingType(): BuiltinType {
+        return this.op1.resultingType() === "float" || this.op2.resultingType() === "float" ? "float" : "int";
     }
 
     toString() {
@@ -21,10 +31,10 @@ export class MulToken implements Token {
 }
 
 export function expectMul(c: CompilerContext): MulToken | ReferenceToken | ValueToken | undefined {
-    let save = c.lex.position;
+    let position = c.lex.position;
     let operand1 = expectValue(c);
     if (!operand1) {
-        c.lex.position = save;
+        c.lex.position = position;
         return;
     }
 
@@ -46,14 +56,16 @@ export function expectMul(c: CompilerContext): MulToken | ReferenceToken | Value
         throw new Error(`Expected second operand for sum at ${c.lex.lineColumn()}`);
     }
 
-    return new MulToken(operand1, operand2, type);
+    return new MulToken(c, position, operand1, operand2, type);
 }
 
-export class SumToken implements Token {
-    constructor(public op1: Token, public op2: Token, public type: "+" | "-") {}
+export class SumToken extends Token {
+    constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public type: "+" | "-") {
+        super(context, position);
+    }
 
-    resultingType(context: CompilerContext): BuiltinType {
-        return this.op1.resultingType(context) === "float" || this.op2.resultingType(context) === "float" ? "float" : "int";
+    resultingType(): BuiltinType {
+        return this.op1.resultingType() === "float" || this.op2.resultingType() === "float" ? "float" : "int";
     }
 
     toString() {
@@ -62,10 +74,10 @@ export class SumToken implements Token {
 }
 
 export function expectSum(c: CompilerContext): SumToken | MulToken | ReferenceToken | ValueToken | undefined {
-    let save = c.lex.position;
+    let position = c.lex.position;
     let operand1 = expectMul(c);
     if (!operand1) {
-        c.lex.position = save;
+        c.lex.position = position;
         return;
     }
 
@@ -85,14 +97,16 @@ export function expectSum(c: CompilerContext): SumToken | MulToken | ReferenceTo
         throw new Error(`Expected second operand for sum at ${c.lex.lineColumn()}`);
     }
 
-    return new SumToken(operand1, operand2, type);
+    return new SumToken(c, position, operand1, operand2, type);
 }
 
-export class ReferenceToken implements Token {
-    constructor(public varName: string) {}
+export class ReferenceToken extends Token {
+    constructor(context: CompilerContext, position: number, public varName: string) {
+        super(context, position);
+    }
 
-    resultingType(context: CompilerContext): BuiltinType {
-        return context.vars.get(this.varName)!.type;
+    resultingType(): BuiltinType {
+        return this.context.vars.get(this.varName)!.type;
     }
 
     toString() {
@@ -101,25 +115,27 @@ export class ReferenceToken implements Token {
 }
 
 export function expectReference(c: CompilerContext) {
-    let save = c.lex.position;
+    let position = c.lex.position;
 
     let isStatic = c.lex.string("#");
 
     let varName = c.lex.readSymbol();
     if (!varName || "0123456789".includes(varName[0])) {
-        c.lex.position = save;
+        c.lex.position = position;
         return;
     }
 
     c.lex.readWhitespace();
 
-    return new ReferenceToken(varName);
+    return new ReferenceToken(c, position, varName);
 }
 
-export class ValueToken implements Token {
-    constructor(public value: string) {}
+export class ValueToken extends Token {
+    constructor(context: CompilerContext, position: number, public value: string) {
+        super(context, position);
+    }
 
-    resultingType(context: CompilerContext): BuiltinType {
+    resultingType(): BuiltinType {
         return "int";
     }
 
@@ -134,21 +150,25 @@ export function expectValue(c: CompilerContext) {
         return ref;
     }
 
+    let position = c.lex.position;
     let value = c.lex.read("0123456789");
     if (!value) {
+        c.lex.position = position;
         return;
     }
 
     c.lex.readWhitespace();
 
-    return new ValueToken(value);
+    return new ValueToken(c, position, value);
 }
 
-export class AssignmentToken implements Token {
-    constructor(public varName: string, public value: Token) {}
+export class AssignmentToken extends Token {
+    constructor(context: CompilerContext, position: number, public varName: string, public value: Token) {
+        super(context, position);
+    }
 
-    resultingType(context: CompilerContext): BuiltinType {
-        return this.value.resultingType(context);
+    resultingType(): BuiltinType {
+        return this.value.resultingType();
     }
 
     toString() {
@@ -157,20 +177,20 @@ export class AssignmentToken implements Token {
 }
 
 export function expectAssignment(c: CompilerContext) {
-    let save = c.lex.position;
+    let position = c.lex.position;
 
     let isStatic = c.lex.string("#");
 
     let varName = c.lex.readSymbol();
     if (!varName) {
-        c.lex.position = save;
+        c.lex.position = position;
         return;
     }
 
     c.lex.readWhitespace();
 
     if (!c.lex.string("=")) {
-        c.lex.position = save;
+        c.lex.position = position;
         return;
     }
 
@@ -187,13 +207,15 @@ export function expectAssignment(c: CompilerContext) {
     if (c.vars.has(varName)) {
     }
 
-    return new AssignmentToken(varName, value);
+    return new AssignmentToken(c, position, varName, value);
 }
 
-export class BlockToken implements Token {
-    constructor(public statements: Token[]) {}
+export class BlockToken extends Token {
+    constructor(context: CompilerContext, position: number, public statements: Token[]) {
+        super(context, position);
+    }
 
-    resultingType(context: CompilerContext): BuiltinType {
+    resultingType(): BuiltinType {
         return "void";
     }
 
@@ -203,6 +225,7 @@ export class BlockToken implements Token {
 }
 
 export function expectBlock(c: CompilerContext) {
+    let position = c.lex.position;
     let statements: Token[] = [];
 
     while (c.lex.position < c.lex.buffer.length) {
@@ -215,5 +238,5 @@ export function expectBlock(c: CompilerContext) {
         c.lex.readWhitespace();
     }
 
-    return new BlockToken(statements);
+    return new BlockToken(c, position, statements);
 }
