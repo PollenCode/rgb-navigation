@@ -8,5 +8,4 @@ admin users
 validation
 responsive adminpanel
 dark theme
-save current idle effect in eeprom
 limit only one arduino build at a time
