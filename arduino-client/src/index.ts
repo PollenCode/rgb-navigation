@@ -79,7 +79,7 @@ async function processMessage(data: LedControllerServerMessage) {
             arduino.sendEffect(data.effect);
             break;
         case "enableLine":
-            arduino.sendEnableLine(0, data.r, data.g, data.b, data.startLed, data.endLed, data.duration);
+            arduino.sendEnableLine(1, data.r, data.g, data.b, data.startLed, data.endLed, data.duration);
             break;
         case "roomEffect":
             arduino.sendRoom(1, data.room);
