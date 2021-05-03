@@ -26,6 +26,10 @@ export function Routes() {
             } else {
                 localStorage.removeItem("s");
             }
+
+            if (!token) {
+                window.location.href = serverPath + "/api/oauth";
+            }
         }
 
         client.on("auth", onAuth);
@@ -37,7 +41,7 @@ export function Routes() {
             client.setAccessToken(localStorage.getItem("s")!);
         } else {
             // Redirect to oauth
-            window.location.href = serverPath;
+            window.location.href = serverPath + "/api/oauth";
         }
 
         return () => {
@@ -46,7 +50,7 @@ export function Routes() {
     }, []);
 
     if (!user) {
-        return <p>logged out, refresh the page to log in</p>;
+        return null;
     }
 
     return (

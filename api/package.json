@@ -2,6 +2,7 @@
   "name": "rgb-navigation-api",
   "version": "1.0.0",
   "main": "dist/index.js",
+  "repository": "PollenCode/rgb-navigation",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^15.0.0",

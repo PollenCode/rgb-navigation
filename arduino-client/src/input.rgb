@@ -1,0 +1,7 @@
+
+// i bevat de hoeveelste led
+// max bevat de max led
+// ledstrip descriptor language f
+//
+
+i = ((1) ? (5 - 10 * 10) : (10))

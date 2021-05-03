@@ -3,7 +3,7 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { ArduinoBuildMessage, LedControllerServerMessage } from "./message";
 
 export const isDevelopment = process.env.NODE_ENV === "development";
-export const serverPath = isDevelopment ? "http://localhost:3001" : "";
+export const serverPath = isDevelopment ? "http://localhost:3001" : "https://rgb.ikdoeict.be";
 
 export interface User {
     id: string;
