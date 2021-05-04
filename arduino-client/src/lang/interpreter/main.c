@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#undef DEBUG
+
 enum OpCode
 {
     Noop = 0x00,
@@ -10,7 +12,7 @@ enum OpCode
     Push8 = 0x03,
     Push16 = 0x04,
     Push32 = 0x05,
-    PopVoid = 0x06,
+    Dup = 0x06,
     Swap = 0x07,
     Add = 0x10,
     Sub = 0x11,
@@ -19,6 +21,7 @@ enum OpCode
     Mod = 0x14,
     Inv = 0x15,
     Abs = 0x16,
+    Out = 0xA0,
 };
 
 int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
@@ -42,26 +45,38 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
                 printf("stackoverflow\n");
                 return -1;
             }
+#ifdef DEBUG
             printf("push %d\n", addr);
+#endif
             break;
         }
         case Pop:
         {
             unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
             *(int *)(mem + addr) = *(int *)(mem + stackPointer);
+#ifdef DEBUG
             printf("pop %d\n", addr);
+#endif
             stackPointer += 4;
             break;
         }
-        case PopVoid:
-            printf("popvoid\n");
+        case Dup:
+        {
+            stackPointer -= 4;
+            *(int *)(mem + stackPointer) = *(int *)(mem + stackPointer + 4);
+#ifdef DEBUG
+            printf("dup\n");
+#endif
             break;
+        }
         case Push8:
         {
             char val = mem[exePointer++];
             stackPointer -= 4;
             *(char *)(mem + stackPointer) = val;
+#ifdef DEBUG
             printf("pushconst8 %d\n", val);
+#endif
             break;
         }
         case Push16:
@@ -69,7 +84,9 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
             short val = mem[exePointer++] | (mem[exePointer++] << 8);
             stackPointer -= 4;
             *(short *)(mem + stackPointer) = val;
+#ifdef DEBUG
             printf("pushconst16 %d\n", val);
+#endif
             break;
         }
         case Push32:
@@ -77,52 +94,78 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
             int val = mem[exePointer++] | (mem[exePointer++] << 8) | (mem[exePointer++] << 16) | (mem[exePointer++] << 24);
             stackPointer -= 4;
             *(int *)(mem + stackPointer) = val;
+#ifdef DEBUG
             printf("pushconst32 %d\n", val);
+#endif
             break;
         }
         case Swap:
+        {
+            int temp = *(int *)(mem + stackPointer + 4);
+            *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer);
+            *(int *)(mem + stackPointer) = temp;
+#ifdef DEBUG
             printf("swap\n");
+#endif
             break;
+        }
         case Add:
             *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) + *(int *)(mem + stackPointer);
             stackPointer += 4;
+#ifdef DEBUG
             printf("add\n");
+#endif
             break;
         case Sub:
             *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) - *(int *)(mem + stackPointer);
             stackPointer += 4;
+#ifdef DEBUG
             printf("sub\n");
+#endif
             break;
         case Mul:
             *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) * *(int *)(mem + stackPointer);
             stackPointer += 4;
+#ifdef DEBUG
             printf("mul\n");
+#endif
             break;
         case Div:
             *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) / *(int *)(mem + stackPointer);
             stackPointer += 4;
+#ifdef DEBUG
             printf("div\n");
+#endif
             break;
         case Mod:
             *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) % *(int *)(mem + stackPointer);
             stackPointer += 4;
+#ifdef DEBUG
             printf("mod\n");
+#endif
             break;
         case Inv:
             *(int *)(mem + stackPointer) = -(*(int *)(mem + stackPointer + 4));
+#ifdef DEBUG
             printf("inv\n");
+#endif
             break;
         case Abs:
         {
             int val = *(int *)(mem + stackPointer);
             *(int *)(mem + stackPointer) = val < 0 ? -val : val;
+#ifdef DEBUG
             printf("abs\n");
+#endif
             break;
         }
+        case Out:
+            putchar(mem[stackPointer++]);
+            break;
 
         default:
             printf("unknown opcode %d\n", op);
-            break;
+            return -2;
         }
     }
     return 0;
@@ -141,8 +184,6 @@ int main()
     int codeSize = ftell(fd);
     fseek(fd, 0, SEEK_SET);
 
-    printf("file size %d\n", codeSize);
-
     unsigned char *mem = (unsigned char *)malloc(65536);
     memset(mem, 65536, 0);
 
@@ -153,9 +194,12 @@ int main()
 
     fclose(fd);
 
-    printf("interpreting\n");
-    int res = run(mem, codeSize, 32);
-    printf("result = %d\n", res);
+    int res = run(mem, codeSize, 12);
+
+    if (res)
+        printf("program exited with non-zero exit code %d\n", res);
+
+    printf("---- relevant memory ----\n");
 
     for (int i = 0; i < 40; i += 4)
     {

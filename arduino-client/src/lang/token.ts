@@ -16,7 +16,7 @@ export abstract class Token {
     abstract toString(): string;
     abstract setTypes(): void;
 
-    emit(target: CodeWriter): void {}
+    emit(target: CodeWriter, isRoot = false): void {}
 }
 
 function expectBrackets(c: CompilerContext): Token | undefined {
@@ -389,11 +389,14 @@ export class AssignmentToken extends Token {
         return `var:${this.varName} = ${this.value}`;
     }
 
-    emit(code: CodeWriter) {
+    emit(code: CodeWriter, isRoot: boolean) {
         if (!(this.value.type instanceof IntType && this.value.type.constantValue !== undefined)) {
             this.value.emit(code);
             let address = this.context.vars.get(this.varName)!.location;
             code.pop(address);
+            if (!isRoot) {
+                code.dup();
+            }
         }
     }
 }
@@ -443,7 +446,7 @@ export class BlockToken extends Token {
     }
 
     emit(code: CodeWriter) {
-        this.statements.forEach((e) => e.emit(code));
+        this.statements.forEach((e) => e.emit(code, true));
     }
 }
 
@@ -452,7 +455,7 @@ export function expectBlock(c: CompilerContext) {
     let statements: Token[] = [];
 
     while (c.lex.position < c.lex.buffer.length) {
-        let s = expectAssignment(c);
+        let s = expectOut(c) || expectAssignment(c);
         if (!s) {
             throw new Error(`Expected statement at ${c.lex.lineColumn()}`);
         }
@@ -462,4 +465,40 @@ export function expectBlock(c: CompilerContext) {
     }
 
     return new BlockToken(c, position, statements);
+}
+
+export class OutToken extends Token {
+    constructor(context: CompilerContext, position: number, public value: Token) {
+        super(context, position);
+    }
+
+    toString(): string {
+        return `out ${this.value.toString()}`;
+    }
+    setTypes(): void {
+        this.value.setTypes();
+        this.type = this.value.type;
+    }
+
+    emit(code: CodeWriter, isRoot: boolean) {
+        this.value.emit(code);
+        code.out();
+        if (!isRoot) {
+            code.dup();
+        }
+    }
+}
+
+export function expectOut(c: CompilerContext) {
+    if (!c.lex.string("out ")) {
+        return;
+    }
+
+    let position = c.lex.position;
+    let op = expectTernary(c) || expectBrackets(c);
+    if (!op) {
+        throw new Error(`Expected operand for out statement at ${c.lex.lineColumn()}`);
+    }
+
+    return new OutToken(c, position, op);
 }
