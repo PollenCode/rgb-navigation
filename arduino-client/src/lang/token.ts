@@ -137,7 +137,9 @@ export class MulToken extends Token {
     }
 
     emit(code: CodeWriter) {
-        if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
+        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+            code.pushConst(this.type.constantValue);
+        } else if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
             if (this.op1.type.constantValue !== undefined) {
                 code.pushConst(this.op1.type.constantValue);
             } else {
@@ -225,7 +227,9 @@ export class SumToken extends Token {
     }
 
     emit(code: CodeWriter) {
-        if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
+        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+            code.pushConst(this.type.constantValue);
+        } else if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
             if (this.op1.type.constantValue !== undefined) {
                 code.pushConst(this.op1.type.constantValue);
             } else {

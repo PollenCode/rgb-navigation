@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #undef DEBUG
 
@@ -194,7 +195,19 @@ int main()
 
     fclose(fd);
 
-    int res = run(mem, codeSize, 12);
+    struct timespec tstart = {0, 0}, tend = {0, 0};
+    clock_gettime(CLOCK_MONOTONIC, &tstart);
+
+    int res;
+    for (int i = 0; i < 300; i++)
+    {
+        res = run(mem, codeSize, 16);
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &tend);
+    printf("done, took about %.5f seconds\n",
+           ((double)tend.tv_sec + 1.0e-9 * tend.tv_nsec) -
+               ((double)tstart.tv_sec + 1.0e-9 * tstart.tv_nsec));
 
     if (res)
         printf("program exited with non-zero exit code %d\n", res);
