@@ -295,8 +295,12 @@ export class ReferenceToken extends Token {
     }
 
     emit(code: CodeWriter): void {
-        let address = this.context.vars.get(this.varName)!.location;
-        code.push(address);
+        if (this.type instanceof IntType && this.type.constantValue !== undefined) {
+            code.pushConst(this.type.constantValue!);
+        } else {
+            let address = this.context.vars.get(this.varName)!.location;
+            code.push(address);
+        }
     }
 }
 
@@ -317,12 +321,12 @@ export function expectReference(c: CompilerContext) {
 }
 
 export class ValueToken extends Token {
-    constructor(context: CompilerContext, position: number, public value: string) {
+    constructor(context: CompilerContext, position: number, public value: string, public noInlining: boolean) {
         super(context, position);
     }
 
     setTypes(): void {
-        this.type = new IntType(parseInt(this.value));
+        this.type = new IntType(this.noInlining ? undefined : parseInt(this.value));
     }
 
     toString() {
@@ -335,21 +339,23 @@ export class ValueToken extends Token {
 }
 
 export function expectValue(c: CompilerContext) {
+    let position = c.lex.position;
     let ref = expectReference(c);
     if (ref) {
         return ref;
     }
 
-    let position = c.lex.position;
     let value = c.lex.read("0123456789");
     if (!value) {
         c.lex.position = position;
         return;
     }
 
+    let noInlining = c.lex.string("?");
+
     c.lex.readWhitespace();
 
-    return new ValueToken(c, position, value);
+    return new ValueToken(c, position, value, noInlining);
 }
 
 export class AssignmentToken extends Token {
@@ -384,9 +390,13 @@ export class AssignmentToken extends Token {
     }
 
     emit(code: CodeWriter) {
-        this.value.emit(code);
-        let address = this.context.vars.get(this.varName)!.location;
-        code.pop(address);
+        if (!(this.value.type instanceof IntType && this.value.type.constantValue !== undefined)) {
+            this.value.emit(code);
+            let address = this.context.vars.get(this.varName)!.location;
+            code.pop(address);
+        } else {
+            console.log(this.varName, "is constant", this.value.type);
+        }
     }
 }
 
