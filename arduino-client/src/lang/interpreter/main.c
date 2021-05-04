@@ -154,7 +154,7 @@ int main()
     fclose(fd);
 
     printf("interpreting\n");
-    int res = run(mem, codeSize, 20);
+    int res = run(mem, codeSize, 32);
     printf("result = %d\n", res);
 
     for (int i = 0; i < 40; i += 4)

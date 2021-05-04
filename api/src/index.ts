@@ -1,3 +1,4 @@
+import { throws } from "assert/strict";
 import io from "socket.io-client";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { ArduinoBuildMessage, LedControllerServerMessage } from "./message";
@@ -14,6 +15,17 @@ export interface User {
 
 interface Events {
     auth: (auth: User | undefined, accessToken: string | undefined) => void;
+}
+
+
+    
+function hexToRgb(hex: any) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+    } : 0;
 }
 
 export class RGBClient extends TypedEmitter<Events> {
@@ -118,6 +130,25 @@ export class RGBClient extends TypedEmitter<Events> {
     public async emitArduinoBuild(message: ArduinoBuildMessage) {
         this.socket.emit("arduinoBuild", message);
     }
+
+    public async ledController(startLed: number, endLed: number, duration: number, color:any){
+        let r : any = hexToRgb(color);
+        let req: LedControllerServerMessage = {
+            type: "enableLine",
+            duration: duration,
+            startLed: startLed,
+            endLed: endLed,
+            r: Number(hexToRgb(color)),
+            g: Number(hexToRgb(color)),
+            b: Number(hexToRgb(color)),
+        };
+        return await this.doFetch("/api/leds", "POST", req);
+    }
+
+    public async getToken() {
+        return await this.doFetch("/api/createToken", "GET");
+    }
+
 }
 
 export * from "./message";

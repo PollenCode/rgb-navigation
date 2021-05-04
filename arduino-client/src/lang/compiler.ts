@@ -75,9 +75,9 @@ async function compile(input: string) {
     // input = await preprocess(input);
 
     let context = new CompilerContext(input);
-    context.vars.set("r", { type: new IntType(0), location: 0, static: true, name: "r" });
-    context.vars.set("g", { type: new IntType(0), location: 4, static: true, name: "g" });
-    context.vars.set("b", { type: new IntType(0), location: 8, static: true, name: "b" });
+    context.vars.set("r", { type: new IntType(), location: 0, static: true, name: "r" });
+    context.vars.set("g", { type: new IntType(), location: 4, static: true, name: "g" });
+    context.vars.set("b", { type: new IntType(), location: 8, static: true, name: "b" });
     context.memorySize = 12;
 
     logger("parsing...");
