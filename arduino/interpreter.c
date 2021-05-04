@@ -36,6 +36,11 @@ enum OpCode
     Out = 0xA0,
 };
 
+// optimizations:
+// - push <addr:2> -> pushb <addr:1>
+// - pop <addr:2> -> popb <addr:1>
+// - instructions like add8
+
 int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 {
     unsigned short stackPointer = 700;

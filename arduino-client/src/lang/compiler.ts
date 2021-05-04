@@ -106,7 +106,7 @@ async function compile(input: string) {
     }
     console.log(parts.join(", "));
 
-    let outputFile = await fs.open("../rgb-lang/input.hex", "w");
+    let outputFile = await fs.open("../arduino/testing/input.hex", "w");
     outputFile.write(buffer);
     await outputFile.close();
 }
