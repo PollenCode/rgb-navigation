@@ -29,6 +29,9 @@ enum OpCode
     Mod = 0x14,
     Inv = 0x15,
     Abs = 0x16,
+    Jrnz = 0x20,
+    Jrz = 0x21,
+    Jr = 0x22,
     Out = 0xA0,
 };
 
@@ -51,7 +54,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #ifdef DEBUG
             printf("push %d\n", addr);
 #endif
-            break;
+            continue;
         }
         case Pop:
         {
@@ -61,7 +64,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
             printf("pop %d\n", addr);
 #endif
             stackPointer += sizeof(INT);
-            break;
+            continue;
         }
         case Push8:
         {
@@ -71,7 +74,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #ifdef DEBUG
             printf("pushconst8 %d\n", val);
 #endif
-            break;
+            continue;
         }
         case Push16:
         {
@@ -81,7 +84,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #ifdef DEBUG
             printf("pushconst16 %d\n", val);
 #endif
-            break;
+            continue;
         }
         case Push32:
         {
@@ -91,7 +94,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #ifdef DEBUG
             printf("pushconst32 %d\n", val);
 #endif
-            break;
+            continue;
         }
         case Dup:
         {
@@ -100,7 +103,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #ifdef DEBUG
             printf("dup\n");
 #endif
-            break;
+            continue;
         }
         case Swap:
         {
@@ -110,7 +113,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #ifdef DEBUG
             printf("swap\n");
 #endif
-            break;
+            continue;
         }
         case 0x08:
         case 0x09:
@@ -131,41 +134,41 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #ifdef DEBUG
             printf("add\n");
 #endif
-            break;
+            continue;
         case Sub:
             *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) - *(INT *)(mem + stackPointer);
             stackPointer += sizeof(INT);
 #ifdef DEBUG
             printf("sub\n");
 #endif
-            break;
+            continue;
         case Mul:
             *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) * *(INT *)(mem + stackPointer);
             stackPointer += sizeof(INT);
 #ifdef DEBUG
             printf("mul\n");
 #endif
-            break;
+            continue;
         case Div:
             *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) / *(INT *)(mem + stackPointer);
             stackPointer += sizeof(INT);
 #ifdef DEBUG
             printf("div\n");
 #endif
-            break;
+            continue;
         case Mod:
             *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) % *(INT *)(mem + stackPointer);
             stackPointer += sizeof(INT);
 #ifdef DEBUG
             printf("mod\n");
 #endif
-            break;
+            continue;
         case Inv:
             *(INT *)(mem + stackPointer) = -(*(INT *)(mem + stackPointer + sizeof(INT)));
 #ifdef DEBUG
             printf("inv\n");
 #endif
-            break;
+            continue;
         case Abs:
         {
             INT val = *(INT *)(mem + stackPointer);
@@ -173,8 +176,57 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #ifdef DEBUG
             printf("abs\n");
 #endif
-            break;
+            continue;
         }
+
+        case 0x17:
+        case 0x18:
+        case 0x19:
+        case 0x1A:
+        case 0x1B:
+        case 0x1C:
+        case 0x1D:
+        case 0x1E:
+        case 0x1F:
+            return EINVOP;
+
+        case Jrnz:
+        {
+            unsigned char rel = mem[exePointer++];
+#ifdef DEBUG
+            printf("jrnz %d\n", rel);
+#endif
+            if (*(INT *)(mem + stackPointer))
+            {
+                exePointer += rel;
+            }
+            stackPointer += sizeof(INT);
+            continue;
+        }
+
+        case Jrz:
+        {
+            unsigned char rel = mem[exePointer++];
+#ifdef DEBUG
+            printf("jrz %d\n", rel);
+#endif
+            if (!*(INT *)(mem + stackPointer))
+            {
+                exePointer += rel;
+            }
+            stackPointer += sizeof(INT);
+            continue;
+        }
+        case Jr:
+        {
+            unsigned char rel = mem[exePointer++];
+#ifdef DEBUG
+            printf("jr %d\n", rel);
+#endif
+            exePointer += rel;
+            continue;
+        }
+
             // case Out:
             //     // PRINT("out: ");
             //     // PRINTLN((int)mem[stackPointer++]);

@@ -1,8 +1,3 @@
-// i bevat de hoeveelste led
-// max bevat de max led
-// ledstrip descriptor language f
-//
-
 // vc = 10? % (5? + 0?)
 // vd = 10? % (5? + 1?)
 // ve = 10? % (5? + 2?)
@@ -11,8 +6,11 @@
 
 // out 400? - 345?
 
-time = counter / 5 + index * 5;
+// time = counter / 5 + index * 5;
 
-r = time % 256;
-g = 0;
-b = 255 - (time % 256);
+// r = time % 256;
+// g = 0;
+// b = 255 - (time % 256);
+
+time = counter ? 20 : 30;
+counter = counter + 1;

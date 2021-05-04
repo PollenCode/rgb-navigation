@@ -58,8 +58,10 @@ export enum OpCode {
     Mod = 0x14,
     Inv = 0x15,
     Abs = 0x16,
+    Jrnz = 0x20,
+    Jrz = 0x21,
+    Jr = 0x22,
     Out = 0xa0,
-    OutIndirect = 0xa1,
 }
 
 export class CodeWriter extends BinaryWriter {
@@ -139,12 +141,26 @@ export class CodeWriter extends BinaryWriter {
         logger("out");
         this.write8(OpCode.Out);
     }
-    outIndirect() {
-        logger("outindirect");
-        this.write8(OpCode.OutIndirect);
-    }
     halt() {
         logger("halt");
         this.write8(OpCode.Halt);
+    }
+    jrnz(offset: number) {
+        if (offset >= 127 || offset <= -128) throw new Error("Jump too far");
+        logger("jnz", offset);
+        this.write8(OpCode.Jrnz);
+        this.write8(offset);
+    }
+    jrz(offset: number) {
+        if (offset >= 127 || offset <= -128) throw new Error("Jump too far");
+        logger("jz", offset);
+        this.write8(OpCode.Jrz);
+        this.write8(offset);
+    }
+    jr(offset: number) {
+        if (offset >= 127 || offset <= -128) throw new Error("Jump too far");
+        logger("jr", offset);
+        this.write8(OpCode.Jr);
+        this.write8(offset);
     }
 }

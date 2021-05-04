@@ -58,11 +58,33 @@ export class TernaryToken extends Token {
         if (this.op.type instanceof NumberType && this.op.type.constantValue !== undefined) {
             this.type = this.op.type.constantValue ? this.trueOp.type : this.falseOp.type;
         } else {
-            this.type = this.trueOp.type;
+            this.type = new IntType();
         }
     }
-    emit() {
-        throw new Error("Ternary not emitted");
+    emit(code: CodeWriter) {
+        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+            code.pushConst(this.type.constantValue);
+            return;
+        }
+
+        this.op.emit(code);
+
+        let jrzLocation = code.position;
+        code.position += 2;
+
+        this.trueOp.emit(code);
+        let jrLocation = code.position;
+        code.position += 2;
+
+        let falseLocation = code.position;
+        this.falseOp.emit(code);
+
+        let save = code.position;
+        code.position = jrzLocation;
+        code.jrz(falseLocation - jrzLocation - 2);
+        code.position = jrLocation;
+        code.jr(save - jrLocation - 2);
+        code.position = save;
     }
 }
 
