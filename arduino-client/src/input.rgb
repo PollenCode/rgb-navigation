@@ -11,7 +11,7 @@
 
 // out 400? - 345?
 
-time = counter / 5;
+time = counter / 5 + index * 5;
 
 r = time % 256;
 g = 0;
