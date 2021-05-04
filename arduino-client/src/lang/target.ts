@@ -48,8 +48,9 @@ export enum OpCode {
     Push8 = 0x03,
     Push16 = 0x04,
     Push32 = 0x05,
-    PopVoid = 0x06,
+    Dup = 0x06,
     Swap = 0x07,
+    Halt = 0x0f,
     Add = 0x10,
     Sub = 0x11,
     Mul = 0x12,
@@ -57,6 +58,8 @@ export enum OpCode {
     Mod = 0x14,
     Inv = 0x15,
     Abs = 0x16,
+    Out = 0xa0,
+    OutIndirect = 0xa1,
 }
 
 export class CodeWriter extends BinaryWriter {
@@ -96,9 +99,9 @@ export class CodeWriter extends BinaryWriter {
         this.write8(OpCode.Push32);
         this.write32(num);
     }
-    popVoid() {
-        logger("popVoid");
-        this.write8(OpCode.PopVoid);
+    dup() {
+        logger("dup");
+        this.write8(OpCode.Dup);
     }
     swap() {
         logger("swap");
@@ -131,5 +134,17 @@ export class CodeWriter extends BinaryWriter {
     abs() {
         logger("abs");
         this.write8(OpCode.Abs);
+    }
+    out() {
+        logger("out");
+        this.write8(OpCode.Out);
+    }
+    outIndirect() {
+        logger("outindirect");
+        this.write8(OpCode.OutIndirect);
+    }
+    halt() {
+        logger("halt");
+        this.write8(OpCode.Halt);
     }
 }
