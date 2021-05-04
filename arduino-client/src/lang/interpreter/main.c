@@ -1,4 +1,4 @@
-#undef DEBUG
+// #define DEBUG
 
 #include <string.h>
 #include <stdio.h>

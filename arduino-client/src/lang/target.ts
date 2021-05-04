@@ -50,6 +50,7 @@ export enum OpCode {
     Push32 = 0x05,
     Dup = 0x06,
     Swap = 0x07,
+    Halt = 0x0f,
     Add = 0x10,
     Sub = 0x11,
     Mul = 0x12,
@@ -141,5 +142,9 @@ export class CodeWriter extends BinaryWriter {
     outIndirect() {
         logger("outindirect");
         this.write8(OpCode.OutIndirect);
+    }
+    halt() {
+        logger("halt");
+        this.write8(OpCode.Halt);
     }
 }

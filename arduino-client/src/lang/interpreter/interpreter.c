@@ -1,6 +1,3 @@
-
-#undef DEBUG
-
 #ifdef ARDUINO
 #define PUTCHAR Serial.write
 #else
@@ -18,6 +15,7 @@ enum OpCode
     Push32 = 0x05,
     Dup = 0x06,
     Swap = 0x07,
+    Halt = 0x0F,
     Add = 0x10,
     Sub = 0x11,
     Mul = 0x12,
@@ -39,6 +37,11 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
         {
         case Noop:
             break;
+        case Halt:
+#ifdef DEBUG
+            printf("halt\n");
+#endif
+            return 0;
         case Push:
         {
             unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);

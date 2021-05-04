@@ -64,6 +64,7 @@ export class CompilerContext {
     getCode() {
         let writer = new CodeWriter();
         this.root!.emit(writer, true);
+        writer.halt();
         return writer.buffer;
     }
 }
