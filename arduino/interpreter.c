@@ -1,13 +1,15 @@
 #include <stdint.h>
 
 #ifdef ARDUINO
-#define PUTCHAR Serial.write
-#define INT uint32_t
+#define INT int
 #else
 #include <stdio.h>
 #define PUTCHAR putchar
 #define INT uint32_t
 #endif
+
+#define EINVOP -2
+#define EOVERFLOW -1
 
 enum OpCode
 {
@@ -32,30 +34,20 @@ enum OpCode
 
 int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 {
-    unsigned short stackPointer = 65535;
+    unsigned short stackPointer = 700;
 
-    while (exePointer < size)
+    while (1)
     {
         unsigned char op = mem[exePointer++];
         switch (op)
         {
         case Noop:
-            break;
-        case Halt:
-#ifdef DEBUG
-            printf("halt\n");
-#endif
-            return 0;
+            continue;
         case Push:
         {
             unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
             stackPointer -= sizeof(INT);
             *(INT *)(mem + stackPointer) = *(INT *)(mem + addr);
-            if (stackPointer < 1000)
-            {
-                printf("stackoverflow\n");
-                return -1;
-            }
 #ifdef DEBUG
             printf("push %d\n", addr);
 #endif
@@ -69,15 +61,6 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
             printf("pop %d\n", addr);
 #endif
             stackPointer += sizeof(INT);
-            break;
-        }
-        case Dup:
-        {
-            stackPointer -= sizeof(INT);
-            *(INT *)(mem + stackPointer) = *(INT *)(mem + stackPointer + sizeof(INT));
-#ifdef DEBUG
-            printf("dup\n");
-#endif
             break;
         }
         case Push8:
@@ -110,6 +93,15 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #endif
             break;
         }
+        case Dup:
+        {
+            stackPointer -= sizeof(INT);
+            *(INT *)(mem + stackPointer) = *(INT *)(mem + stackPointer + sizeof(INT));
+#ifdef DEBUG
+            printf("dup\n");
+#endif
+            break;
+        }
         case Swap:
         {
             INT temp = *(INT *)(mem + stackPointer + sizeof(INT));
@@ -120,6 +112,19 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #endif
             break;
         }
+        case 0x08:
+        case 0x09:
+        case 0x0A:
+        case 0x0B:
+        case 0x0C:
+        case 0x0E:
+            return EINVOP;
+
+        case Halt:
+#ifdef DEBUG
+            printf("halt\n");
+#endif
+            return 0;
         case Add:
             *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) + *(INT *)(mem + stackPointer);
             stackPointer += sizeof(INT);
@@ -170,15 +175,17 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #endif
             break;
         }
-        case Out:
-            PUTCHAR(mem[stackPointer++]);
-            break;
+            // case Out:
+            //     // PRINT("out: ");
+            //     // PRINTLN((int)mem[stackPointer++]);
+            //     // PUTCHAR(mem[stackPointer++]);
+            //     break;
 
         default:
 #ifdef DEBUG
             printf("unknown opcode %d\n", op);
 #endif
-            return -2;
+            return EINVOP;
         }
     }
     return 0;

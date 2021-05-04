@@ -167,9 +167,9 @@ export class MulToken extends Token {
     }
 }
 
-export function expectMul(c: CompilerContext): MulToken | ReferenceToken | ValueToken | undefined {
+export function expectMul(c: CompilerContext): Token | undefined {
     let position = c.lex.position;
-    let operand1 = expectValue(c);
+    let operand1 = expectValue(c) || expectBrackets(c);
     if (!operand1) {
         c.lex.position = position;
         return;
@@ -394,14 +394,14 @@ export class AssignmentToken extends Token {
     }
 
     emit(code: CodeWriter, isRoot: boolean) {
-        if (!(this.value.type instanceof IntType && this.value.type.constantValue !== undefined)) {
-            this.value.emit(code);
-            let address = this.context.vars.get(this.varName)!.location;
-            code.pop(address);
-            if (!isRoot) {
-                code.dup();
-            }
+        // if (!(this.value.type instanceof IntType && this.value.type.constantValue !== undefined)) {
+        this.value.emit(code);
+        let address = this.context.vars.get(this.varName)!.location;
+        code.pop(address);
+        if (!isRoot) {
+            code.dup();
         }
+        // }
     }
 }
 

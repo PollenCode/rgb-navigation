@@ -1,7 +1,7 @@
 {
-    "sketch": "RGB-Navigation.ino",
+    "sketch": "arduino.ino",
     "programmer": "AVRISP mkII",
     "board": "arduino:avr:uno",
-    "port": "COM4",
+    "port": "/dev/ttyUSB0",
     "output": "output/"
 }

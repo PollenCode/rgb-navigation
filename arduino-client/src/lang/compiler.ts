@@ -76,10 +76,11 @@ async function compile(input: string) {
     // input = await preprocess(input);
 
     let context = new CompilerContext(input);
-    context.vars.set("i", { type: new IntType(), location: 0, static: true, name: "i" });
-    context.vars.set("r", { type: new IntType(), location: 4, static: true, name: "r" });
-    context.vars.set("g", { type: new IntType(), location: 8, static: true, name: "g" });
-    context.vars.set("b", { type: new IntType(), location: 12, static: true, name: "b" });
+    context.vars.set("index", { type: new IntType(), location: 0, static: true, name: "index" });
+    context.vars.set("counter", { type: new IntType(), location: 4, static: true, name: "counter" });
+    context.vars.set("r", { type: new IntType(), location: 8, static: true, name: "r" });
+    context.vars.set("g", { type: new IntType(), location: 12, static: true, name: "g" });
+    context.vars.set("b", { type: new IntType(), location: 16, static: true, name: "b" });
     context.memorySize = 12;
 
     logger("parsing...");
@@ -98,7 +99,12 @@ async function compile(input: string) {
     logger(`program uses ${program.length} bytes for code, starting at ${memory.length}`);
     logger(`total size ${buffer.length} bytes`);
 
-    console.log(buffer.toString("hex"));
+    let str = buffer.toString("hex");
+    let parts = [];
+    for (let i = 0; i < str.length; i += 2) {
+        parts.push("0x" + str.substr(i, 2));
+    }
+    console.log(parts.join(", "));
 
     let outputFile = await fs.open("../rgb-lang/input.hex", "w");
     outputFile.write(buffer);
