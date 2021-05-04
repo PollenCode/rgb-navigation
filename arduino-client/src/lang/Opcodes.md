@@ -1,27 +1,28 @@
 # Opcodes
 
--   `0x00`: noop (no operation)
+-   `0x00` `noop`
+-   `0x01` `push <src:2>`
+-   `0x02` `pop <src:2>`
+-   `0x03` `pushconst8 <c>`
+-   `0x04` `pushconst16 <c:2>`
+-   `0x05` `pushconst32 <c:4>`
+-   `0x06` `pop`
+-   `0x07` `swap`
+-   `0x10` `add` +
+-   `0x11` `sub` -
+-   `0x12` `mul` \*
+-   `0x13` `div` /
+-   `0x14` `mod` %
+-   `0x15` `inv` -
+-   `0x16` `abs` abs()
 
--   `0x01 <dest> <value:1>`: add unsigned byte
--   `0x02 <dest> <value:2>`: add unsigned short
--   `0x03 <dest> <value:4>`: add unsigned int
+```c
+// pushconst8 5 (03 05)
+// push 0 (01 00 00)
+a = 8
+// div
+a = 5 / a
+// pop 0 (02 00 00)
 
--   `0x04 <dest> <value:1>`: sub unsigned byte
--   `0x05 <dest> <value:2>`: sub unsigned short
--   `0x06 <dest> <value:4>`: sub unsigned int
 
--   `0x07 <dest> <value:1>`: mul unsigned byte
--   `0x08 <dest> <value:2>`: mul unsigned short
--   `0x09 <dest> <value:4>`: mul unsigned int
-
--   `0x0A <dest> <value:1>`: div unsigned byte
--   `0x0B <dest> <value:2>`: div unsigned short
--   `0x0C <dest> <value:4>`: div unsigned int
-
--   `0x0D <dest> <value:1>`: mod unsigned byte
--   `0x0E <dest> <value:2>`: mod unsigned short
--   `0x0F <dest> <value:4>`: mod unsigned int
-
--   `0x31 <dest> <src> <value:1>`: add unsigned byte from src
--   `0x32 <dest> <src> <value:2>`: add unsigned short from src
--   `0x33 <dest> <src> <value:4>`: add unsigned int from src
+```

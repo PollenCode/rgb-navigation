@@ -42,7 +42,10 @@ async function compile(input: string) {
 
     let res = expectBlock(context);
     res.setTypes();
-    console.log(JSON.stringify(res));
+    console.log(res);
+    let writer = new CodeWriter();
+    res.emit(writer);
+    console.log(writer.buffer.toString("hex"));
     // console.log(res.context.vars);
 
     // console.log(res.toString());
@@ -56,9 +59,3 @@ async function compile(input: string) {
 }
 
 compileFile("src/input.rgb");
-
-let code = new CodeWriter(1);
-
-code.addConst16(0xff, 56);
-
-logger(code.buffer.toString("hex"));
