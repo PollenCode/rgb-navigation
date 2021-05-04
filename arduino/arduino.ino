@@ -1,9 +1,6 @@
 #include <FastLED.h>
 #include "leds.h"
-#include "effects.h"
 #define PUTCHAR Serial.write
-#define PRINT Serial.print
-#define PRINTLN Serial.println
 #include "interpreter.c"
 
 // What is effects.h? Effects.h is generated using arduino-client and contains all the possible effects.
@@ -15,7 +12,7 @@
 #define INTERLACE_LEVEL 2
 
 // Effect that is used when there are no routes currently displayed, see effects.h to see which effects cooresponds to a number
-unsigned char idleEffect = DEFAULT_EFFECT;
+unsigned char idleEffect = 0;
 LineEffect *routes[MAX_LINES];
 uint32_t counter = 0;
 uint16_t fpsCounter = 0;
@@ -48,8 +45,6 @@ void setup()
     }
 
     Serial.println("Ready");
-    Serial.println((int)&run, HEX);
-    // setupEffect(idleEffect);
 
     // Serial.println("Copying program");
     // memcpy(mem, program, sizeof(program));
