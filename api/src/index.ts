@@ -149,6 +149,10 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/createToken", "GET");
     }
 
+    public async getTokens() {
+        return await this.doFetch("/api/getTokens", "GET");
+    }
+
 }
 
 export * from "./message";
