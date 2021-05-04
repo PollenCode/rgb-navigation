@@ -153,6 +153,13 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/getTokens", "GET");
     }
 
+    public async deleteToken(id: any) {
+        let req = {
+            id: id
+        }
+        return await this.doFetch("/api/deleteToken", "DELETE", req);
+    }
+
 }
 
 export * from "./message";
