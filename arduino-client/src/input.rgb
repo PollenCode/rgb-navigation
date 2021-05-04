@@ -4,4 +4,5 @@
 // ledstrip descriptor language f
 //
 
-i = ((1) ? (5 - 10 * 10) : (10))
+a = 20?
+c = 45? - a

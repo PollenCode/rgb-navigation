@@ -3,10 +3,6 @@ import { Lexer } from "./lexer";
 import { CodeWriter } from "./target";
 import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType } from "./types";
 
-interface Location {
-    address: number;
-}
-
 export abstract class Token {
     readonly context: CompilerContext;
     readonly position: number;
@@ -20,9 +16,7 @@ export abstract class Token {
     abstract toString(): string;
     abstract setTypes(): void;
 
-    emit(target: CodeWriter): Location | undefined {
-        return;
-    }
+    emit(target: CodeWriter): void {}
 }
 
 function expectBrackets(c: CompilerContext): Token | undefined {
@@ -67,10 +61,13 @@ export class TernaryToken extends Token {
             this.type = this.trueOp.type;
         }
     }
+    emit() {
+        throw new Error("Ternary not emitted");
+    }
 }
 
 function expectTernary(c: CompilerContext): Token | undefined {
-    let op = expectBrackets(c) || expectSum(c);
+    let op = expectSum(c) || expectBrackets(c);
     if (!op) {
         return;
     }
@@ -83,7 +80,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let trueOp = expectBrackets(c) || expectTernary(c);
+    let trueOp = expectTernary(c) || expectBrackets(c);
     if (!trueOp) {
         throw new Error(`Expected something after ?, at ${c.lex.lineColumn(position)}`);
     }
@@ -94,7 +91,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let falseOp = expectBrackets(c) || expectTernary(c);
+    let falseOp = expectTernary(c) || expectBrackets(c);
     if (!falseOp) {
         throw new Error(`Expected something after :, at ${c.lex.lineColumn(position)}`);
     }
@@ -140,7 +137,31 @@ export class MulToken extends Token {
     }
 
     emit(code: CodeWriter) {
-        return undefined;
+        if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
+            if (this.op1.type.constantValue !== undefined) {
+                code.pushConst(this.op1.type.constantValue);
+            } else {
+                this.op1.emit(code);
+            }
+            if (this.op2.type.constantValue !== undefined) {
+                code.pushConst(this.op2.type.constantValue);
+            } else {
+                this.op2.emit(code);
+            }
+            switch (this.operator) {
+                case "*":
+                    code.mul();
+                    break;
+                case "/":
+                    code.div();
+                    break;
+                case "%":
+                    code.mod();
+                    break;
+            }
+        } else {
+            throw new Error(`Add/sub ${this.op1.type.name} and ${this.op2.type.name} not implemented`);
+        }
     }
 }
 
@@ -165,7 +186,7 @@ export function expectMul(c: CompilerContext): MulToken | ReferenceToken | Value
 
     c.lex.readWhitespace();
 
-    let operand2 = expectBrackets(c) || expectMul(c);
+    let operand2 = expectMul(c) || expectBrackets(c);
     if (!operand2) {
         throw new Error(`Expected second operand for multiplication at ${c.lex.lineColumn()}`);
     }
@@ -206,50 +227,22 @@ export class SumToken extends Token {
     emit(code: CodeWriter) {
         if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
             if (this.op1.type.constantValue !== undefined) {
-                // addconst t2, n
-                let a2 = this.op2.emit(code)!;
-                switch (this.op1.type.size) {
-                    case 1:
-                        code.addConst8(a2.address, this.op1.type.constantValue);
-                        break;
-                    case 2:
-                        code.addConst16(a2.address, this.op1.type.constantValue);
-                        break;
-                    case 4:
-                        code.addConst32(a2.address, this.op1.type.constantValue);
-                        break;
-                }
-                return a2;
-            } else if (this.op2.type.constantValue !== undefined) {
-                // addconst t1, n
-                let a1 = this.op1.emit(code)!;
-                switch (this.op1.type.size) {
-                    case 1:
-                        code.addConst8(a1.address, this.op2.type.constantValue);
-                        break;
-                    case 2:
-                        code.addConst16(a1.address, this.op2.type.constantValue);
-                        break;
-                    case 4:
-                        code.addConst32(a1.address, this.op2.type.constantValue);
-                        break;
-                }
-                return a1;
+                code.pushConst(this.op1.type.constantValue);
             } else {
-                // add t1, t2
-                let a1 = this.op1.emit(code)!;
-                let a2 = this.op2.emit(code)!;
-                switch (this.op1.type.size) {
-                    case 1:
-                        code.add(a1.address, a2.address);
-                        break;
-                    case 2:
-                        code.add(a1.address, a2.address);
-                        break;
-                    case 4:
-                        code.add(a1.address, a2.address);
-                        break;
-                }
+                this.op1.emit(code);
+            }
+            if (this.op2.type.constantValue !== undefined) {
+                code.pushConst(this.op2.type.constantValue);
+            } else {
+                this.op2.emit(code);
+            }
+            switch (this.operator) {
+                case "+":
+                    code.add();
+                    break;
+                case "-":
+                    code.sub();
+                    break;
             }
         } else {
             throw new Error(`Add/sub ${this.op1.type.name} and ${this.op2.type.name} not implemented`);
@@ -257,9 +250,9 @@ export class SumToken extends Token {
     }
 }
 
-export function expectSum(c: CompilerContext): SumToken | MulToken | ReferenceToken | ValueToken | undefined {
+export function expectSum(c: CompilerContext): Token | undefined {
     let position = c.lex.position;
-    let operand1 = expectMul(c);
+    let operand1 = expectMul(c) || expectBrackets(c);
     if (!operand1) {
         c.lex.position = position;
         return;
@@ -276,7 +269,7 @@ export function expectSum(c: CompilerContext): SumToken | MulToken | ReferenceTo
 
     c.lex.readWhitespace();
 
-    let operand2 = expectBrackets(c) || expectSum(c);
+    let operand2 = expectSum(c) || expectBrackets(c);
     if (!operand2) {
         throw new Error(`Expected second operand for sum at ${c.lex.lineColumn()}`);
     }
@@ -300,6 +293,15 @@ export class ReferenceToken extends Token {
     toString() {
         return `var:${this.varName}`;
     }
+
+    emit(code: CodeWriter): void {
+        if (this.type instanceof IntType && this.type.constantValue !== undefined) {
+            code.pushConst(this.type.constantValue!);
+        } else {
+            let address = this.context.vars.get(this.varName)!.location;
+            code.push(address);
+        }
+    }
 }
 
 export function expectReference(c: CompilerContext) {
@@ -319,35 +321,41 @@ export function expectReference(c: CompilerContext) {
 }
 
 export class ValueToken extends Token {
-    constructor(context: CompilerContext, position: number, public value: string) {
+    constructor(context: CompilerContext, position: number, public value: string, public noInlining: boolean) {
         super(context, position);
     }
 
     setTypes(): void {
-        this.type = new IntType(parseInt(this.value));
+        this.type = new IntType(this.noInlining ? undefined : parseInt(this.value));
     }
 
     toString() {
         return `val:${this.value}`;
     }
+
+    emit(code: CodeWriter) {
+        code.pushConst(parseInt(this.value));
+    }
 }
 
 export function expectValue(c: CompilerContext) {
+    let position = c.lex.position;
     let ref = expectReference(c);
     if (ref) {
         return ref;
     }
 
-    let position = c.lex.position;
     let value = c.lex.read("0123456789");
     if (!value) {
         c.lex.position = position;
         return;
     }
 
+    let noInlining = c.lex.string("?");
+
     c.lex.readWhitespace();
 
-    return new ValueToken(c, position, value);
+    return new ValueToken(c, position, value, noInlining);
 }
 
 export class AssignmentToken extends Token {
@@ -365,8 +373,8 @@ export class AssignmentToken extends Token {
             // Update type, can contain new constant value
             v.type = this.value.type;
         } else {
-            let location = this.context.currentVarLocation;
-            this.context.currentVarLocation += this.value.type.size;
+            let location = this.context.memorySize;
+            this.context.memorySize += this.value.type.size;
             this.context.vars.set(this.varName, {
                 location,
                 name: this.varName,
@@ -376,8 +384,17 @@ export class AssignmentToken extends Token {
         }
         this.type = this.value.type;
     }
+
     toString() {
         return `var:${this.varName} = ${this.value}`;
+    }
+
+    emit(code: CodeWriter) {
+        if (!(this.value.type instanceof IntType && this.value.type.constantValue !== undefined)) {
+            this.value.emit(code);
+            let address = this.context.vars.get(this.varName)!.location;
+            code.pop(address);
+        }
     }
 }
 
@@ -401,7 +418,7 @@ export function expectAssignment(c: CompilerContext) {
 
     c.lex.readWhitespace();
 
-    let value = expectBrackets(c) || expectTernary(c);
+    let value = expectTernary(c) || expectBrackets(c);
     if (!value) {
         throw new Error(`Value was expected after value declaration at ${c.lex.lineColumn()}`);
     }
@@ -423,6 +440,10 @@ export class BlockToken extends Token {
 
     toString() {
         return this.statements.map((e) => e.toString()).join("\n");
+    }
+
+    emit(code: CodeWriter) {
+        this.statements.forEach((e) => e.emit(code));
     }
 }
 

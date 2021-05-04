@@ -84,7 +84,7 @@ export class IntType extends NumberType {
     constructor(constantValue?: number) {
         super(constantValue);
         this.name = "int";
-        this.size = 2;
+        this.size = 4;
     }
 
     isAssignableTo(other: Type): boolean {
