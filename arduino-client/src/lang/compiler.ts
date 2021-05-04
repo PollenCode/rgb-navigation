@@ -46,6 +46,11 @@ async function compile(input: string) {
     let writer = new CodeWriter();
     res.emit(writer);
     console.log(writer.buffer.toString("hex"));
+
+    let outputFile = await fs.open("src/lang/interpreter/input.hex", "w");
+    outputFile.write(writer.buffer);
+    await outputFile.close();
+
     // console.log(res.context.vars);
 
     // console.log(res.toString());
