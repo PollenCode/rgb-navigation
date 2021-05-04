@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #define DEBUG
-#include "../arduino/interpreter.c"
+#include "../interpreter.c"
 
 int main()
 {
@@ -34,7 +34,7 @@ int main()
     clock_gettime(CLOCK_MONOTONIC, &tstart);
 
     int res;
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 1; i++)
     {
         mem[0] = i;
         res = run(mem, codeSize, 20);
