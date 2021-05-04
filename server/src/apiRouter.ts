@@ -121,4 +121,13 @@ router.get("/getTokens", async (req, res, next) => {
     res.json({status:"ok", tokens})
 });
 
+router.delete("/deleteToken", async (req, res, next) => {
+    let token = await prisma.token.delete({
+        where: {
+            id: req.body.id
+        }
+    });
+    res.json({status:"ok", token})
+});
+
 export default router;

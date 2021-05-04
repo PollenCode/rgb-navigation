@@ -11,13 +11,14 @@ export function Token(){
     let client = useContext(AuthContext);
     const [token, setToken] = useState('');
     const [tokens, setTokens] = useState([]);
+    const [message, setMessage] = useState('');
     
 
     useEffect(() => {
         client.getTokens().then((e) => {
             setTokens(e.tokens);
         })
-    }, [token]);
+    }, [token, message]);
     
     return(
         <div className="flex justify-center px-1 md:px-4 pt-4">
@@ -35,7 +36,7 @@ export function Token(){
                     <p className="mt-4 ml-5">Token:</p>
                     <p className="border ml-5 w-100 h-15 p-1 break-words overflow-hidden">{token}</p>
                 </div>
-                
+                <p className="mt-5">{message}</p>
                 <ul className="mt-4 border-collapse border rounded overflow-hidden">
                     {tokens.map((tokenList: any) => (
                             <li className="border-b last:border-0 text-gray-700 hover:bg-gray-50 transition flex items-center justify-between">
@@ -44,9 +45,8 @@ export function Token(){
                                     style={{ margin: "0.5em" }}
                                     type="button"
                                     onClick={() => {
-                                        client.getToken().then((e) => {
-                                            setToken(e.jwt);
-                                        })
+                                        client.deleteToken(tokenList.id);
+                                        setMessage('De token met Id: ' + tokenList.id + ' is verwijderd.')
                                     }}>
                                     Delete
                                 </Button>
