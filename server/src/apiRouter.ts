@@ -116,4 +116,9 @@ router.get("/createToken", async (req, res, next) => {
     res.json({ status: "ok", jwt });
 });
 
+router.get("/getTokens", async (req, res, next) => {
+    let tokens = await prisma.token.findMany({});
+    res.json({status:"ok", tokens})
+});
+
 export default router;
