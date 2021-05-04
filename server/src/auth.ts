@@ -6,6 +6,10 @@ export function createUserAccessToken(userId: string) {
     return jsonwebtoken.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: 60 * 60 });
 }
 
+export function createToken(tokenId: string) {
+    return jsonwebtoken.sign({ tokenId }, process.env.JWT_SECRET!, { expiresIn: 60 * 60 });
+}
+
 export function validateUserAccessToken(token: string) {
     try {
         return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { userId: string };

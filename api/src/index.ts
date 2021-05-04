@@ -145,6 +145,10 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/leds", "POST", req);
     }
 
+    public async getToken() {
+        return await this.doFetch("/api/createToken", "GET");
+    }
+
 }
 
 export * from "./message";
