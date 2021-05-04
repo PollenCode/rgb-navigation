@@ -100,7 +100,7 @@ async function compile(input: string) {
 
     console.log(buffer.toString("hex"));
 
-    let outputFile = await fs.open("src/lang/interpreter/input.hex", "w");
+    let outputFile = await fs.open("../rgb-lang/input.hex", "w");
     outputFile.write(buffer);
     await outputFile.close();
 }
