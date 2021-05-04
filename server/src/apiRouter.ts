@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createUserAccessToken, getOAuthUrl } from "./auth";
+import { createToken, createUserAccessToken, getOAuthUrl } from "./auth";
 import { isDevelopment } from "./helpers";
 import { withUser } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
@@ -108,6 +108,12 @@ router.post("/leds", withUser(), async (req, res, next) => {
 router.get("/users", async (req, res, next) => {
     let user = await prisma.user.findMany({});
     res.json({ status: "ok", user });
+});
+
+router.get("/createToken", async (req, res, next) => {
+    let token = await prisma.token.create({});
+    let jwt = createToken(String(token.id));
+    res.json({ status: "ok", jwt });
 });
 
 export default router;

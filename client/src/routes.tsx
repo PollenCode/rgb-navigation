@@ -9,6 +9,8 @@ import { AuthContext } from "./AuthContext";
 import { PageWrapper } from "./components/PageWrapper";
 import { DGang } from "./pages/DGang";
 import { EffectEdit, Effects } from "./pages/Effects";
+import { LedController } from "./pages/LedController";
+import { Token } from "./pages/Token";
 
 const client = new RGBClient();
 
@@ -74,6 +76,8 @@ function AdminRouter() {
                 <Route path="/admin/effects" exact component={Effects} />
                 <Route path="/admin/dgang" exact component={DGang} />
                 <Route path="/admin/users" exact component={UsersList} />
+                <Route path="/admin/ledcontrol" exact component={LedController} />
+                <Route path="/admin/token" exact component={Token} />
                 <Redirect to="/admin" />
             </Switch>
         </PageWrapper>

@@ -29,3 +29,7 @@ model Effect {
   author User?   @relation(fields: [userId], references: [id])
   userId String?
 }
+
+model Token {
+  id Int @id @default(autoincrement())
+}
