@@ -33,8 +33,9 @@ int main()
     clock_gettime(CLOCK_MONOTONIC, &tstart);
 
     int res;
-    for (int i = 0; i < 300; i++)
+    for (int i = 0; i < 240; i++)
     {
+        mem[0] = i;
         res = run(mem, codeSize, 16);
     }
 

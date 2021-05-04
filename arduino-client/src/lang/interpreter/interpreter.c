@@ -1,8 +1,12 @@
+#include <stdint.h>
+
 #ifdef ARDUINO
 #define PUTCHAR Serial.write
+#define INT uint32_t
 #else
 #include <stdio.h>
 #define PUTCHAR putchar
+#define INT uint32_t
 #endif
 
 enum OpCode
@@ -45,8 +49,8 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
         case Push:
         {
             unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
-            stackPointer -= 4;
-            *(int *)(mem + stackPointer) = *(int *)(mem + addr);
+            stackPointer -= sizeof(INT);
+            *(INT *)(mem + stackPointer) = *(INT *)(mem + addr);
             if (stackPointer < 1000)
             {
                 printf("stackoverflow\n");
@@ -60,17 +64,17 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
         case Pop:
         {
             unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
-            *(int *)(mem + addr) = *(int *)(mem + stackPointer);
+            *(INT *)(mem + addr) = *(INT *)(mem + stackPointer);
 #ifdef DEBUG
             printf("pop %d\n", addr);
 #endif
-            stackPointer += 4;
+            stackPointer += sizeof(INT);
             break;
         }
         case Dup:
         {
-            stackPointer -= 4;
-            *(int *)(mem + stackPointer) = *(int *)(mem + stackPointer + 4);
+            stackPointer -= sizeof(INT);
+            *(INT *)(mem + stackPointer) = *(INT *)(mem + stackPointer + sizeof(INT));
 #ifdef DEBUG
             printf("dup\n");
 #endif
@@ -79,7 +83,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
         case Push8:
         {
             char val = mem[exePointer++];
-            stackPointer -= 4;
+            stackPointer -= sizeof(INT);
             *(char *)(mem + stackPointer) = val;
 #ifdef DEBUG
             printf("pushconst8 %d\n", val);
@@ -89,7 +93,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
         case Push16:
         {
             short val = mem[exePointer++] | (mem[exePointer++] << 8);
-            stackPointer -= 4;
+            stackPointer -= sizeof(INT);
             *(short *)(mem + stackPointer) = val;
 #ifdef DEBUG
             printf("pushconst16 %d\n", val);
@@ -99,7 +103,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
         case Push32:
         {
             int val = mem[exePointer++] | (mem[exePointer++] << 8) | (mem[exePointer++] << 16) | (mem[exePointer++] << 24);
-            stackPointer -= 4;
+            stackPointer -= sizeof(INT);
             *(int *)(mem + stackPointer) = val;
 #ifdef DEBUG
             printf("pushconst32 %d\n", val);
@@ -108,59 +112,59 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
         }
         case Swap:
         {
-            int temp = *(int *)(mem + stackPointer + 4);
-            *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer);
-            *(int *)(mem + stackPointer) = temp;
+            INT temp = *(INT *)(mem + stackPointer + sizeof(INT));
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer);
+            *(INT *)(mem + stackPointer) = temp;
 #ifdef DEBUG
             printf("swap\n");
 #endif
             break;
         }
         case Add:
-            *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) + *(int *)(mem + stackPointer);
-            stackPointer += 4;
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) + *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
 #ifdef DEBUG
             printf("add\n");
 #endif
             break;
         case Sub:
-            *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) - *(int *)(mem + stackPointer);
-            stackPointer += 4;
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) - *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
 #ifdef DEBUG
             printf("sub\n");
 #endif
             break;
         case Mul:
-            *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) * *(int *)(mem + stackPointer);
-            stackPointer += 4;
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) * *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
 #ifdef DEBUG
             printf("mul\n");
 #endif
             break;
         case Div:
-            *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) / *(int *)(mem + stackPointer);
-            stackPointer += 4;
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) / *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
 #ifdef DEBUG
             printf("div\n");
 #endif
             break;
         case Mod:
-            *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) % *(int *)(mem + stackPointer);
-            stackPointer += 4;
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) % *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
 #ifdef DEBUG
             printf("mod\n");
 #endif
             break;
         case Inv:
-            *(int *)(mem + stackPointer) = -(*(int *)(mem + stackPointer + 4));
+            *(INT *)(mem + stackPointer) = -(*(INT *)(mem + stackPointer + sizeof(INT)));
 #ifdef DEBUG
             printf("inv\n");
 #endif
             break;
         case Abs:
         {
-            int val = *(int *)(mem + stackPointer);
-            *(int *)(mem + stackPointer) = val < 0 ? -val : val;
+            INT val = *(INT *)(mem + stackPointer);
+            *(INT *)(mem + stackPointer) = val < 0 ? -val : val;
 #ifdef DEBUG
             printf("abs\n");
 #endif
