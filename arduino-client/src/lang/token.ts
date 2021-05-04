@@ -67,7 +67,7 @@ export class TernaryToken extends Token {
 }
 
 function expectTernary(c: CompilerContext): Token | undefined {
-    let op = expectBrackets(c) || expectSum(c);
+    let op = expectSum(c) || expectBrackets(c);
     if (!op) {
         return;
     }
@@ -80,7 +80,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let trueOp = expectBrackets(c) || expectTernary(c);
+    let trueOp = expectTernary(c) || expectBrackets(c);
     if (!trueOp) {
         throw new Error(`Expected something after ?, at ${c.lex.lineColumn(position)}`);
     }
@@ -91,7 +91,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let falseOp = expectBrackets(c) || expectTernary(c);
+    let falseOp = expectTernary(c) || expectBrackets(c);
     if (!falseOp) {
         throw new Error(`Expected something after :, at ${c.lex.lineColumn(position)}`);
     }
@@ -186,7 +186,7 @@ export function expectMul(c: CompilerContext): MulToken | ReferenceToken | Value
 
     c.lex.readWhitespace();
 
-    let operand2 = expectBrackets(c) || expectMul(c);
+    let operand2 = expectMul(c) || expectBrackets(c);
     if (!operand2) {
         throw new Error(`Expected second operand for multiplication at ${c.lex.lineColumn()}`);
     }
@@ -250,9 +250,9 @@ export class SumToken extends Token {
     }
 }
 
-export function expectSum(c: CompilerContext): SumToken | MulToken | ReferenceToken | ValueToken | undefined {
+export function expectSum(c: CompilerContext): Token | undefined {
     let position = c.lex.position;
-    let operand1 = expectMul(c);
+    let operand1 = expectMul(c) || expectBrackets(c);
     if (!operand1) {
         c.lex.position = position;
         return;
@@ -269,7 +269,7 @@ export function expectSum(c: CompilerContext): SumToken | MulToken | ReferenceTo
 
     c.lex.readWhitespace();
 
-    let operand2 = expectBrackets(c) || expectSum(c);
+    let operand2 = expectSum(c) || expectBrackets(c);
     if (!operand2) {
         throw new Error(`Expected second operand for sum at ${c.lex.lineColumn()}`);
     }
@@ -420,7 +420,7 @@ export function expectAssignment(c: CompilerContext) {
 
     c.lex.readWhitespace();
 
-    let value = expectBrackets(c) || expectTernary(c);
+    let value = expectTernary(c) || expectBrackets(c);
     if (!value) {
         throw new Error(`Value was expected after value declaration at ${c.lex.lineColumn()}`);
     }

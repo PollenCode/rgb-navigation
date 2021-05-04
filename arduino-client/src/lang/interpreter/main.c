@@ -21,47 +21,21 @@ enum OpCode
     Abs = 0x16,
 };
 
-int main()
+int run(unsigned char *mem, unsigned int size)
 {
-    FILE *fd = fopen("input.hex", "rb");
-    if (!fd)
-    {
-        printf("could not open file\n");
-        return -1;
-    }
-
-    fseek(fd, 0, SEEK_END);
-    int size = ftell(fd);
-    fseek(fd, 0, SEEK_SET);
-
-    printf("file size %d\n", size);
-
-    unsigned char *mem = (unsigned char *)malloc(65536);
-    memset(mem, 65536, 0);
-    int *stack = (int *)mem;
+    unsigned short exePointer = 0;
     unsigned short stackPointer = 65535;
-    unsigned char *buffer = (unsigned char *)malloc(size);
 
-    for (int i = 0; i < size; i++)
+    while (exePointer < size)
     {
-        buffer[i] = fgetc(fd);
-    }
-
-    fclose(fd);
-
-    printf("interpreting\n");
-    printf("stackPointer %d\n", stackPointer);
-
-    for (int i = 0; i < size;)
-    {
-        unsigned char op = buffer[i++];
+        unsigned char op = mem[exePointer++];
         switch (op)
         {
         case Noop:
             break;
         case Push:
         {
-            unsigned short addr = buffer[i++] | (buffer[i++] << 8);
+            unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
             stackPointer -= 4;
             *(int *)(mem + stackPointer) = *(int *)(mem + addr);
             if (stackPointer < 1000)
@@ -74,9 +48,9 @@ int main()
         }
         case Pop:
         {
-            unsigned short addr = buffer[i++] | (buffer[i++] << 8);
+            unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
             *(int *)(mem + addr) = *(int *)(mem + stackPointer);
-            printf("pop %d = %d\n", addr, *(int *)(mem + stackPointer));
+            printf("pop %d\n", addr);
             stackPointer += 4;
             break;
         }
@@ -85,7 +59,7 @@ int main()
             break;
         case Push8:
         {
-            char val = buffer[i++];
+            char val = mem[exePointer++];
             stackPointer -= 4;
             *(char *)(mem + stackPointer) = val;
             printf("pushconst8 %d\n", val);
@@ -93,7 +67,7 @@ int main()
         }
         case Push16:
         {
-            short val = buffer[i++] | (buffer[i++] << 8);
+            short val = mem[exePointer++] | (mem[exePointer++] << 8);
             stackPointer -= 4;
             *(short *)(mem + stackPointer) = val;
             printf("pushconst16 %d\n", val);
@@ -101,7 +75,7 @@ int main()
         }
         case Push32:
         {
-            int val = buffer[i++] | (buffer[i++] << 8) | (buffer[i++] << 16) | (buffer[i++] << 24);
+            int val = mem[exePointer++] | (mem[exePointer++] << 8) | (mem[exePointer++] << 16) | (mem[exePointer++] << 24);
             stackPointer -= 4;
             *(int *)(mem + stackPointer) = val;
             printf("pushconst32 %d\n", val);
@@ -111,9 +85,9 @@ int main()
             printf("swap\n");
             break;
         case Add:
-            printf("add %d + %d\n", *(int *)(mem + stackPointer + 4), *(int *)(mem + stackPointer));
             *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) + *(int *)(mem + stackPointer);
             stackPointer += 4;
+            printf("add\n");
             break;
         case Sub:
             *(int *)(mem + stackPointer + 4) = *(int *)(mem + stackPointer + 4) - *(int *)(mem + stackPointer);
@@ -152,6 +126,37 @@ int main()
             break;
         }
     }
+    return 0;
+}
+
+int main()
+{
+    FILE *fd = fopen("input.hex", "rb");
+    if (!fd)
+    {
+        printf("could not open file\n");
+        return -1;
+    }
+
+    fseek(fd, 0, SEEK_END);
+    int codeSize = ftell(fd);
+    fseek(fd, 0, SEEK_SET);
+
+    printf("file size %d\n", codeSize);
+
+    unsigned char *mem = (unsigned char *)malloc(65536);
+    memset(mem, 65536, 0);
+
+    for (int i = 0; i < codeSize; i++)
+    {
+        mem[i] = fgetc(fd);
+    }
+
+    fclose(fd);
+
+    printf("interpreting\n");
+    int res = run(mem, codeSize);
+    printf("result = %d\n", res);
 
     for (int i = 0; i < 40; i += 4)
     {
