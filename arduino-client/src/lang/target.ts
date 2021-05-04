@@ -58,6 +58,7 @@ export enum OpCode {
     Mod = 0x14,
     Inv = 0x15,
     Abs = 0x16,
+    Add8 = 0x17,
     Jrnz = 0x20,
     Jrz = 0x21,
     Jr = 0x22,
@@ -136,6 +137,12 @@ export class CodeWriter extends BinaryWriter {
     abs() {
         logger("abs");
         this.write8(OpCode.Abs);
+    }
+    add8(value: number) {
+        if (value >= 127 || value <= -128) throw new Error("Add value too big");
+        logger("add8", value);
+        this.write8(OpCode.Add8);
+        this.write8(value);
     }
     out() {
         logger("out");

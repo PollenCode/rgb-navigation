@@ -29,6 +29,7 @@ enum OpCode
     Mod = 0x14,
     Inv = 0x15,
     Abs = 0x16,
+    Add8 = 0x17,
     Jrnz = 0x20,
     Jrz = 0x21,
     Jr = 0x22,
@@ -178,8 +179,15 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #endif
             continue;
         }
-
-        case 0x17:
+        case Add8:
+        {
+            char val = mem[exePointer++];
+            *(INT *)(mem + stackPointer) += val;
+#ifdef DEBUG
+            printf("add8 %d\n", val);
+#endif
+            continue;
+        }
         case 0x18:
         case 0x19:
         case 0x1A:

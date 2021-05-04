@@ -12,5 +12,9 @@
 // g = 0;
 // b = 255 - (time % 256);
 
-time = counter ? 20 : 30;
-counter = counter + 1;
+// time = counter ? 20 : 30;
+
+calc = (counter % 1000) / 500
+
+r = calc ? 255 : 0;
+b = calc ? 0 : 255;

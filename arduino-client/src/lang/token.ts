@@ -253,12 +253,16 @@ export class SumToken extends Token {
             code.pushConst(this.type.constantValue);
         } else if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
             if (this.op1.type.constantValue !== undefined) {
-                code.pushConst(this.op1.type.constantValue);
+                // code.pushConst(this.op1.type.constantValue);
+                code.add8(this.op1.type.constantValue);
+                return;
             } else {
                 this.op1.emit(code);
             }
             if (this.op2.type.constantValue !== undefined) {
-                code.pushConst(this.op2.type.constantValue);
+                // code.pushConst(this.op2.type.constantValue);
+                code.add8(this.op2.type.constantValue);
+                return;
             } else {
                 this.op2.emit(code);
             }
