@@ -21,9 +21,8 @@ enum OpCode
     Abs = 0x16,
 };
 
-int run(unsigned char *mem, unsigned int size)
+int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 {
-    unsigned short exePointer = 0;
     unsigned short stackPointer = 65535;
 
     while (exePointer < size)
@@ -155,7 +154,7 @@ int main()
     fclose(fd);
 
     printf("interpreting\n");
-    int res = run(mem, codeSize);
+    int res = run(mem, codeSize, 20);
     printf("result = %d\n", res);
 
     for (int i = 0; i < 40; i += 4)

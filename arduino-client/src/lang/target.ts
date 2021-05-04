@@ -5,19 +5,27 @@ const logger = debug("rgb:compiler");
 
 export class BinaryWriter {
     position: number = 0;
-    buffer: Buffer;
+    size: number = 0;
+    private _buffer: Buffer;
 
     constructor(initialSize: number = 64) {
-        this.buffer = Buffer.alloc(initialSize);
+        this._buffer = Buffer.alloc(initialSize);
+    }
+
+    get buffer() {
+        return this._buffer.slice(0, this.size);
     }
 
     write8(x: number) {
-        if (this.position >= this.buffer.length) {
-            let b = this.buffer;
-            this.buffer = Buffer.alloc(this.buffer.length * 2);
-            b.copy(this.buffer, 0, 0, b.length);
+        if (this.position >= this._buffer.length) {
+            let b = this._buffer;
+            this._buffer = Buffer.alloc(this._buffer.length * 2);
+            b.copy(this._buffer, 0, 0, b.length);
         }
-        this.buffer[this.position++] = x & 0xff;
+        this._buffer[this.position++] = x & 0xff;
+        if (this.position > this.size) {
+            this.size = this.position;
+        }
     }
 
     write16(x: number) {

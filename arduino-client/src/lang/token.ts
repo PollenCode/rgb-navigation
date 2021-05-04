@@ -373,8 +373,8 @@ export class AssignmentToken extends Token {
             // Update type, can contain new constant value
             v.type = this.value.type;
         } else {
-            let location = this.context.currentVarLocation;
-            this.context.currentVarLocation += this.value.type.size;
+            let location = this.context.memorySize;
+            this.context.memorySize += this.value.type.size;
             this.context.vars.set(this.varName, {
                 location,
                 name: this.varName,
@@ -394,8 +394,6 @@ export class AssignmentToken extends Token {
             this.value.emit(code);
             let address = this.context.vars.get(this.varName)!.location;
             code.pop(address);
-        } else {
-            console.log(this.varName, "is constant", this.value.type);
         }
     }
 }
