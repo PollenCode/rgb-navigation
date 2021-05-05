@@ -1,4 +1,3 @@
-#include "../leds.h"
 
 uint64_t counter = 0;
 

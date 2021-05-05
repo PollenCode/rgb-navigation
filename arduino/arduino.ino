@@ -1,25 +1,35 @@
 #include <FastLED.h>
-#include "leds.h"
-#define PUTCHAR Serial.write
 #include "interpreter.c"
 
-// What is effects.h? Effects.h is generated using arduino-client and contains all the possible effects.
-//                    When an effect is added to the effects folder, this file can easily be regenerated without modifying the arduino.ino file.
-// What is leds.h? Leds.h contains variables and functions and can be used here, and in effects
-
-#define DATA_PIN 3
+#define LED_COUNT 50
+#define DATA_PIN D4
+// Max amount of routes that can be drawn at once
 #define MAX_LINES 32
+// Every x other pixel is rendered in the next frame
 #define INTERLACE_LEVEL 2
+#define MAX_PROGRAM_SIZE 2000
 
-// Effect that is used when there are no routes currently displayed, see effects.h to see which effects cooresponds to a number
+// A route
+struct LineEffect
+{
+    uint16_t startLed;
+    uint16_t endLed;
+    uint64_t endTime;
+    CRGB color;
+
+    LineEffect(uint16_t startLed, uint16_t endLed, uint64_t endTime, CRGB color) : startLed(startLed), endLed(endLed), endTime(endTime), color(color) {}
+};
+
 unsigned char idleEffect = 0;
 LineEffect *routes[MAX_LINES];
+CRGB leds[LED_COUNT];
 uint32_t counter = 0;
 uint16_t fpsCounter = 0;
 uint64_t lastShown = 0;
-int interlacing = 0;
 
-unsigned char mem[700] = {0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0xff, 0x00, 0x08, 0x00, 0x00, 0x03, 0x00, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x03, 0x0f, 0x33, 0x21, 0x08, 0x04, 0xff, 0x00, 0x08, 0x02, 0x00, 0x22, 0x05, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
+int interlacing = 0;
+unsigned short entryPoint = 16;
+unsigned char mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x01, 0x08, 0x00, 0x03, 0x64, 0x13, 0x10, 0x03, 0x20, 0x14, 0x02, 0x0c, 0x00, 0x01, 0x0c, 0x00, 0x03, 0x10, 0x33, 0x21, 0x08, 0x03, 0x20, 0x01, 0x0c, 0x00, 0x11, 0x22, 0x03, 0x01, 0x0c, 0x00, 0x02, 0x0c, 0x00, 0x01, 0x0c, 0x00, 0x03, 0x08, 0x12, 0x08, 0x00, 0x00, 0x04, 0xff, 0x00, 0x01, 0x0c, 0x00, 0x03, 0x08, 0x12, 0x11, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x01, 0x08, 0x00, 0x10, 0x04, 0xff, 0x00, 0x14, 0x03, 0x00, 0x30, 0x21, 0x05, 0x04, 0xff, 0x00, 0x22, 0x02, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
 
 void setColorLine(int start, int end, CRGB color);
 
@@ -37,7 +47,6 @@ void setup()
     // Increasing the baud rate will cause corruption and inconsistency
     Serial.begin(19200);
     Serial.println("Starting...");
-    delay(100);
 
     pinMode(LED_BUILTIN, OUTPUT);
     memset(routes, 0, sizeof(LineEffect *) * MAX_LINES);
@@ -94,7 +103,7 @@ void processPacket()
             uint16_t duration = Serial.read() << 8 | Serial.read();
 
             uint64_t endTime = duration > 0 ? millis() + duration * 1000 : 0;
-            routes[id] = new LineEffect(startLed, endLed, endTime, Color(r, g, b));
+            routes[id] = new LineEffect(startLed, endLed, endTime, CRGB(r, g, b));
 
             Serial.print("Enable line ");
             Serial.print(id);
@@ -140,27 +149,27 @@ void processPacket()
         switch (room)
         {
         case 0:
-            routes[id] = new LineEffect(0, 5, endTime, Color(255, 0, 0));
+            routes[id] = new LineEffect(0, 5, endTime, CRGB(255, 0, 0));
             Serial.print("Room 1");
             break;
         case 1:
-            routes[id] = new LineEffect(0, 10, endTime, Color(255, 0, 0));
+            routes[id] = new LineEffect(0, 10, endTime, CRGB(255, 0, 0));
             Serial.print("Room 2");
             break;
         case 2:
-            routes[id] = new LineEffect(0, 15, endTime, Color(255, 0, 0));
+            routes[id] = new LineEffect(0, 15, endTime, CRGB(255, 0, 0));
             Serial.print("Room 3");
             break;
         case 3:
-            routes[id] = new LineEffect(0, 20, endTime, Color(255, 0, 0));
+            routes[id] = new LineEffect(0, 20, endTime, CRGB(255, 0, 0));
             Serial.print("Room 4");
             break;
         case 4:
-            routes[id] = new LineEffect(0, 25, endTime, Color(255, 0, 0));
+            routes[id] = new LineEffect(0, 25, endTime, CRGB(255, 0, 0));
             Serial.print("Room 5");
             break;
         case 5:
-            routes[id] = new LineEffect(0, 30, endTime, Color(255, 0, 0));
+            routes[id] = new LineEffect(0, 30, endTime, CRGB(255, 0, 0));
             Serial.print("Room 6");
             break;
         }
@@ -244,13 +253,18 @@ void loop()
         }
     }
 
+    // for (int i = 0; i < LED_COUNT; i++)
+    // {
+    //     leds[i] = CRGB(255, 0, 0);
+    // }
+
     if (!anyRoute)
     {
         *(INT *)(mem + 8) = time & 0x7FFF;
         for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
         {
             *(INT *)(mem + 4) = i;
-            run(mem, sizeof(mem), 12);
+            run(mem, entryPoint, MAX_PROGRAM_SIZE);
             leds[i] = CRGB(mem[0], mem[1], mem[2]);
         }
         interlacing++;
@@ -263,6 +277,8 @@ void loop()
     {
         Serial.print("FPS: ");
         Serial.println(fpsCounter);
+        // Serial.print((int32_t)(executed & 0xFFFFFFFF));
+        // Serial.println((int32_t)(executed >> 32) & 0xFFFFFFFF);
         lastShown = time;
         fpsCounter = 0;
     }

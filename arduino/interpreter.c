@@ -56,14 +56,11 @@ enum OpCode
 
 void (*callHandler)(unsigned char);
 
-int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
+int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPointer)
 {
-    unsigned short stackPointer = 700;
-
     while (1)
     {
-        unsigned char op = mem[exePointer++];
-        switch (op)
+        switch (mem[exePointer++])
         {
         case Noop:
             continue;
@@ -110,8 +107,9 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
         case PushConst32:
         {
             int val = mem[exePointer++] | (mem[exePointer++] << 8) | (mem[exePointer++] << 16) | (mem[exePointer++] << 24);
+            exePointer += 4;
             stackPointer -= sizeof(INT);
-            *(int *)(mem + stackPointer) = val;
+            *(uint32_t *)(mem + stackPointer) = val;
 #ifdef DEBUG
             printf("pushconst32 %d\n", val);
 #endif
