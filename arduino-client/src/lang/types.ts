@@ -20,6 +20,12 @@ export abstract class NumberType implements Type {
     abstract sub(other: NumberType): NumberType;
     abstract add(other: NumberType): NumberType;
     abstract mod(other: NumberType): NumberType;
+    abstract eq(other: NumberType): NumberType;
+    abstract neq(other: NumberType): NumberType;
+    abstract lt(other: NumberType): NumberType;
+    abstract gt(other: NumberType): NumberType;
+    abstract lte(other: NumberType): NumberType;
+    abstract gte(other: NumberType): NumberType;
 }
 
 export class VoidType implements Type {
@@ -73,6 +79,37 @@ export class FloatType extends NumberType {
     mod(other: NumberType): NumberType {
         return new FloatType(
             this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue % other.constantValue : undefined
+        );
+    }
+
+    eq(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue === other.constantValue ? 1 : 0) : undefined
+        );
+    }
+    neq(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue !== other.constantValue ? 1 : 0) : undefined
+        );
+    }
+    lt(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue < other.constantValue ? 1 : 0) : undefined
+        );
+    }
+    gt(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue > other.constantValue ? 1 : 0) : undefined
+        );
+    }
+    lte(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue <= other.constantValue ? 1 : 0) : undefined
+        );
+    }
+    gte(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue >= other.constantValue ? 1 : 0) : undefined
         );
     }
 }
@@ -145,6 +182,37 @@ export class IntType extends NumberType {
                 this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue % other.constantValue : undefined
             );
         }
+    }
+
+    eq(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue === other.constantValue ? 1 : 0) : undefined
+        );
+    }
+    neq(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue !== other.constantValue ? 1 : 0) : undefined
+        );
+    }
+    lt(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue < other.constantValue ? 1 : 0) : undefined
+        );
+    }
+    gt(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue > other.constantValue ? 1 : 0) : undefined
+        );
+    }
+    lte(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue <= other.constantValue ? 1 : 0) : undefined
+        );
+    }
+    gte(other: NumberType): NumberType {
+        return new IntType(
+            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue >= other.constantValue ? 1 : 0) : undefined
+        );
     }
 }
 

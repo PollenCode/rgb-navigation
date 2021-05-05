@@ -89,7 +89,7 @@ export class TernaryToken extends Token {
 }
 
 function expectTernary(c: CompilerContext): Token | undefined {
-    let op = expectSum(c) || expectBrackets(c);
+    let op = expectCompare(c) || expectBrackets(c);
     if (!op) {
         return;
     }
@@ -531,4 +531,122 @@ export function expectOut(c: CompilerContext) {
     }
 
     return new OutToken(c, position, op);
+}
+
+export class CompareToken extends Token {
+    constructor(
+        context: CompilerContext,
+        position: number,
+        public op1: Token,
+        public op2: Token,
+        public operator: "==" | "!=" | ">" | ">=" | "<" | "<="
+    ) {
+        super(context, position);
+    }
+
+    toString(): string {
+        return `${this.op1} ${this.operator} ${this.op2}`;
+    }
+
+    setTypes(): void {
+        this.op1.setTypes();
+        this.op2.setTypes();
+
+        if (this.op1.type instanceof NumberType && this.op2.type instanceof NumberType) {
+            switch (this.operator) {
+                case "!=":
+                    this.type = this.op1.type.neq(this.op2.type);
+                    break;
+                case "==":
+                    this.type = this.op1.type.eq(this.op2.type);
+                    break;
+                case ">":
+                    this.type = this.op1.type.gt(this.op2.type);
+                    break;
+                case ">=":
+                    this.type = this.op1.type.gte(this.op2.type);
+                    break;
+                case "<":
+                    this.type = this.op1.type.lt(this.op2.type);
+                    break;
+                case "<=":
+                    this.type = this.op1.type.lte(this.op2.type);
+                    break;
+            }
+        } else {
+            this.type = new IntType();
+        }
+    }
+
+    emit(code: CodeWriter) {
+        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+            code.pushConst(this.type.constantValue);
+            return;
+        }
+
+        this.op1.emit(code);
+        this.op2.emit(code);
+        switch (this.operator) {
+            case "!=":
+                code.neq();
+                break;
+            case "==":
+                code.eq();
+                break;
+            case ">":
+                code.bt();
+                break;
+            case ">=":
+                code.bte();
+                break;
+            case "<":
+                code.lt();
+                break;
+            case "<=":
+                code.lte();
+                break;
+            default:
+                throw new Error("Invalid compare operator");
+        }
+    }
+}
+
+function expectCompare(c: CompilerContext) {
+    let position = c.lex.position;
+    let op1 = expectSum(c) || expectBrackets(c);
+    if (!op1) {
+        return;
+    }
+
+    let operator: "==" | "!=" | ">" | ">=" | "<" | "<=";
+    if (c.lex.string("===")) {
+        throw new Error(`Use == instead of === at ${c.lex.lineColumn()}`);
+    } else if (c.lex.string("!==")) {
+        throw new Error(`Use != instead of !== at ${c.lex.lineColumn()}`);
+    } else if (c.lex.string("==")) {
+        operator = "==";
+    } else if (c.lex.string("=")) {
+        throw new Error(`Use double equals signs (==) instead of a single one (=) to compare values at ${c.lex.lineColumn()}`);
+    } else if (c.lex.string("!=")) {
+        operator = "!=";
+    } else if (c.lex.string(">=")) {
+        operator = ">=";
+    } else if (c.lex.string(">")) {
+        operator = ">";
+    } else if (c.lex.string("<=")) {
+        operator = "<=";
+    } else if (c.lex.string("<")) {
+        operator = "<";
+    } else {
+        return op1;
+    }
+
+    c.lex.readWhitespace();
+
+    let op2 = expectSum(c) || expectBrackets(c);
+    if (!op2) {
+        throw new Error(`Expected value to compare against at ${c.lex.lineColumn()}`);
+    }
+
+    return new CompareToken(c, position, op1, op2, operator);
 }
