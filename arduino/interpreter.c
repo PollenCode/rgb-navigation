@@ -37,6 +37,7 @@ enum OpCode
     Jrnz = 0x20,
     Jrz = 0x21,
     Jr = 0x22,
+    Call = 0x23,
 
     Eq = 0x30,
     Neq = 0x31,
@@ -52,6 +53,8 @@ enum OpCode
 // - push <addr:2> -> pushb <addr:1>
 // - pop <addr:2> -> popb <addr:1>
 // - instructions like add8
+
+void (*callHandler)(unsigned char);
 
 int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 {
@@ -270,7 +273,16 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
             continue;
         }
 
-        case 0x23:
+        case Call:
+        {
+            unsigned char id = mem[exePointer++];
+            callHandler(mem[id]);
+#ifdef DEBUG
+            printf("call %d\n", id);
+#endif
+            continue;
+        }
+
         case 0x24:
         case 0x25:
         case 0x26:

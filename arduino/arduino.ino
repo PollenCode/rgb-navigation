@@ -23,8 +23,17 @@ unsigned char mem[700] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 
 void setColorLine(int start, int end, CRGB color);
 
+void handler(unsigned char id)
+{
+    switch (id)
+    {
+    }
+}
+
 void setup()
 {
+    callHandler = handler;
+
     // Increasing the baud rate will cause corruption and inconsistency
     Serial.begin(19200);
     Serial.println("Starting...");

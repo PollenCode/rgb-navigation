@@ -66,6 +66,7 @@ export enum OpCode {
     Jrnz = 0x20,
     Jrz = 0x21,
     Jr = 0x22,
+    Call = 0x23,
 
     Eq = 0x30,
     Neq = 0x31,
@@ -215,5 +216,10 @@ export class CodeWriter extends BinaryWriter {
     bte() {
         logger("bte");
         this.write8(OpCode.Bte);
+    }
+    call(index: number) {
+        logger("call", index);
+        this.write8(OpCode.Call);
+        this.write8(index);
     }
 }
