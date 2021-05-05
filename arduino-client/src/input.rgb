@@ -1,6 +1,16 @@
+// CHRISTMAS EFFECT
+// value = (index + timer / 100) % 32
+// value = value > 16 ? 32 - value : value
+// r = value * 8
+// g = 255 - (value * 8)
+// b = (index + timer) % 255 == 0 ? 255 : 0
 
-
-a = timer / 10
-r = a % 255
+r = 255
 g = 0
-b = 0
+
+if index > 15 {
+    b = 255
+}
+else {
+    b = 0
+}

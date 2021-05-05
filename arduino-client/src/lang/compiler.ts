@@ -2,7 +2,7 @@ require("dotenv").config();
 import fs from "fs/promises";
 import debug from "debug";
 import { Lexer } from "./lexer";
-import { expectBlock, Token } from "./token";
+import { expectProgram, Token } from "./token";
 import { IntType, NumberType, Type } from "./types";
 import { BinaryWriter, CodeWriter } from "./target";
 
@@ -54,7 +54,7 @@ export class CompilerContext {
     }
 
     compile() {
-        this.root = expectBlock(this);
+        this.root = expectProgram(this);
     }
 
     typeCheck() {
