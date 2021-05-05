@@ -6,7 +6,7 @@
 // Max amount of routes that can be drawn at once
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
-#define INTERLACE_LEVEL 2
+#define INTERLACE_LEVEL 1
 #define MAX_PROGRAM_SIZE 2000
 
 // A route
@@ -26,10 +26,12 @@ CRGB leds[LED_COUNT];
 uint32_t counter = 0;
 uint16_t fpsCounter = 0;
 uint64_t lastShown = 0;
+int receivePosition = 0;
+int bytesToReceive = 0;
 
 int interlacing = 0;
-unsigned short entryPoint = 16;
-unsigned char mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x01, 0x08, 0x00, 0x03, 0x64, 0x13, 0x10, 0x03, 0x20, 0x14, 0x02, 0x0c, 0x00, 0x01, 0x0c, 0x00, 0x03, 0x10, 0x33, 0x21, 0x08, 0x03, 0x20, 0x01, 0x0c, 0x00, 0x11, 0x22, 0x03, 0x01, 0x0c, 0x00, 0x02, 0x0c, 0x00, 0x01, 0x0c, 0x00, 0x03, 0x08, 0x12, 0x08, 0x00, 0x00, 0x04, 0xff, 0x00, 0x01, 0x0c, 0x00, 0x03, 0x08, 0x12, 0x11, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x01, 0x08, 0x00, 0x10, 0x04, 0xff, 0x00, 0x14, 0x03, 0x00, 0x30, 0x21, 0x05, 0x04, 0xff, 0x00, 0x22, 0x02, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
+unsigned short entryPoint = 12;
+unsigned char mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x04, 0x03, 0x00, 0x22, 0x03, 0x04, 0xff, 0x00, 0x08, 0x00, 0x00, 0x03, 0x00, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x05, 0x04, 0xff, 0x00, 0x22, 0x02, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
 
 void setColorLine(int start, int end, CRGB color);
 
@@ -68,119 +70,6 @@ void setup()
     // memcpy(mem, program, sizeof(program));
 }
 
-void processPacket()
-{
-    int packetType = Serial.read();
-    // Switch does not work for some reason??
-    if (packetType == 1) // Set effect
-    {
-        idleEffect = Serial.read();
-        Serial.print("Set idle effect ");
-        Serial.println(idleEffect);
-        // setupEffect(idleEffect);
-    }
-    else if (packetType == 2 || packetType == 3) // Enable/disable line
-    {
-        uint8_t id = Serial.read();
-        if (id >= MAX_LINES)
-        {
-            Serial.println("Reached max lines");
-            return;
-        }
-
-        if (packetType == 2)
-        {
-            if (routes[id] != nullptr)
-            {
-                setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
-                delete routes[id];
-            }
-
-            // Enable line effect
-            uint8_t r = Serial.read(), g = Serial.read(), b = Serial.read();
-            uint16_t startLed = Serial.read() << 8 | Serial.read();
-            uint16_t endLed = Serial.read() << 8 | Serial.read();
-            uint16_t duration = Serial.read() << 8 | Serial.read();
-
-            uint64_t endTime = duration > 0 ? millis() + duration * 1000 : 0;
-            routes[id] = new LineEffect(startLed, endLed, endTime, CRGB(r, g, b));
-
-            Serial.print("Enable line ");
-            Serial.print(id);
-            Serial.print(", startLed=");
-            Serial.print(startLed);
-            Serial.print(", endLed=");
-            Serial.print(endLed);
-            Serial.print(", duration=");
-            Serial.println(duration);
-        }
-        else
-        {
-            // Disable line effect
-            if (routes[id] != nullptr)
-            {
-                setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
-                delete routes[id];
-                routes[id] = nullptr;
-            }
-
-            Serial.print("Disable line ");
-            Serial.println(id);
-        }
-    }
-    else if (packetType == 4)
-    {
-        uint8_t id = Serial.read();
-        if (id >= MAX_LINES)
-        {
-            Serial.println("Reached max lines");
-            return;
-        }
-
-        if (routes[id] != nullptr)
-        {
-            setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
-            delete routes[id];
-        }
-
-        uint8_t room = Serial.read();
-        uint64_t endTime = millis() + 5 * 1000;
-
-        switch (room)
-        {
-        case 0:
-            routes[id] = new LineEffect(0, 5, endTime, CRGB(255, 0, 0));
-            Serial.print("Room 1");
-            break;
-        case 1:
-            routes[id] = new LineEffect(0, 10, endTime, CRGB(255, 0, 0));
-            Serial.print("Room 2");
-            break;
-        case 2:
-            routes[id] = new LineEffect(0, 15, endTime, CRGB(255, 0, 0));
-            Serial.print("Room 3");
-            break;
-        case 3:
-            routes[id] = new LineEffect(0, 20, endTime, CRGB(255, 0, 0));
-            Serial.print("Room 4");
-            break;
-        case 4:
-            routes[id] = new LineEffect(0, 25, endTime, CRGB(255, 0, 0));
-            Serial.print("Room 5");
-            break;
-        case 5:
-            routes[id] = new LineEffect(0, 30, endTime, CRGB(255, 0, 0));
-            Serial.print("Room 6");
-            break;
-        }
-    }
-    else
-    {
-        Serial.print("Unknown packet type ");
-        Serial.println(packetType);
-    }
-}
-
 void setColorLine(int start, int end, CRGB color)
 {
     for (int i = 0; i < LED_COUNT; i++)
@@ -192,6 +81,114 @@ void setColorLine(int start, int end, CRGB color)
     for (int i = start; i != end && i < LED_COUNT && i >= 0; i += dir)
     {
         leds[i] = color;
+    }
+}
+
+void handleSetIdle()
+{
+    Serial.read();
+    idleEffect = Serial.read();
+    Serial.print("Set idle effect ");
+    Serial.println(idleEffect);
+}
+
+void handleEnableLine()
+{
+    Serial.read();
+    uint8_t id = Serial.read();
+
+    if (id >= MAX_LINES)
+    {
+        Serial.println("Reached max lines");
+        return;
+    }
+
+    if (routes[id] != nullptr)
+    {
+        setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
+        delete routes[id];
+    }
+
+    // Enable line effect
+    uint8_t r = Serial.read(), g = Serial.read(), b = Serial.read();
+    uint16_t startLed = Serial.read() << 8 | Serial.read();
+    uint16_t endLed = Serial.read() << 8 | Serial.read();
+    uint16_t duration = Serial.read() << 8 | Serial.read();
+
+    uint64_t endTime = duration > 0 ? millis() + duration * 1000 : 0;
+    routes[id] = new LineEffect(startLed, endLed, endTime, CRGB(r, g, b));
+
+    Serial.print("Enable line ");
+    Serial.print(id);
+    Serial.print(", startLed=");
+    Serial.print(startLed);
+    Serial.print(", endLed=");
+    Serial.print(endLed);
+    Serial.print(", duration=");
+    Serial.println(duration);
+}
+
+void handleDisableLine()
+{
+    Serial.read();
+    int id = Serial.read();
+
+    if (routes[id] != nullptr)
+    {
+        setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
+        delete routes[id];
+        routes[id] = nullptr;
+    }
+
+    Serial.print("Disable line ");
+    Serial.println(id);
+}
+
+void handleSetRoom()
+{
+    Serial.read();
+    uint8_t id = Serial.read();
+    if (id >= MAX_LINES)
+    {
+        Serial.println("Reached max lines");
+        return;
+    }
+
+    if (routes[id] != nullptr)
+    {
+        setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
+        delete routes[id];
+    }
+
+    uint8_t room = Serial.read();
+    uint64_t endTime = millis() + 5 * 1000;
+
+    switch (room)
+    {
+    case 0:
+        routes[id] = new LineEffect(0, 5, endTime, CRGB(255, 0, 0));
+        Serial.println("Room 1");
+        break;
+    case 1:
+        routes[id] = new LineEffect(0, 10, endTime, CRGB(255, 0, 0));
+        Serial.println("Room 2");
+        break;
+    case 2:
+        routes[id] = new LineEffect(0, 15, endTime, CRGB(255, 0, 0));
+        Serial.println("Room 3");
+        break;
+    case 3:
+        routes[id] = new LineEffect(0, 20, endTime, CRGB(255, 0, 0));
+        Serial.println("Room 4");
+        break;
+    case 4:
+        routes[id] = new LineEffect(0, 25, endTime, CRGB(255, 0, 0));
+        Serial.println("Room 5");
+        break;
+    case 5:
+        routes[id] = new LineEffect(0, 30, endTime, CRGB(255, 0, 0));
+        Serial.println("Room 6");
+        break;
     }
 }
 
@@ -208,16 +205,69 @@ void loop()
     //     }
     // }
 
-    uint64_t time = millis();
-
-    int packetSize = Serial.peek();
-    int available = Serial.available();
-
-    if (packetSize > 0 && available >= packetSize)
+    if (receivePosition < bytesToReceive)
     {
-        Serial.read(); // Consume packetSize
-        processPacket();
+        Serial.println("starting receive...");
+        while (Serial.available() && receivePosition < bytesToReceive)
+        {
+            Serial.print("receiving ... ");
+            Serial.print(receivePosition);
+            Serial.print("/");
+            Serial.println(bytesToReceive);
+            mem[receivePosition] = Serial.read();
+            receivePosition++;
+        }
+
+        if (receivePosition >= bytesToReceive)
+        {
+            Serial.println("receiving complete");
+        }
     }
+    else
+    {
+        int packetType = Serial.peek();
+        switch (packetType)
+        {
+        case -1:
+            break;
+        case 1:
+            if (Serial.available() >= 2)
+                handleSetIdle();
+            break;
+        case 2:
+            if (Serial.available() >= 11)
+                handleEnableLine();
+            break;
+        case 3:
+            if (Serial.available() >= 2)
+                handleDisableLine();
+            break;
+        case 4:
+            if (Serial.available() >= 3)
+                handleSetRoom();
+            break;
+        case 5:
+            if (Serial.available() >= 5)
+            {
+                Serial.read();
+                bytesToReceive = Serial.read() << 8 | Serial.read();
+                receivePosition = 0;
+                entryPoint = Serial.read() << 8 | Serial.read();
+                Serial.print("Receiving program, size = ");
+                Serial.println(bytesToReceive);
+                Serial.print("entryPoint = ");
+                Serial.println(entryPoint);
+            }
+            break;
+        default:
+            // Consume invalid byte
+            Serial.print("consume ");
+            Serial.println(Serial.read());
+            break;
+        }
+    }
+
+    uint64_t time = millis();
 
     bool anyRoute = false;
 
@@ -253,14 +303,9 @@ void loop()
         }
     }
 
-    // for (int i = 0; i < LED_COUNT; i++)
-    // {
-    //     leds[i] = CRGB(255, 0, 0);
-    // }
-
     if (!anyRoute)
     {
-        *(INT *)(mem + 8) = time & 0x7FFF;
+        *(INT *)(mem + 8) = (int)time;
         for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
         {
             *(INT *)(mem + 4) = i;

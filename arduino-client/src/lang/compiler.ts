@@ -102,11 +102,12 @@ async function compile(input: string) {
     logger(`total size ${buffer.length} bytes`);
 
     let str = buffer.toString("hex");
-    let parts = [];
-    for (let i = 0; i < str.length; i += 2) {
-        parts.push("0x" + str.substr(i, 2));
-    }
-    console.log(parts.join(", "));
+    console.log(str);
+    // let parts = [];
+    // for (let i = 0; i < str.length; i += 2) {
+    //     parts.push("0x" + str.substr(i, 2));
+    // }
+    // console.log(parts.join(", "));
 
     let outputFile = await fs.open("../arduino/testing/input.hex", "w");
     outputFile.write(buffer);

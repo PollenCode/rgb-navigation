@@ -18,13 +18,26 @@ console.log(`opening serial port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
 
 let client = new RGBClient();
 let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
-//setTimeout(() => arduino.sendEffect(1), 2000);
-//setTimeout(() => arduino.sendRoom(1, 1), 4000);
-//setTimeout(() => arduino.sendEnableLine(0, 0, 0, 255, 0, 50, 60), 2000);
-//setTimeout(() => arduino.sendEnableLine(0, 0, 255, 0, 0, 31, 8), 5000);
+// setTimeout(() => arduino.sendEffect(1), 1000);
+// setTimeout(() => arduino.sendRoom(1, 1), 4000);
+// setTimeout(() => arduino.sendEnableLine(0, 0, 0, 255, 0, 50, 60), 2000);
+// setTimeout(() => arduino.sendEnableLine(0, 0, 255, 0, 0, 31, 8), 5000);
 // setTimeout(() => arduino.sendDisableLine(0), 15000);
 // setTimeout(() => arduino.sendEnableLine(1, 0, 255, 0, 0, 15, 5), 17000);
-// setTimeout(() => arduino.sendDisableLine(1), 25000);
+// setTimeout(() => arduino.sendDisableLine(1), 5000);
+setTimeout(
+    () =>
+        arduino.sendProgram(
+            Buffer.from(
+                "000000000000000000000000000000000108000104001004000214020c00010c00040001322105010c00220704ff01010c0011080000030008010003000802000f",
+                "hex"
+            ),
+            16
+        ),
+    1000
+);
+
+setTimeout(() => arduino.sendEffect(1), 1000);
 
 const BOARD_TYPE = "arduino:avr:uno";
 
