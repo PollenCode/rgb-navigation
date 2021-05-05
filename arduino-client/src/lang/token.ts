@@ -512,6 +512,9 @@ export function expectBlock(c: CompilerContext) {
         do {
             s = expectIf(c);
             if (s) statements.push(s);
+
+            c.lex.string(";");
+            c.lex.readWhitespace();
         } while (s);
 
         if (!c.lex.string("}")) {
@@ -526,6 +529,10 @@ export function expectBlock(c: CompilerContext) {
         if (!s) {
             throw new Error(`Expected statement after : at ${c.lex.lineColumn()}`);
         }
+
+        c.lex.string(";");
+        c.lex.readWhitespace();
+
         statements.push(s);
     } else {
         return;

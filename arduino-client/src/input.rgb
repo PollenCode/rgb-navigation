@@ -1,13 +1,22 @@
 // CHRISTMAS EFFECT
 
-if 1 {
-    value = (index + timer / 100) % 32
-    value = value > 16 ? 32 - value : value
-    r = value * 8
-    g = 255 - (value * 8)
-    b = (index + timer) % 255 == 0 ? 255 : 0
-}
+// if 0 {
+//     value = (index + timer / 100) % 32;
+//     value = value > 16 ? 32 - value : value;
+//     r = value * 8;
+//     g = 255 - value * 8;
+//     b = (index + timer) % 255 == 0 ? 255 : 0;
+// }
 
+if (index % 2) {
+    r = 255;
+    g = 0;
+    b = 0;
+} else {
+    r = 0;
+    g = 0;
+    b = 255;
+}
 
 // t = timer % 512
 
@@ -28,4 +37,3 @@ if 1 {
 //     g = 0
 //     b = a
 // }
-
