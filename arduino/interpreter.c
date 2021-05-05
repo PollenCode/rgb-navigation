@@ -22,6 +22,7 @@ enum OpCode
     Dup = 0x06,
     Swap = 0x07,
     Halt = 0x0F,
+
     Add = 0x10,
     Sub = 0x11,
     Mul = 0x12,
@@ -30,9 +31,18 @@ enum OpCode
     Inv = 0x15,
     Abs = 0x16,
     Add8 = 0x17,
+
     Jrnz = 0x20,
     Jrz = 0x21,
     Jr = 0x22,
+
+    Eq = 0x30,
+    Neq = 0x31,
+    Lt = 0x32,
+    Bt = 0x33,
+    Lte = 0x34,
+    Bte = 0x35,
+
     Out = 0xA0,
 };
 
@@ -239,6 +249,64 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
             exePointer += rel;
             continue;
         }
+
+        case 0x23:
+        case 0x24:
+        case 0x25:
+        case 0x26:
+        case 0x27:
+        case 0x28:
+        case 0x29:
+        case 0x2A:
+        case 0x2B:
+        case 0x2C:
+        case 0x2D:
+        case 0x2E:
+        case 0x2F:
+            return EINVOP;
+
+        case Eq:
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) == *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
+#ifdef DEBUG
+            printf("eq\n");
+#endif
+            continue;
+        case Neq:
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) != *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
+#ifdef DEBUG
+            printf("neq\n");
+#endif
+            continue;
+        case Lt:
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) < *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
+#ifdef DEBUG
+            printf("lt\n");
+#endif
+            continue;
+        case Bt:
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) > *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
+#ifdef DEBUG
+            printf("bt\n");
+#endif
+            continue;
+        case Lte:
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) <= *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
+#ifdef DEBUG
+            printf("lte\n");
+#endif
+            continue;
+        case Bte:
+            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) >= *(INT *)(mem + stackPointer);
+            stackPointer += sizeof(INT);
+#ifdef DEBUG
+            printf("bte\n");
+#endif
+            continue;
 
             // case Out:
             //     // PRINT("out: ");

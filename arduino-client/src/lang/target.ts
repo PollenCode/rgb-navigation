@@ -51,6 +51,7 @@ export enum OpCode {
     Dup = 0x06,
     Swap = 0x07,
     Halt = 0x0f,
+
     Add = 0x10,
     Sub = 0x11,
     Mul = 0x12,
@@ -59,9 +60,18 @@ export enum OpCode {
     Inv = 0x15,
     Abs = 0x16,
     Add8 = 0x17,
+
     Jrnz = 0x20,
     Jrz = 0x21,
     Jr = 0x22,
+
+    Eq = 0x30,
+    Neq = 0x31,
+    Lt = 0x32,
+    Bt = 0x33,
+    Lte = 0x34,
+    Bte = 0x35,
+
     Out = 0xa0,
 }
 
@@ -169,5 +179,29 @@ export class CodeWriter extends BinaryWriter {
         logger("jr", offset);
         this.write8(OpCode.Jr);
         this.write8(offset);
+    }
+    eq() {
+        logger("eq");
+        this.write8(OpCode.Eq);
+    }
+    neq() {
+        logger("neq");
+        this.write8(OpCode.Neq);
+    }
+    lt() {
+        logger("lt");
+        this.write8(OpCode.Lt);
+    }
+    bt() {
+        logger("bt");
+        this.write8(OpCode.Bt);
+    }
+    lte() {
+        logger("lte");
+        this.write8(OpCode.Lte);
+    }
+    bte() {
+        logger("bte");
+        this.write8(OpCode.Bte);
     }
 }
