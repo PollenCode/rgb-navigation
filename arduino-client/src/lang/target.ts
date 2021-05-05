@@ -45,11 +45,13 @@ export enum OpCode {
     Noop = 0x00,
     Push = 0x01,
     Pop = 0x02,
-    Push8 = 0x03,
-    Push16 = 0x04,
-    Push32 = 0x05,
+    PushConst8 = 0x03,
+    PushConst16 = 0x04,
+    PushConst32 = 0x05,
     Dup = 0x06,
     Swap = 0x07,
+    Pop8 = 0x08,
+    Push8 = 0x09,
     Halt = 0x0f,
 
     Add = 0x10,
@@ -81,6 +83,16 @@ export class CodeWriter extends BinaryWriter {
         this.write8(OpCode.Push);
         this.write16(src);
     }
+    push8(src: number) {
+        logger("push8", src);
+        this.write8(OpCode.Push8);
+        this.write16(src);
+    }
+    pop8(src: number) {
+        logger("pop8", src);
+        this.write8(OpCode.Pop8);
+        this.write16(src);
+    }
     pop(src: number) {
         logger("pop", src);
         this.write8(OpCode.Pop);
@@ -99,17 +111,17 @@ export class CodeWriter extends BinaryWriter {
     }
     pushConst8(num: number) {
         logger("pushConst8", num);
-        this.write8(OpCode.Push8);
+        this.write8(OpCode.PushConst8);
         this.write8(num);
     }
     pushConst16(num: number) {
         logger("pushConst16", num);
-        this.write8(OpCode.Push16);
+        this.write8(OpCode.PushConst16);
         this.write16(num);
     }
     pushConst32(num: number) {
         logger("pushConst32", num);
-        this.write8(OpCode.Push32);
+        this.write8(OpCode.PushConst32);
         this.write32(num);
     }
     dup() {

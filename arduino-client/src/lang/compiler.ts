@@ -76,12 +76,14 @@ async function compile(input: string) {
     // input = await preprocess(input);
 
     let context = new CompilerContext(input);
-    context.vars.set("index", { type: new IntType(), location: 0, static: true, name: "index" });
-    context.vars.set("counter", { type: new IntType(), location: 4, static: true, name: "counter" });
-    context.vars.set("r", { type: new IntType(), location: 8, static: true, name: "r" });
-    context.vars.set("g", { type: new IntType(), location: 12, static: true, name: "g" });
-    context.vars.set("b", { type: new IntType(), location: 16, static: true, name: "b" });
+    context.vars.set("r", { type: new IntType(undefined, 1), location: 0, static: true, name: "r" });
+    context.vars.set("g", { type: new IntType(undefined, 1), location: 1, static: true, name: "g" });
+    context.vars.set("b", { type: new IntType(undefined, 1), location: 2, static: true, name: "b" });
+    context.vars.set("index", { type: new IntType(), location: 4, static: true, name: "index" });
+    context.vars.set("timer", { type: new IntType(), location: 8, static: true, name: "timer" });
     context.memorySize = 12;
+
+    console.log(context.vars);
 
     logger("parsing...");
     context.compile();

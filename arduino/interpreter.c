@@ -16,11 +16,13 @@ enum OpCode
     Noop = 0x00,
     Push = 0x01,
     Pop = 0x02,
-    Push8 = 0x03,
-    Push16 = 0x04,
-    Push32 = 0x05,
+    PushConst8 = 0x03,
+    PushConst16 = 0x04,
+    PushConst32 = 0x05,
     Dup = 0x06,
     Swap = 0x07,
+    Pop8 = 0x08,
+    Push8 = 0x09,
     Halt = 0x0F,
 
     Add = 0x10,
@@ -82,17 +84,17 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
             stackPointer += sizeof(INT);
             continue;
         }
-        case Push8:
+        case PushConst8:
         {
             char val = mem[exePointer++];
             stackPointer -= sizeof(INT);
-            *(char *)(mem + stackPointer) = val;
+            mem[stackPointer] = val;
 #ifdef DEBUG
             printf("pushconst8 %d\n", val);
 #endif
             continue;
         }
-        case Push16:
+        case PushConst16:
         {
             short val = mem[exePointer++] | (mem[exePointer++] << 8);
             stackPointer -= sizeof(INT);
@@ -102,7 +104,7 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #endif
             continue;
         }
-        case Push32:
+        case PushConst32:
         {
             int val = mem[exePointer++] | (mem[exePointer++] << 8) | (mem[exePointer++] << 16) | (mem[exePointer++] << 24);
             stackPointer -= sizeof(INT);
@@ -131,8 +133,26 @@ int run(unsigned char *mem, unsigned int size, unsigned short exePointer)
 #endif
             continue;
         }
-        case 0x08:
-        case 0x09:
+        case Pop8:
+        {
+            unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
+            mem[addr] = mem[stackPointer];
+#ifdef DEBUG
+            printf("pop8 %d\n", addr);
+#endif
+            stackPointer += sizeof(INT);
+            continue;
+        }
+        case Push8:
+        {
+            unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
+            stackPointer -= sizeof(INT);
+            mem[stackPointer] = mem[addr];
+#ifdef DEBUG
+            printf("push8 %d\n", addr);
+#endif
+            continue;
+        }
         case 0x0A:
         case 0x0B:
         case 0x0C:

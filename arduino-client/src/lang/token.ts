@@ -328,8 +328,9 @@ export class ReferenceToken extends Token {
         if (this.type instanceof IntType && this.type.constantValue !== undefined) {
             code.pushConst(this.type.constantValue!);
         } else {
-            let address = this.context.vars.get(this.varName)!.location;
-            code.push(address);
+            let v = this.context.vars.get(this.varName)!;
+            if (v.type.size === 1) code.push8(v.location);
+            else code.push(v.location);
         }
     }
 }
@@ -401,7 +402,9 @@ export class AssignmentToken extends Token {
             if (v instanceof VoidType) throw new Error(`Cannot assign void to ${v.type} at ${this.context.lex.lineColumn(this.position)}`);
 
             // Update type, can contain new constant value
-            v.type = this.value.type;
+            if (v.type instanceof NumberType && this.value.type instanceof NumberType && this.value.type.constantValue !== undefined) {
+                v.type.constantValue = this.value.type.constantValue;
+            }
         } else {
             let location = this.context.memorySize;
             this.context.memorySize += this.value.type.size;
@@ -422,11 +425,12 @@ export class AssignmentToken extends Token {
     emit(code: CodeWriter, isRoot: boolean) {
         // if (!(this.value.type instanceof IntType && this.value.type.constantValue !== undefined)) {
         this.value.emit(code);
-        let address = this.context.vars.get(this.varName)!.location;
-        code.pop(address);
         if (!isRoot) {
             code.dup();
         }
+        let v = this.context.vars.get(this.varName)!;
+        if (v.type.size === 1) code.pop8(v.location);
+        else code.pop(v.location);
         // }
     }
 }
