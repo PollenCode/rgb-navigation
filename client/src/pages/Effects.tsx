@@ -85,19 +85,15 @@ function EffectListItem(props: { effect: Effect; onClick?: () => void }) {
 
 const DEFAULT_CODE = `
 
-void setup() {
-    // Do your setup logic here, do not remove this function if you don't need it
-}
+// This code will run for every led on the strip
+// index contains which led is currently 
+// timer contains the time in millis
 
-void loop() {
-
-    // Example effect: set all leds to white
-    for (int i = 0; i < LED_COUNT; i++)
-    {
-        leds[i] = CRGB(255, 255, 255);
-    }
-
-}
+// Example effect
+// Flashing red
+r = timer % 255
+g = 0
+b = 0
 
 `;
 
