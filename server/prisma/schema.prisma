@@ -23,11 +23,12 @@ model User {
 
 // A custom arduino effect
 model Effect {
-  id     Int     @id @default(autoincrement())
-  name   String  @unique
-  code   String
-  author User?   @relation(fields: [userId], references: [id])
-  userId String?
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  code     String
+  compiled Bytes?
+  author   User?   @relation(fields: [authorId], references: [id])
+  authorId String?
 }
 
 model Token {

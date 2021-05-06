@@ -12,7 +12,8 @@
     "node-fetch": "^2.6.1",
     "querystring": "^0.2.1",
     "socket.io": "^4.0.0",
-    "rgb-navigation-api": "link:../api"
+    "rgb-navigation-api": "link:../api",
+    "rgb-compiler": "link:../compiler"
   },
   "scripts": {
     "start": "nodemon --exec npx ts-node src/index.ts",

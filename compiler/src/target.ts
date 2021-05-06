@@ -1,7 +1,7 @@
 import { NumberType, Type } from "./types";
 import debug from "debug";
 
-const logger = debug("rgb:compiler");
+const logger = debug("rgb:compiler:emit");
 
 export class BinaryWriter {
     position: number = 0;
@@ -45,12 +45,15 @@ export enum OpCode {
     Noop = 0x00,
     Push = 0x01,
     Pop = 0x02,
-    Push8 = 0x03,
-    Push16 = 0x04,
-    Push32 = 0x05,
+    PushConst8 = 0x03,
+    PushConst16 = 0x04,
+    PushConst32 = 0x05,
     Dup = 0x06,
     Swap = 0x07,
+    Pop8 = 0x08,
+    Push8 = 0x09,
     Halt = 0x0f,
+
     Add = 0x10,
     Sub = 0x11,
     Mul = 0x12,
@@ -58,14 +61,37 @@ export enum OpCode {
     Mod = 0x14,
     Inv = 0x15,
     Abs = 0x16,
+    Add8 = 0x17,
+
+    Jrnz = 0x20,
+    Jrz = 0x21,
+    Jr = 0x22,
+    Call = 0x23,
+
+    Eq = 0x30,
+    Neq = 0x31,
+    Lt = 0x32,
+    Bt = 0x33,
+    Lte = 0x34,
+    Bte = 0x35,
+
     Out = 0xa0,
-    OutIndirect = 0xa1,
 }
 
 export class CodeWriter extends BinaryWriter {
     push(src: number) {
         logger("push", src);
         this.write8(OpCode.Push);
+        this.write16(src);
+    }
+    push8(src: number) {
+        logger("push8", src);
+        this.write8(OpCode.Push8);
+        this.write16(src);
+    }
+    pop8(src: number) {
+        logger("pop8", src);
+        this.write8(OpCode.Pop8);
         this.write16(src);
     }
     pop(src: number) {
@@ -86,17 +112,17 @@ export class CodeWriter extends BinaryWriter {
     }
     pushConst8(num: number) {
         logger("pushConst8", num);
-        this.write8(OpCode.Push8);
+        this.write8(OpCode.PushConst8);
         this.write8(num);
     }
     pushConst16(num: number) {
         logger("pushConst16", num);
-        this.write8(OpCode.Push16);
+        this.write8(OpCode.PushConst16);
         this.write16(num);
     }
     pushConst32(num: number) {
         logger("pushConst32", num);
-        this.write8(OpCode.Push32);
+        this.write8(OpCode.PushConst32);
         this.write32(num);
     }
     dup() {
@@ -135,16 +161,65 @@ export class CodeWriter extends BinaryWriter {
         logger("abs");
         this.write8(OpCode.Abs);
     }
+    add8(value: number) {
+        if (value >= 127 || value <= -128) throw new Error("Add value too big");
+        logger("add8", value);
+        this.write8(OpCode.Add8);
+        this.write8(value);
+    }
     out() {
         logger("out");
         this.write8(OpCode.Out);
     }
-    outIndirect() {
-        logger("outindirect");
-        this.write8(OpCode.OutIndirect);
-    }
     halt() {
         logger("halt");
         this.write8(OpCode.Halt);
+    }
+    jrnz(offset: number) {
+        if (offset >= 127 || offset <= -128) throw new Error("Jump too far");
+        logger("jnz", offset);
+        this.write8(OpCode.Jrnz);
+        this.write8(offset);
+    }
+    jrz(offset: number) {
+        if (offset >= 127 || offset <= -128) throw new Error("Jump too far");
+        logger("jz", offset);
+        this.write8(OpCode.Jrz);
+        this.write8(offset);
+    }
+    jr(offset: number) {
+        if (offset >= 127 || offset <= -128) throw new Error("Jump too far");
+        logger("jr", offset);
+        this.write8(OpCode.Jr);
+        this.write8(offset);
+    }
+    eq() {
+        logger("eq");
+        this.write8(OpCode.Eq);
+    }
+    neq() {
+        logger("neq");
+        this.write8(OpCode.Neq);
+    }
+    lt() {
+        logger("lt");
+        this.write8(OpCode.Lt);
+    }
+    bt() {
+        logger("bt");
+        this.write8(OpCode.Bt);
+    }
+    lte() {
+        logger("lte");
+        this.write8(OpCode.Lte);
+    }
+    bte() {
+        logger("bte");
+        this.write8(OpCode.Bte);
+    }
+    call(index: number) {
+        logger("call", index);
+        this.write8(OpCode.Call);
+        this.write8(index);
     }
 }

@@ -1,7 +1,10 @@
 import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
 import { CodeWriter } from "./target";
-import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType } from "./types";
+import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType, FloatType } from "./types";
+import debug from "debug";
+
+const logger = debug("rgb:compiler");
 
 export abstract class Token {
     readonly context: CompilerContext;
@@ -58,16 +61,38 @@ export class TernaryToken extends Token {
         if (this.op.type instanceof NumberType && this.op.type.constantValue !== undefined) {
             this.type = this.op.type.constantValue ? this.trueOp.type : this.falseOp.type;
         } else {
-            this.type = this.trueOp.type;
+            this.type = new IntType();
         }
     }
-    emit() {
-        throw new Error("Ternary not emitted");
+    emit(code: CodeWriter) {
+        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+            code.pushConst(this.type.constantValue);
+            return;
+        }
+
+        this.op.emit(code);
+
+        let jrzLocation = code.position;
+        code.position += 2;
+
+        this.trueOp.emit(code);
+        let jrLocation = code.position;
+        code.position += 2;
+
+        let falseLocation = code.position;
+        this.falseOp.emit(code);
+
+        let save = code.position;
+        code.position = jrzLocation;
+        code.jrz(falseLocation - jrzLocation - 2);
+        code.position = jrLocation;
+        code.jr(save - jrLocation - 2);
+        code.position = save;
     }
 }
 
 function expectTernary(c: CompilerContext): Token | undefined {
-    let op = expectSum(c) || expectBrackets(c);
+    let op = expectCompare(c) || expectBrackets(c);
     if (!op) {
         return;
     }
@@ -167,9 +192,9 @@ export class MulToken extends Token {
     }
 }
 
-export function expectMul(c: CompilerContext): MulToken | ReferenceToken | ValueToken | undefined {
+export function expectMul(c: CompilerContext): Token | undefined {
     let position = c.lex.position;
-    let operand1 = expectValue(c);
+    let operand1 = expectValue(c) || expectBrackets(c);
     if (!operand1) {
         c.lex.position = position;
         return;
@@ -232,11 +257,15 @@ export class SumToken extends Token {
         } else if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
             if (this.op1.type.constantValue !== undefined) {
                 code.pushConst(this.op1.type.constantValue);
+                // code.add8(this.op1.type.constantValue);
+                // return;
             } else {
                 this.op1.emit(code);
             }
             if (this.op2.type.constantValue !== undefined) {
                 code.pushConst(this.op2.type.constantValue);
+                // code.add8(this.op2.type.constantValue);
+                // return;
             } else {
                 this.op2.emit(code);
             }
@@ -302,8 +331,9 @@ export class ReferenceToken extends Token {
         if (this.type instanceof IntType && this.type.constantValue !== undefined) {
             code.pushConst(this.type.constantValue!);
         } else {
-            let address = this.context.vars.get(this.varName)!.location;
-            code.push(address);
+            let v = this.context.vars.get(this.varName)!;
+            if (v.type.size === 1) code.push8(v.location);
+            else code.push(v.location);
         }
     }
 }
@@ -363,28 +393,50 @@ export function expectValue(c: CompilerContext) {
 }
 
 export class AssignmentToken extends Token {
-    constructor(context: CompilerContext, position: number, public varName: string, public value: Token, public isStatic: boolean) {
+    constructor(context: CompilerContext, position: number, public typeName: string | undefined, public varName: string, public value: Token) {
         super(context, position);
     }
 
     setTypes(): void {
         this.value.setTypes();
-        if (this.context.vars.has(this.varName)) {
-            let v = this.context.vars.get(this.varName)!;
-            // isAssignable(type, v.type)
-            if (v instanceof VoidType) throw new Error(`Cannot assign void to ${v.type} at ${this.context.lex.lineColumn(this.position)}`);
+        if (this.typeName) {
+            // Define variable
+            if (this.context.vars.has(this.varName)) {
+                throw new Error(
+                    `Variable ${this.varName} has already been declared, second declaration is at ${this.context.lex.lineColumn(this.position)}`
+                );
+            }
 
-            // Update type, can contain new constant value
-            v.type = this.value.type;
+            let type;
+            switch (this.typeName) {
+                case "int":
+                    type = new IntType(undefined, 4);
+                    break;
+                case "byte":
+                    type = new IntType(undefined, 1);
+                    break;
+                case "float":
+                    type = new FloatType();
+                    break;
+                default:
+                    throw new Error(`Unknown variable type ${this.typeName} at ${this.context.lex.lineColumn(this.position)}`);
+            }
+
+            if (type instanceof NumberType && this.value.type instanceof NumberType && this.value.type.constantValue !== undefined) {
+                type.constantValue = this.value.type.constantValue;
+            }
+
+            this.context.defineVariable(this.varName, type);
         } else {
-            let location = this.context.memorySize;
-            this.context.memorySize += this.value.type.size;
-            this.context.vars.set(this.varName, {
-                location,
-                name: this.varName,
-                static: this.isStatic,
-                type: this.value.type,
-            });
+            // Set variable
+            if (!this.context.vars.has(this.varName)) {
+                throw new Error(`Variable ${this.varName} was not found, at ${this.context.lex.lineColumn(this.position)}`);
+            }
+
+            let v = this.context.vars.get(this.varName)!;
+            if (v.type instanceof NumberType && this.value.type instanceof NumberType && this.value.type.constantValue !== undefined) {
+                v.type.constantValue = this.value.type.constantValue;
+            }
         }
         this.type = this.value.type;
     }
@@ -394,28 +446,30 @@ export class AssignmentToken extends Token {
     }
 
     emit(code: CodeWriter, isRoot: boolean) {
-        if (!(this.value.type instanceof IntType && this.value.type.constantValue !== undefined)) {
-            this.value.emit(code);
-            let address = this.context.vars.get(this.varName)!.location;
-            code.pop(address);
-            if (!isRoot) {
-                code.dup();
-            }
+        // if (!(this.value.type instanceof IntType && this.value.type.constantValue !== undefined)) {
+        this.value.emit(code);
+        if (!isRoot) {
+            code.dup();
         }
+        let v = this.context.vars.get(this.varName)!;
+        if (v.type.size === 1) code.pop8(v.location);
+        else code.pop(v.location);
+        // }
     }
 }
 
 export function expectAssignment(c: CompilerContext) {
     let position = c.lex.position;
 
-    let isStatic = c.lex.string("#");
-
-    let varName = c.lex.readSymbol();
-    if (!varName) {
+    let name0 = c.lex.readSymbol();
+    if (!name0) {
         c.lex.position = position;
         return;
     }
 
+    c.lex.readWhitespace();
+
+    let name1 = c.lex.readSymbol();
     c.lex.readWhitespace();
 
     if (!c.lex.string("=")) {
@@ -432,7 +486,11 @@ export function expectAssignment(c: CompilerContext) {
 
     c.lex.readWhitespace();
 
-    return new AssignmentToken(c, position, varName, value, isStatic);
+    if (name1) {
+        return new AssignmentToken(c, position, name0, name1, value);
+    } else {
+        return new AssignmentToken(c, position, undefined, name0, value);
+    }
 }
 
 export class BlockToken extends Token {
@@ -446,7 +504,8 @@ export class BlockToken extends Token {
     }
 
     toString() {
-        return this.statements.map((e) => e.toString()).join("\n");
+        if (this.statements.length === 1) return `: ${this.statements[0]}`;
+        else return `{\n${this.statements.map((e) => e.toString()).join("\n")}\n}\n`;
     }
 
     emit(code: CodeWriter) {
@@ -454,12 +513,12 @@ export class BlockToken extends Token {
     }
 }
 
-export function expectBlock(c: CompilerContext) {
+export function expectProgram(c: CompilerContext) {
     let position = c.lex.position;
     let statements: Token[] = [];
 
     while (c.lex.position < c.lex.buffer.length) {
-        let s = expectOut(c) || expectAssignment(c);
+        let s = expectOut(c) || expectIf(c);
         if (!s) {
             throw new Error(`Expected statement at ${c.lex.lineColumn()}`);
         }
@@ -468,6 +527,44 @@ export function expectBlock(c: CompilerContext) {
         c.lex.readWhitespace();
     }
 
+    return new BlockToken(c, position, statements);
+}
+
+export function expectBlock(c: CompilerContext) {
+    let position = c.lex.position;
+    let statements: Token[] = [];
+    if (c.lex.string("{")) {
+        c.lex.readWhitespace();
+
+        let s: Token | undefined;
+        do {
+            s = expectIf(c);
+            if (s) statements.push(s);
+
+            c.lex.string(";");
+            c.lex.readWhitespace();
+        } while (s);
+
+        if (!c.lex.string("}")) {
+            throw new Error(`Expected closing } at ${c.lex.lineColumn()}`);
+        }
+
+        c.lex.readWhitespace();
+    } else if (c.lex.string(":")) {
+        c.lex.readWhitespace();
+
+        let s = expectIf(c);
+        if (!s) {
+            throw new Error(`Expected statement after : at ${c.lex.lineColumn()}`);
+        }
+
+        c.lex.string(";");
+        c.lex.readWhitespace();
+
+        statements.push(s);
+    } else {
+        return;
+    }
     return new BlockToken(c, position, statements);
 }
 
@@ -505,4 +602,209 @@ export function expectOut(c: CompilerContext) {
     }
 
     return new OutToken(c, position, op);
+}
+
+export class CompareToken extends Token {
+    constructor(
+        context: CompilerContext,
+        position: number,
+        public op1: Token,
+        public op2: Token,
+        public operator: "==" | "!=" | ">" | ">=" | "<" | "<="
+    ) {
+        super(context, position);
+    }
+
+    toString(): string {
+        return `${this.op1} ${this.operator} ${this.op2}`;
+    }
+
+    setTypes(): void {
+        this.op1.setTypes();
+        this.op2.setTypes();
+
+        if (this.op1.type instanceof NumberType && this.op2.type instanceof NumberType) {
+            switch (this.operator) {
+                case "!=":
+                    this.type = this.op1.type.neq(this.op2.type);
+                    break;
+                case "==":
+                    this.type = this.op1.type.eq(this.op2.type);
+                    break;
+                case ">":
+                    this.type = this.op1.type.gt(this.op2.type);
+                    break;
+                case ">=":
+                    this.type = this.op1.type.gte(this.op2.type);
+                    break;
+                case "<":
+                    this.type = this.op1.type.lt(this.op2.type);
+                    break;
+                case "<=":
+                    this.type = this.op1.type.lte(this.op2.type);
+                    break;
+            }
+        } else {
+            this.type = new IntType();
+        }
+    }
+
+    emit(code: CodeWriter) {
+        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+            code.pushConst(this.type.constantValue);
+            return;
+        }
+
+        this.op1.emit(code);
+        this.op2.emit(code);
+        switch (this.operator) {
+            case "!=":
+                code.neq();
+                break;
+            case "==":
+                code.eq();
+                break;
+            case ">":
+                code.bt();
+                break;
+            case ">=":
+                code.bte();
+                break;
+            case "<":
+                code.lt();
+                break;
+            case "<=":
+                code.lte();
+                break;
+            default:
+                throw new Error("Invalid compare operator");
+        }
+    }
+}
+
+function expectCompare(c: CompilerContext) {
+    let position = c.lex.position;
+    let op1 = expectSum(c) || expectBrackets(c);
+    if (!op1) {
+        return;
+    }
+
+    let operator: "==" | "!=" | ">" | ">=" | "<" | "<=";
+    if (c.lex.string("===")) {
+        throw new Error(`Use == instead of === at ${c.lex.lineColumn()}`);
+    } else if (c.lex.string("!==")) {
+        throw new Error(`Use != instead of !== at ${c.lex.lineColumn()}`);
+    } else if (c.lex.string("==")) {
+        operator = "==";
+    } else if (c.lex.string("=")) {
+        throw new Error(`Use double equals signs (==) instead of a single one (=) to compare values at ${c.lex.lineColumn()}`);
+    } else if (c.lex.string("!=")) {
+        operator = "!=";
+    } else if (c.lex.string(">=")) {
+        operator = ">=";
+    } else if (c.lex.string(">")) {
+        operator = ">";
+    } else if (c.lex.string("<=")) {
+        operator = "<=";
+    } else if (c.lex.string("<")) {
+        operator = "<";
+    } else {
+        return op1;
+    }
+
+    c.lex.readWhitespace();
+
+    let op2 = expectSum(c) || expectBrackets(c);
+    if (!op2) {
+        throw new Error(`Expected value to compare against at ${c.lex.lineColumn()}`);
+    }
+
+    return new CompareToken(c, position, op1, op2, operator);
+}
+
+export class IfToken extends Token {
+    constructor(context: CompilerContext, position: number, public condition: Token, public ifBlock: Token, public elseBlock: Token | undefined) {
+        super(context, position);
+    }
+
+    toString(): string {
+        if (this.elseBlock) return `if ${this.condition} \n\t${this.ifBlock}\n else \n\t${this.elseBlock}\n`;
+        else return `if ${this.condition} \n\t${this.ifBlock}\n`;
+    }
+    setTypes(): void {
+        this.type = VOID;
+        this.condition.setTypes();
+        this.ifBlock.setTypes();
+        this.elseBlock?.setTypes();
+    }
+    emit(code: CodeWriter): void {
+        if (this.condition.type instanceof NumberType && this.condition.type.constantValue !== undefined) {
+            if (this.condition.type.constantValue !== 0) {
+                this.ifBlock.emit(code);
+            } else {
+                this.elseBlock?.emit(code);
+            }
+            return;
+        }
+
+        this.condition.emit(code);
+        if (!this.elseBlock) {
+            let jrzLocation = code.position;
+            code.position += 2;
+
+            this.ifBlock.emit(code);
+
+            let save = code.position;
+            code.position = jrzLocation;
+            code.jrz(save - jrzLocation - 2);
+            code.position = save;
+        } else {
+            let jrzLocation = code.position;
+            code.position += 2;
+
+            this.ifBlock.emit(code);
+            let jrLocation = code.position;
+            code.position += 2;
+
+            let elseLocation = code.position;
+            this.elseBlock.emit(code);
+
+            let save = code.position;
+            code.position = jrzLocation;
+            code.jrz(elseLocation - jrzLocation - 2);
+            code.position = jrLocation;
+            code.jr(save - jrLocation - 2);
+            code.position = save;
+        }
+    }
+}
+
+export function expectIf(c: CompilerContext) {
+    let position = c.lex.position;
+    if (!c.lex.string("if")) {
+        return expectAssignment(c);
+    }
+
+    c.lex.readWhitespace();
+
+    let condition = expectTernary(c) || expectBrackets(c);
+    if (!condition) {
+        throw new Error(`Expected if condition at ${c.lex.lineColumn()}`);
+    }
+
+    let ifBlock = expectBlock(c);
+    if (!ifBlock) {
+        throw new Error(`Expected code block after if at ${c.lex.lineColumn()}`);
+    }
+
+    let elseBlock: Token | undefined = undefined;
+    if (c.lex.string("else")) {
+        c.lex.readWhitespace();
+        elseBlock = expectBlock(c);
+        if (!elseBlock) {
+            throw new Error(`Expected code block after else at ${c.lex.lineColumn()}`);
+        }
+    }
+
+    return new IfToken(c, position, condition, ifBlock, elseBlock);
 }

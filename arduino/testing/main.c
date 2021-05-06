@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include "interpreter.c"
+#define DEBUG
+#include "../interpreter.c"
 
 int main()
 {
@@ -33,10 +34,10 @@ int main()
     clock_gettime(CLOCK_MONOTONIC, &tstart);
 
     int res;
-    for (int i = 0; i < 240; i++)
+    for (int i = 0; i < 1; i++)
     {
         mem[0] = i;
-        res = run(mem, codeSize, 16);
+        res = run(mem, codeSize, 12);
     }
 
     clock_gettime(CLOCK_MONOTONIC, &tend);
@@ -52,6 +53,10 @@ int main()
     for (int i = 0; i < 40; i += 4)
     {
         printf("value at %x: %d\n", i, *(int *)(mem + i));
+    }
+    for (int i = 0; i < 8; i++)
+    {
+        printf("value at %x: %d\n", i, mem[i]);
     }
     for (int i = 65535 - 16; i < 65535; i += 4)
     {

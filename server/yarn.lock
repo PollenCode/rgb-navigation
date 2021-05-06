@@ -1297,6 +1297,10 @@ responselike@^1.0.2:
   dependencies:
     lowercase-keys "^1.0.0"
 
+"rgb-compiler@link:../compiler":
+  version "0.0.0"
+  uid ""
+
 "rgb-navigation-api@link:../api":
   version "0.0.0"
   uid ""
