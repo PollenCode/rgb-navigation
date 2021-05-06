@@ -3,7 +3,7 @@ import { Prompt, RouteComponentProps, useHistory } from "react-router";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
-import Editor, { DiffEditor, useMonaco, loader } from "@monaco-editor/react";
+import Editor, { useMonaco } from "@monaco-editor/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faCheck,
@@ -150,6 +150,7 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
     const history = useHistory();
     const outputRef = useRef<HTMLPreElement>(null);
     const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
+    const monaco = useMonaco();
 
     function clearOutput() {
         if (outputRef.current) {
@@ -166,6 +167,36 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
             outputRef.current.scrollTop = outputRef.current.scrollHeight;
         }
     }
+
+    useEffect(() => {
+        if (!monaco) return;
+        monaco.languages.register({ id: "rgb-lang" });
+        monaco.languages.setMonarchTokensProvider("rgb-lang", {
+            tokenizer: {
+                root: [
+                    [/\/\/.*/, "comment"],
+                    [/(if|out|else|int|short|float|byte)/, "keyword"],
+                    [/(=|==|>|<|>=|<=|\+|-|\*|%|\^)/, "operator"],
+                    [/\d+/, "number"],
+                ],
+            },
+        });
+        monaco.languages.registerCompletionItemProvider("rgb-lang", {
+            provideCompletionItems: () => ({
+                suggestions: [
+                    ...Array.from(code!.matchAll(/(int)+\s+([a-z0-9]+)/gi)).map((e) => ({
+                        kind: monaco.languages.CompletionItemKind.Variable,
+                        insertText: e[2],
+                        range: undefined as any,
+                        label: e[2],
+                    })),
+                    { kind: monaco.languages.CompletionItemKind.Class, insertText: "int", range: undefined as any, label: "int" },
+                    { kind: monaco.languages.CompletionItemKind.Class, insertText: "float", range: undefined as any, label: "float" },
+                    { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "if", range: undefined as any, label: "if" },
+                ],
+            }),
+        });
+    }, [monaco]);
 
     useEffect(() => {
         client.getEffect(parseInt(props.match.params.id)).then(setEffect);
@@ -287,8 +318,9 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                         minimap: {
                             enabled: false,
                         },
+                        autoClosingBrackets: "always",
                     }}
-                    defaultLanguage="cpp"
+                    defaultLanguage="rgb-lang"
                     theme="vs-dark"
                     value={code}
                     onChange={(ev) => setCode(ev)}
@@ -298,7 +330,10 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                 <div className="absolute bottom-0 right-0 w-full border-t bg-black bg-opacity-10 text-white" style={{ backdropFilter: "blur(8px)" }}>
                     <h2 className="font-bold px-4 py-2 flex">
                         Output
-                        <span className="ml-auto cursor-pointer" onClick={() => setShowOutput(false)}>
+                        <span title="Clear output" className="ml-auto cursor-pointer mr-5" onClick={() => clearOutput()}>
+                            <FontAwesomeIcon icon={faTrash} />
+                        </span>
+                        <span title="Hide output" className="cursor-pointer" onClick={() => setShowOutput(false)}>
                             <FontAwesomeIcon icon={faTimes} />
                         </span>
                     </h2>
