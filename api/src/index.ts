@@ -1,7 +1,7 @@
 import { throws } from "assert/strict";
 import io from "socket.io-client";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { ArduinoBuildMessage, LedControllerServerMessage } from "./message";
+import { LedControllerServerMessage } from "./message";
 
 export const isDevelopment = process.env.NODE_ENV === "development";
 export const serverPath = isDevelopment ? "http://localhost:3001" : "https://rgb.ikdoeict.be";
@@ -121,10 +121,6 @@ export class RGBClient extends TypedEmitter<Events> {
 
     public async buildEffect(id: number, upload: boolean): Promise<{ status: "error"; error: string } | { status: "ok" }> {
         return await this.doFetch("/api/effect/build/" + id + (upload ? "?upload=true" : ""), "POST");
-    }
-
-    public async emitArduinoBuild(message: ArduinoBuildMessage) {
-        this.socket.emit("arduinoBuild", message);
     }
 
     public async ledController(startLed: number, endLed: number, duration: number, color: any) {

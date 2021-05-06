@@ -3,8 +3,10 @@ import http from "http";
 import { validateDeviceAccessToken, validateUserAccessToken } from "./auth";
 import { PrismaClient } from ".prisma/client";
 import { LedControllerServerMessage } from "rgb-navigation-api";
+import debug from "debug";
 
-let prisma = new PrismaClient();
+const logger = debug("rgb:socket");
+const prisma = new PrismaClient();
 let roomsCurrentlyBinding: {
     [roomId: string]: { socketId: string; userId: string };
 } = {};
@@ -14,7 +16,7 @@ export function createSocketServer(server: http.Server) {
     socket = new Server(server, { cors: { origin: "*" } });
 
     socket.on("connection", (connection) => {
-        // console.log("new connection", connection.id);
+        // logger("new connection", connection.id);
 
         connection.on("bind", ({ token, roomId }, callback) => {
             // Validate
@@ -51,7 +53,7 @@ export function createSocketServer(server: http.Server) {
         connection.on("nfcScan", async ({ token, uuid }) => {
             // Validate data
             if (typeof token !== "string" || typeof uuid !== "string") {
-                console.warn("received invalid nfcScan data");
+                logger("received invalid nfcScan data");
                 return;
             }
 
@@ -59,7 +61,7 @@ export function createSocketServer(server: http.Server) {
             // which also contains the room id it is located in.
             let deviceToken = validateDeviceAccessToken(token);
             if (!deviceToken) {
-                console.warn("could not verify nfc scan");
+                logger("could not verify nfc scan");
                 return;
             }
             let currentlyBinding = roomsCurrentlyBinding[deviceToken.roomId];
@@ -75,7 +77,7 @@ export function createSocketServer(server: http.Server) {
             if (currentlyBinding) {
                 // Check if there is already someone bound to the nfc
                 if (boundUser) {
-                    console.warn("nfc already bound", uuid);
+                    logger("nfc already bound", uuid);
                     socket.in(deviceToken.roomId).emit("nfcAlreadyBound");
                     socket.in(currentlyBinding.socketId).emit("nfcAlreadyBound");
                     return;
@@ -91,14 +93,14 @@ export function createSocketServer(server: http.Server) {
                     socket.in(currentlyBinding.socketId).emit("nfcBound", { identifier: uuid });
                 }
             } else if (!boundUser) {
-                console.warn("unknown nfc scanned", uuid);
+                logger("unknown nfc scanned", uuid);
                 socket.in(deviceToken.roomId).emit("nfcUnknownScanned");
                 return;
             }
 
             // TODO: enable leds for user
             let followData = { name: boundUser.name };
-            console.warn("enable led for user", boundUser.id, boundUser.name);
+            logger("enable led for user", boundUser.id, boundUser.name);
             socket.in(deviceToken.roomId).emit("userShouldFollow", followData);
             if (currentlyBinding) {
                 socket.in(currentlyBinding.socketId).emit("userShouldFollow", followData);
@@ -119,8 +121,8 @@ export function createSocketServer(server: http.Server) {
             else connection.leave("arduino");
         });
 
-        connection.on("arduinoBuild", (data) => {
-            socket.in("arduino").emit("arduinoBuild", data);
+        connection.on("arduinoOutput", (data) => {
+            socket.in("arduino").emit("arduinoOutput", data);
         });
     });
 
@@ -128,6 +130,6 @@ export function createSocketServer(server: http.Server) {
 }
 
 export function sendArduino(message: LedControllerServerMessage) {
-    console.log("sendArduino");
+    logger("sendArduino", message);
     socket.emit("ledController", message);
 }

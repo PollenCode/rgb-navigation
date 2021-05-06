@@ -18,7 +18,7 @@ import {
     faUpload,
     IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
-import { ArduinoBuildMessage } from "rgb-navigation-api";
+import { LedControllerMessage } from "rgb-navigation-api";
 
 interface Effect {
     name: string;
@@ -157,22 +157,19 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
     useEffect(() => {
         client.getEffect(parseInt(props.match.params.id)).then(setEffect);
 
-        function onArduinoBuild(data: ArduinoBuildMessage) {
-            if (data.type === "stderr") {
-                setOutput((output) => [...output, [true, data.data]]);
-            } else if (data.type === "stdout") {
+        function onArduinoData(data: LedControllerMessage) {
+            if (data.type === "data") {
                 setOutput((output) => [...output, [false, data.data]]);
-            } else if (data.type === "status") {
-                setStatus(data);
-                setLoading(data.percent < 1);
+            } else if (data.type === "error") {
+                setOutput((output) => [...output, [true, data.data]]);
             }
         }
 
-        client.socket.on("arduinoBuild", onArduinoBuild);
+        client.socket.on("arduinoOutput", onArduinoData);
         client.socket.emit("arduinoSubscribe", true);
 
         return () => {
-            client.socket.off("arduinoBuild", onArduinoBuild);
+            client.socket.off("arduinoOutput", onArduinoData);
             client.socket.emit("arduinoSubscribe", false);
         };
     }, []);

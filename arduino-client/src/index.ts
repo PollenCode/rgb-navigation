@@ -54,6 +54,14 @@ async function processMessage(data: LedControllerServerMessage) {
     }
 }
 
+arduino.port.on("data", (data) => {
+    client.socket.emit("arduinoOutput", { type: "data", data: data.toString("utf-8") });
+});
+
+arduino.port.on("error", (data) => {
+    client.socket.emit("arduinoOutput", { type: "error", data: String(data) });
+});
+
 client.socket.on("connect", () => {
     console.log("connected");
 });

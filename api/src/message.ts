@@ -1,8 +1,4 @@
-export type ArduinoBuildMessage =
-    | { type: "stdout"; data: string }
-    | { type: "stderr"; data: string }
-    | { type: "status"; percent: number; status: string };
-
+// Server -> Arduino
 export type LedControllerServerMessage =
     | {
           type: "enableLine";
@@ -18,6 +14,12 @@ export type LedControllerServerMessage =
           room: number;
       }
     | { type: "uploadProgram"; byteCode: string; entryPoint: number };
+
+// Arduino -> Server
+export type LedControllerMessage = {
+    type: "data" | "error";
+    data: string;
+};
 
 // !! Does your change here not reflect in other projects?
 // Make sure to run `yarn start` in this folder (api) to build this package each time you change something

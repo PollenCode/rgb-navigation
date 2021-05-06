@@ -1,3 +1,4 @@
+import EventEmitter from "events";
 import SerialPort from "serialport";
 
 export enum SerialPacketType {
@@ -9,7 +10,7 @@ export enum SerialPacketType {
 }
 
 export class SerialLedController {
-    private port: SerialPort;
+    public port: SerialPort;
 
     public async pause() {
         await new Promise((res) => this.port.close(res));
