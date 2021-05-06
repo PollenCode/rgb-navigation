@@ -1,4 +1,3 @@
-require("dotenv").config();
 import fs from "fs/promises";
 import debug from "debug";
 import { Lexer } from "./lexer";
@@ -22,14 +21,29 @@ interface Variable {
 
 export class CompilerContext {
     lex: Lexer;
-    memorySize: number = 0;
     vars: Map<string, Variable>;
     root?: Token;
+
+    private currentVarAllocation: number = 0;
 
     constructor(input: string) {
         this.lex = new Lexer(input);
         this.lex.readWhitespace();
         this.vars = new Map();
+    }
+
+    defineVariableAt(name: string, type: Type, address: number) {
+        if (this.vars.has(name)) throw new Error("Variable already declared");
+        this.vars.set(name, { name, static: true, location: address, type });
+        if (address + type.size > this.currentVarAllocation) {
+            this.currentVarAllocation = address + type.size;
+        }
+    }
+
+    defineVariable(name: string, type: Type) {
+        if (this.vars.has(name)) throw new Error("Variable already declared");
+        this.vars.set(name, { name, static: true, location: this.currentVarAllocation, type });
+        this.currentVarAllocation += type.size;
     }
 
     getMemory() {
@@ -68,20 +82,21 @@ export class CompilerContext {
         return writer.buffer;
     }
 }
-export interface CompilerContext {
-    vars: Map<string, Variable>;
-}
 
 async function compile(input: string) {
     // input = await preprocess(input);
 
     let context = new CompilerContext(input);
-    context.vars.set("r", { type: new IntType(undefined, 1), location: 0, static: true, name: "r" });
-    context.vars.set("g", { type: new IntType(undefined, 1), location: 1, static: true, name: "g" });
-    context.vars.set("b", { type: new IntType(undefined, 1), location: 2, static: true, name: "b" });
-    context.vars.set("index", { type: new IntType(), location: 4, static: true, name: "index" });
-    context.vars.set("timer", { type: new IntType(), location: 8, static: true, name: "timer" });
-    context.memorySize = 12;
+    context.defineVariableAt("r", new IntType(undefined, 1), 0);
+    context.defineVariableAt("g", new IntType(undefined, 1), 1);
+    context.defineVariableAt("b", new IntType(undefined, 1), 2);
+    context.defineVariableAt("index", new IntType(), 4);
+    context.defineVariableAt("timer", new IntType(), 8);
+    // context.vars.set("r", { type: new IntType(undefined, 1), location: 0, static: true, name: "r" });
+    // context.vars.set("g", { type: new IntType(undefined, 1), location: 1, static: true, name: "g" });
+    // context.vars.set("b", { type: new IntType(undefined, 1), location: 2, static: true, name: "b" });
+    // context.vars.set("index", { type: new IntType(), location: 4, static: true, name: "index" });
+    // context.vars.set("timer", { type: new IntType(), location: 8, static: true, name: "timer" });
 
     console.log(context.vars);
 

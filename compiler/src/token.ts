@@ -406,14 +406,7 @@ export class AssignmentToken extends Token {
                 v.type.constantValue = this.value.type.constantValue;
             }
         } else {
-            let location = this.context.memorySize;
-            this.context.memorySize += this.value.type.size;
-            this.context.vars.set(this.varName, {
-                location,
-                name: this.varName,
-                static: this.isStatic,
-                type: this.value.type,
-            });
+            this.context.defineVariable(this.varName, this.value.type);
         }
         this.type = this.value.type;
     }
