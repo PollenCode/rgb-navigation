@@ -8,7 +8,7 @@
 //     b = (index + timer) % 255 == 0 ? 255 : 0;
 // }
 
-c = (timer + index) % 512;
+int c = (timer + index) % 512;
 r = c < 256 ? c : 511 - c;
 g = 0; // c < 128 ? 128 + c : 128 - c;
 b = 0;

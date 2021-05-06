@@ -13,28 +13,25 @@ async function compileFile(fileName: string) {
 }
 
 interface Variable {
-    static: boolean;
     name: string;
     type: Type;
     location: number;
 }
 
 export class CompilerContext {
-    lex: Lexer;
+    lex!: Lexer;
     vars: Map<string, Variable>;
     root?: Token;
 
     private currentVarAllocation: number = 0;
 
-    constructor(input: string) {
-        this.lex = new Lexer(input);
-        this.lex.readWhitespace();
+    constructor() {
         this.vars = new Map();
     }
 
     defineVariableAt(name: string, type: Type, address: number) {
         if (this.vars.has(name)) throw new Error("Variable already declared");
-        this.vars.set(name, { name, static: true, location: address, type });
+        this.vars.set(name, { name, location: address, type });
         if (address + type.size > this.currentVarAllocation) {
             this.currentVarAllocation = address + type.size;
         }
@@ -42,10 +39,13 @@ export class CompilerContext {
 
     defineVariable(name: string, type: Type) {
         if (this.vars.has(name)) throw new Error("Variable already declared");
-        this.vars.set(name, { name, static: true, location: this.currentVarAllocation, type });
+        this.vars.set(name, { name, location: this.currentVarAllocation, type });
         this.currentVarAllocation += type.size;
     }
 
+    /**
+     * Returns the prealloced variables and their initial value in buffer format
+     */
     getMemory() {
         let writer = new BinaryWriter();
         this.vars.forEach((e) => {
@@ -67,7 +67,9 @@ export class CompilerContext {
         return writer.buffer;
     }
 
-    compile() {
+    compile(input: string) {
+        this.lex = new Lexer(input);
+        this.lex.readWhitespace();
         this.root = expectProgram(this);
     }
 
@@ -75,6 +77,9 @@ export class CompilerContext {
         this.root!.setTypes();
     }
 
+    /**
+     * Generates bytecode, to be interpreted by the interpreter
+     */
     getCode() {
         let writer = new CodeWriter();
         this.root!.emit(writer, true);
@@ -84,24 +89,15 @@ export class CompilerContext {
 }
 
 async function compile(input: string) {
-    // input = await preprocess(input);
-
-    let context = new CompilerContext(input);
+    let context = new CompilerContext();
     context.defineVariableAt("r", new IntType(undefined, 1), 0);
     context.defineVariableAt("g", new IntType(undefined, 1), 1);
     context.defineVariableAt("b", new IntType(undefined, 1), 2);
     context.defineVariableAt("index", new IntType(), 4);
     context.defineVariableAt("timer", new IntType(), 8);
-    // context.vars.set("r", { type: new IntType(undefined, 1), location: 0, static: true, name: "r" });
-    // context.vars.set("g", { type: new IntType(undefined, 1), location: 1, static: true, name: "g" });
-    // context.vars.set("b", { type: new IntType(undefined, 1), location: 2, static: true, name: "b" });
-    // context.vars.set("index", { type: new IntType(), location: 4, static: true, name: "index" });
-    // context.vars.set("timer", { type: new IntType(), location: 8, static: true, name: "timer" });
-
-    console.log(context.vars);
 
     logger("parsing...");
-    context.compile();
+    context.compile(input);
     logger("type checking...");
     context.typeCheck();
     logger("compiling...");

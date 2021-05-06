@@ -1,7 +1,7 @@
 import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
 import { CodeWriter } from "./target";
-import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType } from "./types";
+import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType, FloatType } from "./types";
 
 export abstract class Token {
     readonly context: CompilerContext;
@@ -390,23 +390,50 @@ export function expectValue(c: CompilerContext) {
 }
 
 export class AssignmentToken extends Token {
-    constructor(context: CompilerContext, position: number, public varName: string, public value: Token, public isStatic: boolean) {
+    constructor(context: CompilerContext, position: number, public typeName: string | undefined, public varName: string, public value: Token) {
         super(context, position);
     }
 
     setTypes(): void {
         this.value.setTypes();
-        if (this.context.vars.has(this.varName)) {
-            let v = this.context.vars.get(this.varName)!;
-            // isAssignable(type, v.type)
-            if (v instanceof VoidType) throw new Error(`Cannot assign void to ${v.type} at ${this.context.lex.lineColumn(this.position)}`);
+        if (this.typeName) {
+            // Define variable
+            if (this.context.vars.has(this.varName)) {
+                throw new Error(
+                    `Variable ${this.varName} has already been declared, second declaration is at ${this.context.lex.lineColumn(this.position)}`
+                );
+            }
 
-            // Update type, can contain new constant value
+            let type;
+            switch (this.typeName) {
+                case "int":
+                    type = new IntType(undefined, 4);
+                    break;
+                case "byte":
+                    type = new IntType(undefined, 1);
+                    break;
+                case "float":
+                    type = new FloatType();
+                    break;
+                default:
+                    throw new Error(`Unknown variable type ${this.typeName} at ${this.context.lex.lineColumn(this.position)}`);
+            }
+
+            if (type instanceof NumberType && this.value.type instanceof NumberType && this.value.type.constantValue !== undefined) {
+                type.constantValue = this.value.type.constantValue;
+            }
+
+            this.context.defineVariable(this.varName, type);
+        } else {
+            // Set variable
+            if (!this.context.vars.has(this.varName)) {
+                throw new Error(`Variable ${this.varName} was not found, at ${this.context.lex.lineColumn(this.position)}`);
+            }
+
+            let v = this.context.vars.get(this.varName)!;
             if (v.type instanceof NumberType && this.value.type instanceof NumberType && this.value.type.constantValue !== undefined) {
                 v.type.constantValue = this.value.type.constantValue;
             }
-        } else {
-            this.context.defineVariable(this.varName, this.value.type);
         }
         this.type = this.value.type;
     }
@@ -431,14 +458,15 @@ export class AssignmentToken extends Token {
 export function expectAssignment(c: CompilerContext) {
     let position = c.lex.position;
 
-    let isStatic = c.lex.string("#");
-
-    let varName = c.lex.readSymbol();
-    if (!varName) {
+    let name0 = c.lex.readSymbol();
+    if (!name0) {
         c.lex.position = position;
         return;
     }
 
+    c.lex.readWhitespace();
+
+    let name1 = c.lex.readSymbol();
     c.lex.readWhitespace();
 
     if (!c.lex.string("=")) {
@@ -455,7 +483,11 @@ export function expectAssignment(c: CompilerContext) {
 
     c.lex.readWhitespace();
 
-    return new AssignmentToken(c, position, varName, value, isStatic);
+    if (name1) {
+        return new AssignmentToken(c, position, name0, name1, value);
+    } else {
+        return new AssignmentToken(c, position, undefined, name0, value);
+    }
 }
 
 export class BlockToken extends Token {
