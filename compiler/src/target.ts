@@ -1,7 +1,7 @@
 import { NumberType, Type } from "./types";
 import debug from "debug";
 
-const logger = debug("rgb:compiler");
+const logger = debug("rgb:compiler:emit");
 
 export class BinaryWriter {
     position: number = 0;
