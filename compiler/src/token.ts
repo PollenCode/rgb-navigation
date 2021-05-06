@@ -2,6 +2,9 @@ import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
 import { CodeWriter } from "./target";
 import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType, FloatType } from "./types";
+import debug from "debug";
+
+const logger = debug("rgb:compiler");
 
 export abstract class Token {
     readonly context: CompilerContext;
