@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { Prompt, RouteComponentProps, useHistory } from "react-router";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
@@ -144,21 +144,39 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
     const client = useContext(AuthContext);
     const [effect, setEffect] = useState<Effect>();
     const [code, setCode] = useState<string>();
-    const [output, setOutput] = useState<[boolean, string][]>([]);
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<{ percent: number; status: string }>({ percent: 0, status: "" });
+    const [showOutput, setShowOutput] = useState(false);
     const history = useHistory();
+    const outputRef = useRef<HTMLPreElement>(null);
     const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
+
+    function clearOutput() {
+        if (outputRef.current) {
+            outputRef.current.innerText = "";
+        }
+    }
+
+    function appendOutput(data: string, error = false) {
+        if (outputRef.current) {
+            let el = document.createElement("span");
+            if (error) el.style.color = "red";
+            el.innerText = data;
+            outputRef.current.appendChild(el);
+            outputRef.current.scrollTop = outputRef.current.scrollHeight;
+        }
+    }
 
     useEffect(() => {
         client.getEffect(parseInt(props.match.params.id)).then(setEffect);
 
         function onArduinoData(data: LedControllerMessage) {
-            if (data.type === "data") {
-                setOutput((output) => [...output, [false, data.data]]);
-            } else if (data.type === "error") {
-                setOutput((output) => [...output, [true, data.data]]);
-            }
+            appendOutput(data.data, data.type === "error");
+            // if (data.type === "data") {
+            //     setOutput((output) => [...output, [false, data.data]]);
+            // } else if (data.type === "error") {
+            //     setOutput((output) => [...output, [true, data.data]]);
+            // }
         }
 
         client.socket.on("arduinoOutput", onArduinoData);
@@ -192,17 +210,17 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
     }
 
     async function build() {
-        setOutput([]);
         setLoading(true);
-        // setStatus({ percent: 0, status: "Uploaden" });
+        setShowOutput(true);
+        clearOutput();
         if (effect!.author!.id === client.user!.id) await save();
         let res = await client.buildEffect(effect!.id, true);
         if (res.status === "error") {
-            setOutput([[true, res.error]]);
+            appendOutput(res.error + "\n", true);
         } else {
-            setOutput([[false, "compiling ok"]]);
+            appendOutput("compiling ok\n");
         }
-        await new Promise((res) => setTimeout(res, 1000));
+        await new Promise((res) => setTimeout(res, 2000));
         setLoading(false);
     }
 
@@ -263,26 +281,15 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
             <div className="h-full relative overflow-hidden fade-in">
                 <Editor defaultLanguage="cpp" theme="vs-dark" value={code} onChange={(ev) => setCode(ev)} />
             </div>
-            {output.length && (
+            {showOutput && (
                 <div className="absolute bottom-0 right-0 w-full border-t bg-black bg-opacity-10 text-white" style={{ backdropFilter: "blur(8px)" }}>
                     <h2 className="font-bold px-4 py-2 flex">
                         Output
-                        <span className="ml-auto cursor-pointer" onClick={() => setOutput([])}>
+                        <span className="ml-auto cursor-pointer" onClick={() => setShowOutput(false)}>
                             <FontAwesomeIcon icon={faTimes} />
                         </span>
                     </h2>
-                    <pre
-                        className="px-4 py-2 max-h-96 overflow-auto"
-                        ref={(pre) => {
-                            // Scroll to bottom automatically
-                            if (pre) pre.scrollTop = pre.scrollHeight;
-                        }}>
-                        {output.map((e, i) => (
-                            <p key={i} className={`${e[0] ? "text-red-600" : "text-white"}`}>
-                                {e[1]}
-                            </p>
-                        ))}
-                    </pre>
+                    <pre className="px-4 py-2 max-h-96 overflow-auto" ref={outputRef}></pre>
                 </div>
             )}
         </div>
