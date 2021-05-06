@@ -17,15 +17,15 @@ interface Events {
     auth: (auth: User | undefined, accessToken: string | undefined) => void;
 }
 
-
-    
 function hexToRgb(hex: any) {
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-    } : 0;
+    return result
+        ? {
+              r: parseInt(result[1], 16),
+              g: parseInt(result[2], 16),
+              b: parseInt(result[3], 16),
+          }
+        : 0;
 }
 
 export class RGBClient extends TypedEmitter<Events> {
@@ -91,10 +91,6 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/unbind", "POST");
     }
 
-    public async sendIdleEffect(effect: number) {
-        return await this.doFetch("/api/active-effect/" + effect, "POST");
-    }
-
     public async sendRoom(room: number) {
         let req: LedControllerServerMessage = {
             type: "roomEffect",
@@ -123,16 +119,16 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect", "PATCH", effect);
     }
 
-    public async buildEffect(id: number) {
-        return await this.doFetch("/api/effect/build/" + id, "POST");
+    public async buildEffect(id: number, upload: boolean): Promise<{ status: "error"; error: string } | { status: "ok" }> {
+        return await this.doFetch("/api/effect/build/" + id + (upload ? "?upload=true" : ""), "POST");
     }
 
     public async emitArduinoBuild(message: ArduinoBuildMessage) {
         this.socket.emit("arduinoBuild", message);
     }
 
-    public async ledController(startLed: number, endLed: number, duration: number, color:any){
-        let r : any = hexToRgb(color);
+    public async ledController(startLed: number, endLed: number, duration: number, color: any) {
+        let r: any = hexToRgb(color);
         let req: LedControllerServerMessage = {
             type: "enableLine",
             duration: duration,
@@ -155,11 +151,10 @@ export class RGBClient extends TypedEmitter<Events> {
 
     public async deleteToken(id: any) {
         let req = {
-            id: id
-        }
+            id: id,
+        };
         return await this.doFetch("/api/deleteToken", "DELETE", req);
     }
-
 }
 
 export * from "./message";

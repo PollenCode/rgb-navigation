@@ -3,6 +3,7 @@ import { Router } from "express";
 import debug from "debug";
 import { withUser } from "./middleware";
 import { sendArduino } from "./socketServer";
+import { CompareToken, CompilerContext, IntType } from "rgb-compiler";
 
 const logger = debug("rgb:effects");
 const router = Router();
@@ -10,15 +11,75 @@ const prisma = new PrismaClient();
 
 let activeEffectId = -1;
 
-router.post("/active-effect/:id", async (req, res, next) => {
+function compile(input: string): [Buffer, number] {
+    let context = new CompilerContext();
+    context.defineVariableAt("r", new IntType(undefined, 1), 0);
+    context.defineVariableAt("g", new IntType(undefined, 1), 1);
+    context.defineVariableAt("b", new IntType(undefined, 1), 2);
+    context.defineVariableAt("index", new IntType(), 4);
+    context.defineVariableAt("timer", new IntType(), 8);
+    context.compile(input);
+    context.typeCheck();
+
+    let memory = context.getMemory();
+    let program = context.getCode();
+    let buffer = Buffer.alloc(memory.length + program.length);
+    memory.copy(buffer, 0, 0, memory.length);
+    program.copy(buffer, memory.length, 0, program.length);
+
+    return [buffer, memory.length];
+}
+
+router.post("/effect/build/:id", async (req, res, next) => {
     let id = parseInt(req.params.id);
+    let upload = !!req.query.upload;
     if (isNaN(id)) {
         return res.status(400).end();
     }
 
-    activeEffectId = id;
-    sendArduino({ type: "setIdleEffect", effect: id });
-    res.end();
+    let effect = await prisma.effect.findUnique({
+        where: {
+            id: id,
+        },
+    });
+
+    if (!effect) {
+        return res.status(404).end();
+    }
+
+    try {
+        let [compiled, entryPoint] = compile(effect.code);
+        effect = await prisma.effect.update({
+            where: {
+                id: id,
+            },
+            data: {
+                compiled: compiled,
+                entryPoint: entryPoint,
+                lastError: null,
+            },
+        });
+    } catch (ex) {
+        logger("compile error", ex.message);
+        effect = await prisma.effect.update({
+            where: {
+                id: id,
+            },
+            data: {
+                lastError: ex.message,
+            },
+        });
+        return res.json({
+            status: "error",
+            error: ex.message,
+        });
+    }
+
+    if (upload) {
+        activeEffectId = id;
+        sendArduino({ type: "uploadProgram", byteCode: effect.compiled!.toString("hex"), entryPoint: effect.entryPoint! });
+    }
+    res.json({ status: "ok" });
 });
 
 router.get("/effect", async (req, res, next) => {
@@ -183,13 +244,12 @@ router.get("/effect/:id", withUser(), async (req, res, next) => {
     res.json(effect);
 });
 
-router.post("/effect/build/:id", async (req, res, next) => {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-        return res.status(400).end();
-    }
-    sendArduino({ type: "customEffect", id: id });
-    res.end();
-});
+// router.post("/effect/build/:id", async (req, res, next) => {
+//     const id = parseInt(req.params.id);
+//     if (isNaN(id)) {
+//         return res.status(400).end();
+//     }
+//     res.end();
+// });
 
 export default router;

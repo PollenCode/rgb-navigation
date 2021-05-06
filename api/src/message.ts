@@ -5,10 +5,6 @@ export type ArduinoBuildMessage =
 
 export type LedControllerServerMessage =
     | {
-          type: "setIdleEffect";
-          effect: number;
-      }
-    | {
           type: "enableLine";
           duration: number;
           startLed: number;
@@ -21,10 +17,7 @@ export type LedControllerServerMessage =
           type: "roomEffect";
           room: number;
       }
-    | {
-          type: "customEffect";
-          id: number;
-      };
+    | { type: "uploadProgram"; byteCode: string; entryPoint: number };
 
 // !! Does your change here not reflect in other projects?
 // Make sure to run `yarn start` in this folder (api) to build this package each time you change something

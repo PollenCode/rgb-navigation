@@ -71,7 +71,7 @@ export class SerialLedController {
         this.port.write(Buffer.from([SerialPacketType.Room, id, room]));
     }
 
-    public sendProgram(program: Buffer, entryPoint: number) {
+    public uploadProgram(program: Buffer, entryPoint: number) {
         let buffer = Buffer.alloc(program.length + 5);
         buffer.writeInt8(SerialPacketType.Program, 0);
         buffer.writeInt16BE(program.length, 1);

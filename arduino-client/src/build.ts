@@ -93,3 +93,48 @@ export async function createProject(destination: string, effects: { name: string
     await createEffectScripts(path.join(destination, "effects"), effects);
     await generateEffectsHeaderScript(path.join(destination, "effects.h"), effects, defaultEffectId);
 }
+
+// const BOARD_TYPE = "arduino:avr:uno";
+// export function buildProject(destination: string, upload = false): Promise<boolean> {
+//     return new Promise((resolve, reject) => {
+//         let args = ["compile"];
+//         if (upload) args.push("--upload");
+//         args.push("-b", BOARD_TYPE, "-p", process.env.SERIAL_PORT!, destination);
+
+//         let c = spawn(process.env.ARDUINO_CLI!, args);
+
+//         c.stdout.on("data", (data) => {
+//             client.emitArduinoBuild({ type: "stdout", data: data.toString() });
+//             console.log("| " + data);
+//         });
+
+//         c.stderr.on("data", (data) => {
+//             client.emitArduinoBuild({ type: "stderr", data: data.toString() });
+//             console.log("! " + data);
+//         });
+
+//         c.on("exit", (code) => {
+//             resolve(code === 0);
+//         });
+//     });
+// }
+
+// async function rebuild(defaultEffectId: number) {
+//     client.emitArduinoBuild({ type: "status", percent: 0, status: "Starten" });
+
+//     await arduino.pause();
+//     let effects = await client.getEffects(true);
+
+//     client.emitArduinoBuild({ type: "status", percent: 0.15, status: "Project aanmaken" });
+
+//     let dest = "output/arduino" + new Date().getTime();
+//     await createProject(dest, effects, defaultEffectId);
+
+//     client.emitArduinoBuild({ type: "status", percent: 0.3, status: "Compileren" });
+
+//     await buildProject(dest, true);
+
+//     await arduino.resume();
+
+//     client.emitArduinoBuild({ type: "status", percent: 1, status: "Klaar" });
+// }

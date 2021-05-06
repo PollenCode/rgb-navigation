@@ -133,7 +133,7 @@ export function Effects() {
                             key={e.id}
                             effect={e}
                             onClick={async () => {
-                                await client.sendIdleEffect(e.id);
+                                await client.buildEffect(e.id, true);
                                 setEffects((effects) => effects!.map((t) => ({ ...t, active: t.id === e.id })));
                             }}
                         />
@@ -200,16 +200,15 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
 
     async function build() {
         setOutput([]);
-        setStatus({ percent: 0, status: "Uploaden" });
-        await save();
         setLoading(true);
-        await client.buildEffect(effect!.id);
-        await new Promise((res) => setTimeout(res, 1000));
-    }
-
-    async function activate() {
-        setLoading(true);
-        await client.sendIdleEffect(effect!.id);
+        // setStatus({ percent: 0, status: "Uploaden" });
+        if (effect!.author!.id === client.user!.id) await save();
+        let res = await client.buildEffect(effect!.id, true);
+        if (res.status === "error") {
+            setOutput([[true, res.error]]);
+        } else {
+            setOutput([[false, "compiling ok"]]);
+        }
         await new Promise((res) => setTimeout(res, 1000));
         setLoading(false);
     }
@@ -241,11 +240,6 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                     </span>
                 )}
                 {effect && (
-                    <Button style={{ marginRight: "0.3em" }} loading={loading} icon={faMagic} disabled={loading} onClick={activate}>
-                        Activeer
-                    </Button>
-                )}
-                {effect && !readOnly && (
                     <Button style={{ marginRight: "0.3em" }} loading={loading} icon={faUpload} disabled={loading} onClick={build}>
                         Upload
                     </Button>
