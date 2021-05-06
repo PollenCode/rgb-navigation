@@ -184,7 +184,7 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
         monaco.languages.registerCompletionItemProvider("rgb-lang", {
             provideCompletionItems: () => ({
                 suggestions: [
-                    ...Array.from(code!.matchAll(/(int)+\s+([a-z0-9]+)/gi)).map((e) => ({
+                    ...Array.from(code!.matchAll(/(int|float|byte)+\s+([a-z0-9]+)\s*(;|=)/gi)).map((e) => ({
                         kind: monaco.languages.CompletionItemKind.Variable,
                         insertText: e[2],
                         range: undefined as any,
@@ -192,7 +192,10 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                     })),
                     { kind: monaco.languages.CompletionItemKind.Class, insertText: "int", range: undefined as any, label: "int" },
                     { kind: monaco.languages.CompletionItemKind.Class, insertText: "float", range: undefined as any, label: "float" },
+                    { kind: monaco.languages.CompletionItemKind.Class, insertText: "byte", range: undefined as any, label: "byte" },
                     { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "if", range: undefined as any, label: "if" },
+                    { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "else", range: undefined as any, label: "else" },
+                    { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "out", range: undefined as any, label: "out" },
                 ],
             }),
         });

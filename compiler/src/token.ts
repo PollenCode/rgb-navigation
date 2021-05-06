@@ -393,12 +393,21 @@ export function expectValue(c: CompilerContext) {
 }
 
 export class AssignmentToken extends Token {
-    constructor(context: CompilerContext, position: number, public typeName: string | undefined, public varName: string, public value: Token) {
+    constructor(
+        context: CompilerContext,
+        position: number,
+        public typeName: string | undefined,
+        public varName: string,
+        public value: Token | undefined
+    ) {
         super(context, position);
     }
 
     setTypes(): void {
-        this.value.setTypes();
+        if (this.value) {
+            this.value.setTypes();
+            this.type = this.value.type;
+        }
         if (this.typeName) {
             // Define variable
             if (this.context.vars.has(this.varName)) {
@@ -422,7 +431,7 @@ export class AssignmentToken extends Token {
                     throw new Error(`Unknown variable type ${this.typeName} at ${this.context.lex.lineColumn(this.position)}`);
             }
 
-            if (type instanceof NumberType && this.value.type instanceof NumberType && this.value.type.constantValue !== undefined) {
+            if (this.value && type instanceof NumberType && this.value.type instanceof NumberType && this.value.type.constantValue !== undefined) {
                 type.constantValue = this.value.type.constantValue;
             }
 
@@ -434,11 +443,10 @@ export class AssignmentToken extends Token {
             }
 
             let v = this.context.vars.get(this.varName)!;
-            if (v.type instanceof NumberType && this.value.type instanceof NumberType && this.value.type.constantValue !== undefined) {
-                v.type.constantValue = this.value.type.constantValue;
+            if (v.type instanceof NumberType && this.value!.type instanceof NumberType && this.value!.type.constantValue !== undefined) {
+                v.type.constantValue = this.value!.type.constantValue;
             }
         }
-        this.type = this.value.type;
     }
 
     toString() {
@@ -446,15 +454,15 @@ export class AssignmentToken extends Token {
     }
 
     emit(code: CodeWriter, isRoot: boolean) {
-        // if (!(this.value.type instanceof IntType && this.value.type.constantValue !== undefined)) {
-        this.value.emit(code);
-        if (!isRoot) {
-            code.dup();
+        if (this.value) {
+            this.value.emit(code);
+            if (!isRoot) {
+                code.dup();
+            }
+            let v = this.context.vars.get(this.varName)!;
+            if (v.type.size === 1) code.pop8(v.location);
+            else code.pop(v.location);
         }
-        let v = this.context.vars.get(this.varName)!;
-        if (v.type.size === 1) code.pop8(v.location);
-        else code.pop(v.location);
-        // }
     }
 }
 
@@ -466,25 +474,26 @@ export function expectAssignment(c: CompilerContext) {
         c.lex.position = position;
         return;
     }
-
     c.lex.readWhitespace();
 
     let name1 = c.lex.readSymbol();
     c.lex.readWhitespace();
 
-    if (!c.lex.string("=")) {
+    let eq = c.lex.string("=");
+    if (!name1 && !eq) {
         c.lex.position = position;
         return;
     }
 
-    c.lex.readWhitespace();
+    let value: Token | undefined;
+    if (eq) {
+        c.lex.readWhitespace();
 
-    let value = expectTernary(c) || expectBrackets(c);
-    if (!value) {
-        throw new Error(`Value was expected after value declaration at ${c.lex.lineColumn()}`);
+        value = expectTernary(c) || expectBrackets(c);
+        if (!value) {
+            throw new Error(`Value was expected after value declaration at ${c.lex.lineColumn()}`);
+        }
     }
-
-    c.lex.readWhitespace();
 
     if (name1) {
         return new AssignmentToken(c, position, name0, name1, value);
