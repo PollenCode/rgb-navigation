@@ -35,4 +35,5 @@ model Effect {
 
 model Token {
   id Int @id @default(autoincrement())
+  made DateTime @default(now())
 }
