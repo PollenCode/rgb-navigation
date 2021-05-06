@@ -172,11 +172,6 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
 
         function onArduinoData(data: LedControllerMessage) {
             appendOutput(data.data, data.type === "error");
-            // if (data.type === "data") {
-            //     setOutput((output) => [...output, [false, data.data]]);
-            // } else if (data.type === "error") {
-            //     setOutput((output) => [...output, [true, data.data]]);
-            // }
         }
 
         client.socket.on("arduinoOutput", onArduinoData);
@@ -271,6 +266,14 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                     </Button>
                 )}
             </div>
+            <div className="text-white flex items-center p-1" style={{ backgroundColor: "#1e1e1e" }}>
+                <a href="https://pollencode.github.io/rgb-navigation/index" target="_blank" className="ml-auto hover:underline px-2">
+                    Documentatie
+                </a>
+                <button className="hover:underline px-2" onClick={() => setShowOutput(!showOutput)}>
+                    {showOutput ? "Sluit" : "Toon"} output
+                </button>
+            </div>
             <div className="relative" style={{ maxHeight: status.percent >= 1 || status.percent <= 0 ? "0" : "100px", transition: "2000ms" }}>
                 <div
                     style={{ width: status.percent * 100 + "%", transition: status.percent <= 0 ? "0ms" : "1000ms" }}
@@ -279,7 +282,17 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                 </div>
             </div>
             <div className="h-full relative overflow-hidden fade-in">
-                <Editor defaultLanguage="cpp" theme="vs-dark" value={code} onChange={(ev) => setCode(ev)} />
+                <Editor
+                    options={{
+                        minimap: {
+                            enabled: false,
+                        },
+                    }}
+                    defaultLanguage="cpp"
+                    theme="vs-dark"
+                    value={code}
+                    onChange={(ev) => setCode(ev)}
+                />
             </div>
             {showOutput && (
                 <div className="absolute bottom-0 right-0 w-full border-t bg-black bg-opacity-10 text-white" style={{ backdropFilter: "blur(8px)" }}>
@@ -289,7 +302,7 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                             <FontAwesomeIcon icon={faTimes} />
                         </span>
                     </h2>
-                    <pre className="px-4 py-2 max-h-96 overflow-auto" ref={outputRef}></pre>
+                    <pre className="px-4 py-2 max-h-80 h-80 overflow-auto" ref={outputRef}></pre>
                 </div>
             )}
         </div>
