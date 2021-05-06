@@ -55,7 +55,7 @@ router.delete("/effect/:id", withUser(), async (req, res, next) => {
         logger("user %d tried to delete effect that doesn't exist (%d)", req.user!.id, id);
         return res.status(404).end();
     }
-    if (effect.userId !== req.user!.id) {
+    if (effect.authorId !== req.user!.id) {
         logger("user %d tried to delete effect that isn't his (%s)", req.user.id, effect.name);
         return res.status(403).end();
     }
@@ -122,7 +122,7 @@ router.patch("/effect", withUser(), async (req, res, next) => {
         return res.status(404).end();
     }
 
-    if (existing.userId !== req.user.id) {
+    if (existing.authorId !== req.user.id) {
         logger("user %d tried to update other user's effect (%s)", req.user.id, name);
         return res.status(403).end();
     }
