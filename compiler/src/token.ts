@@ -29,7 +29,7 @@ function expectBrackets(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let op = expectTernary(c) || expectBrackets(c);
+    let op = expectOut(c, true) || expectBrackets(c);
     if (!op) {
         throw new Error(`Expected something after ( at ${c.lex.lineColumn(c.lex.position)}`);
     }
@@ -105,7 +105,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let trueOp = expectTernary(c) || expectBrackets(c);
+    let trueOp = expectOut(c, true) || expectBrackets(c);
     if (!trueOp) {
         throw new Error(`Expected something after ?, at ${c.lex.lineColumn(position)}`);
     }
@@ -116,7 +116,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let falseOp = expectTernary(c) || expectBrackets(c);
+    let falseOp = expectOut(c, true) || expectBrackets(c);
     if (!falseOp) {
         throw new Error(`Expected something after :, at ${c.lex.lineColumn(position)}`);
     }
@@ -489,7 +489,7 @@ export function expectAssignment(c: CompilerContext) {
     if (eq) {
         c.lex.readWhitespace();
 
-        value = expectTernary(c) || expectBrackets(c);
+        value = expectOut(c, true) || expectBrackets(c);
         if (!value) {
             throw new Error(`Value was expected after value declaration at ${c.lex.lineColumn()}`);
         }
@@ -527,7 +527,7 @@ export function expectProgram(c: CompilerContext) {
     let statements: Token[] = [];
 
     while (c.lex.position < c.lex.buffer.length) {
-        let s = expectOut(c) || expectIf(c);
+        let s = expectOut(c, false) || expectIf(c);
         if (!s) {
             throw new Error(`Expected statement at ${c.lex.lineColumn()}`);
         }
@@ -588,20 +588,23 @@ export class OutToken extends Token {
     setTypes(): void {
         this.value.setTypes();
         this.type = this.value.type;
+        // if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+        //     this.type.constantValue = undefined;
+        // }
     }
 
     emit(code: CodeWriter, isRoot: boolean) {
         this.value.emit(code);
-        code.out();
         if (!isRoot) {
             code.dup();
         }
+        code.out();
     }
 }
 
-export function expectOut(c: CompilerContext) {
+export function expectOut(c: CompilerContext, allowInline: boolean) {
     if (!c.lex.string("out ")) {
-        return;
+        return allowInline ? expectTernary(c) || expectBrackets(c) : undefined;
     }
 
     let position = c.lex.position;
@@ -796,7 +799,7 @@ export function expectIf(c: CompilerContext) {
 
     c.lex.readWhitespace();
 
-    let condition = expectTernary(c) || expectBrackets(c);
+    let condition = expectOut(c, true) || expectBrackets(c);
     if (!condition) {
         throw new Error(`Expected if condition at ${c.lex.lineColumn()}`);
     }

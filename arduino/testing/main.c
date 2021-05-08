@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <time.h>
 #define DEBUG
+#define PRINTLN printf
 #include "../interpreter.c"
 
 int main()
@@ -36,8 +37,7 @@ int main()
     int res;
     for (int i = 0; i < 1; i++)
     {
-        mem[0] = i;
-        res = run(mem, codeSize, 12);
+        res = run(mem, 20, 65536);
     }
 
     clock_gettime(CLOCK_MONOTONIC, &tend);

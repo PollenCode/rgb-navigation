@@ -11,6 +11,8 @@
 #define EINVOP -2
 #define EOVERFLOW -1
 
+uint32_t executed;
+
 enum OpCode
 {
     Noop = 0x00,
@@ -60,6 +62,7 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
 {
     while (1)
     {
+        executed++;
         switch (mem[exePointer++])
         {
         case Noop:
@@ -86,9 +89,10 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
         }
         case PushConst8:
         {
-            char val = mem[exePointer++];
+            int val = mem[exePointer++];
             stackPointer -= sizeof(INT);
-            mem[stackPointer] = val;
+            // mem[stackPointer] = val;
+            *(INT *)(mem + stackPointer) = val;
 #ifdef DEBUG
             printf("pushconst8 %d\n", val);
 #endif
@@ -96,9 +100,9 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
         }
         case PushConst16:
         {
-            short val = mem[exePointer++] | (mem[exePointer++] << 8);
+            int val = mem[exePointer++] | (mem[exePointer++] << 8);
             stackPointer -= sizeof(INT);
-            *(short *)(mem + stackPointer) = val;
+            *(INT *)(mem + stackPointer) = val;
 #ifdef DEBUG
             printf("pushconst16 %d\n", val);
 #endif
@@ -109,7 +113,7 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
             int val = mem[exePointer++] | (mem[exePointer++] << 8) | (mem[exePointer++] << 16) | (mem[exePointer++] << 24);
             exePointer += 4;
             stackPointer -= sizeof(INT);
-            *(uint32_t *)(mem + stackPointer) = val;
+            *(INT *)(mem + stackPointer) = val;
 #ifdef DEBUG
             printf("pushconst32 %d\n", val);
 #endif
@@ -148,7 +152,8 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
         {
             unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
             stackPointer -= sizeof(INT);
-            mem[stackPointer] = mem[addr];
+            // mem[stackPointer] = mem[addr];
+            *(INT *)(mem + stackPointer) = mem[addr];
 #ifdef DEBUG
             printf("push8 %d\n", addr);
 #endif
@@ -201,7 +206,7 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
 #endif
             continue;
         case Inv:
-            *(INT *)(mem + stackPointer) = -(*(INT *)(mem + stackPointer + sizeof(INT)));
+            *(INT *)(mem + stackPointer) = -(*(INT *)(mem + stackPointer));
 #ifdef DEBUG
             printf("inv\n");
 #endif
@@ -338,15 +343,21 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
 #endif
             continue;
 
-            // case Out:
-            //     // PRINT("out: ");
-            //     // PRINTLN((int)mem[stackPointer++]);
-            //     // PUTCHAR(mem[stackPointer++]);
-            //     break;
+        case Out:
+#if ARDUINO
+            PRINTLN(*(INT *)(mem + stackPointer));
+#endif
+            stackPointer += sizeof(INT);
+#ifdef DEBUG
+            printf("out %d\n", *(INT *)(mem + stackPointer));
+#endif
+            continue;
 
         default:
+            // PRINTLN("invalid opcode");
+            // PRINTLN(mem[exePointer - 1]);
 #ifdef DEBUG
-            printf("unknown opcode %d\n", op);
+            printf("unknown opcode %d\n", mem[exePointer - 1]);
 #endif
             return EINVOP;
         }

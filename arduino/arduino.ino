@@ -1,4 +1,5 @@
 #include <FastLED.h>
+#define PRINTLN Serial.println
 #include "interpreter.c"
 
 #define LED_COUNT 50
@@ -44,6 +45,7 @@ void handler(unsigned char id)
 
 void setup()
 {
+    executed = 0;
     callHandler = handler;
 
     // Increasing the baud rate will cause corruption and inconsistency
@@ -322,10 +324,15 @@ void loop()
     {
         Serial.print("FPS: ");
         Serial.println(fpsCounter);
+        Serial.print("executed: ");
+        Serial.println(executed);
+        // Serial.print("a: ");
+        // Serial.println(*(INT *)(mem + 0xc));
         // Serial.print((int32_t)(executed & 0xFFFFFFFF));
         // Serial.println((int32_t)(executed >> 32) & 0xFFFFFFFF);
         lastShown = time;
         fpsCounter = 0;
+        executed = 0;
     }
 
     FastLED.show();

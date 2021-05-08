@@ -4,6 +4,8 @@ import debug from "debug";
 import { withUser } from "./middleware";
 import { sendArduino } from "./socketServer";
 import { CompareToken, CompilerContext, IntType } from "rgb-compiler";
+import { isDevelopment } from "./helpers";
+import fs from "fs";
 
 const logger = debug("rgb:effects");
 const router = Router();
@@ -26,6 +28,10 @@ function compile(input: string): [Buffer, number] {
     let buffer = Buffer.alloc(memory.length + program.length);
     memory.copy(buffer, 0, 0, memory.length);
     program.copy(buffer, memory.length, 0, program.length);
+
+    if (isDevelopment) {
+        fs.writeFileSync("../arduino/testing/input.hex", buffer);
+    }
 
     return [buffer, memory.length];
 }
