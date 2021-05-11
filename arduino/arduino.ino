@@ -3,12 +3,12 @@
 #include "interpreter.c"
 
 #define LED_COUNT 50
-#define DATA_PIN D4
+#define DATA_PIN 4
 // Max amount of routes that can be drawn at once
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
 #define INTERLACE_LEVEL 1
-#define MAX_PROGRAM_SIZE 2000
+#define MAX_PROGRAM_SIZE 500
 
 // A route
 struct LineEffect
