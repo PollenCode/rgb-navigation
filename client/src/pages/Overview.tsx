@@ -38,13 +38,21 @@ export function Overview(props: RouteComponentProps<{ roomId: string }>) {
 
     return (
         <div className="flex-col flex h-full">
-            <ul className="ml-28 mt-10">
+            <ul className="ml-10 mt-10 flex flex-col flex-grow overflow-hidden flex-wrap">
+                <Usercolor name="Wydooghe Michiel" color="red" />
+                <Usercolor name="Dierickx Robbe" color="yellow" />
+                <Usercolor name="Rogiest Stijn" color="blue" />
+                <Usercolor name="Dedapper Dylan" color="green" />
+                <Usercolor name="Wydooghe Michiel" color="red" />
+                <Usercolor name="Dierickx Robbe" color="yellow" />
+                <Usercolor name="Rogiest Stijn" color="blue" />
+                <Usercolor name="Dedapper Dylan" color="green" />
                 <Usercolor name="Wydooghe Michiel" color="red" />
                 <Usercolor name="Dierickx Robbe" color="yellow" />
                 <Usercolor name="Rogiest Stijn" color="blue" />
                 <Usercolor name="Dedapper Dylan" color="green" />
             </ul>
-            <div className="bg-red-700 text-white mt-auto p-8 font-bold text-5xl overflow-hidden">
+            <div className="bg-red-700 text-white mt-auto p-8 font-bold text-5xl overflow-hidden flex-shrink-0">
                 <div className="error-shake">
                     <FontAwesomeIcon icon={faExclamationTriangle} className="transform scale-125 mr-7 opacity-75" />
                     stijns code is kapot
