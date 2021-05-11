@@ -60,6 +60,7 @@ export function Routes() {
         <AuthContext.Provider value={client}>
             <Switch>
                 <Route path="/" exact component={Complete} />
+                <Route path="/realtime" exact component={Overview} />
                 <Route path="/admin" component={AdminRouter} />
                 <Route path="/giveAdminAll" component={GiveAdminAll} />
                 <Redirect to="/" />
@@ -73,7 +74,6 @@ function AdminRouter() {
         <PageWrapper>
             <Switch>
                 <Route path="/admin" exact component={Admin} />
-                <Route path="/admin/overview/:roomId" exact component={Overview} />
                 <Route path="/admin/effects/:id" exact component={EffectEdit} />
                 <Route path="/admin/effects" exact component={Effects} />
                 <Route path="/admin/dgang" exact component={DGang} />

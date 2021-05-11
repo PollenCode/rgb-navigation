@@ -12,7 +12,8 @@ function SidebarButton(props: { name: string; to: string; icon?: IconDefinition 
                 activeClassName="bg-blue-100 transition text-blue-600"
                 exact
                 to={props.to}
-                className="py-2 px-4 block hover:bg-gray-50 transition text-gray-700">
+                className="py-2 px-4 block hover:bg-gray-50 transition text-gray-700"
+            >
                 {props.icon && <FontAwesomeIcon className="mr-1.5 opacity-60" icon={props.icon} />}
                 {props.name}
             </NavLink>
@@ -40,7 +41,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                         <SidebarButton icon={faHome} name="Home" to="/admin" />
                         <SidebarButton icon={faFire} name="Effects" to="/admin/effects" />
                         <SidebarButton name="D-gang" to="/admin/dgang" />
-                        <SidebarButton icon={faDotCircle} name="Realtime" to="/admin/overview/dgang" />
+                        <SidebarButton icon={faDotCircle} name="Realtime" to="/realtime" />
                         <SidebarButton name="LedController" to="/admin/ledcontrol" />
                         <SidebarButton name="Token" to="/admin/token" />
                         <SidebarButton icon={faUsers} name="giveAdmin" to="/admin/giveAdmin" />
