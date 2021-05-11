@@ -19,7 +19,7 @@ model User {
   // Auth token for google or kuleuven
   token        String?
   ownedEffects Effect[]
-  admin        Boolean @default(false)
+  admin        Boolean  @default(false)
 }
 
 // A custom arduino effect
@@ -35,6 +35,6 @@ model Effect {
 }
 
 model Token {
-  id Int @id @default(autoincrement())
+  id   String   @id @default(uuid())
   made DateTime @default(now())
 }

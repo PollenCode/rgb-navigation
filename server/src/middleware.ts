@@ -18,7 +18,7 @@ export function withUser(admin: boolean) {
         }
 
         let user = await prisma.user.findUnique({ where: { id: token.userId } });
-        let userToken = await prisma.token.findUnique({ where: { id: parseInt(token.userId) } });
+        let userToken = await prisma.token.findUnique({ where: { id: token.userId } });
         if (!user && !userToken) {
             return res.status(401).end();
         }
