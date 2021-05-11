@@ -1,7 +1,7 @@
 process.env.DEBUG = "rgb:*";
 import debug from "debug";
 import fs from "fs/promises";
-import { CompilerContext, IntType } from "../src";
+import { ByteType, CompilerContext, IntType } from "../src";
 
 const logger = debug("rgb:compiler-test");
 
@@ -12,9 +12,9 @@ async function compileFile(fileName: string) {
 
 async function compile(input: string) {
     let context = new CompilerContext();
-    context.defineVariableAt("r", new IntType(undefined, 1), 0);
-    context.defineVariableAt("g", new IntType(undefined, 1), 1);
-    context.defineVariableAt("b", new IntType(undefined, 1), 2);
+    context.defineVariableAt("r", new ByteType(), 0);
+    context.defineVariableAt("g", new ByteType(), 1);
+    context.defineVariableAt("b", new ByteType(), 2);
     context.defineVariableAt("index", new IntType(), 4);
     context.defineVariableAt("timer", new IntType(), 8);
 

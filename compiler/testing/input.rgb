@@ -1,7 +1,7 @@
 // CHRISTMAS EFFECT
 
 
-int i = 100
+int i = 6
 
 
 if (i > 10) {
@@ -10,4 +10,4 @@ if (i > 10) {
 else if (i > 5) {
     out 5
 }
-else out 0
+else out out out out 0

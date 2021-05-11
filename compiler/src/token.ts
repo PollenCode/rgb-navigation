@@ -1,7 +1,7 @@
 import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
 import { CodeWriter } from "./target";
-import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType, FloatType } from "./types";
+import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType, FloatType, ByteType } from "./types";
 import debug from "debug";
 
 const logger = debug("rgb:compiler");
@@ -419,10 +419,10 @@ export class AssignmentToken extends Token {
             let type;
             switch (this.typeName) {
                 case "int":
-                    type = new IntType(undefined, 4);
+                    type = new IntType();
                     break;
                 case "byte":
-                    type = new IntType(undefined, 1);
+                    type = new ByteType();
                     break;
                 case "float":
                     type = new FloatType();
@@ -431,7 +431,10 @@ export class AssignmentToken extends Token {
                     throw new Error(`Unknown variable type ${this.typeName} at ${this.context.lex.lineColumn(this.position)}`);
             }
 
-            if (this.value && type instanceof NumberType && this.value.type instanceof NumberType && this.value.type.constantValue !== undefined) {
+            if (this.value && !this.value.type.isAssignableTo(type)) {
+                throw new Error(`Type ${this.value.type.name} is not assignable to ${type.name} at ${this.context.lex.lineColumn(this.position)}`);
+            }
+            if (this.value && this.value.type.constantValue !== undefined) {
                 type.constantValue = this.value.type.constantValue;
             }
 
@@ -443,7 +446,7 @@ export class AssignmentToken extends Token {
             }
 
             let v = this.context.vars.get(this.varName)!;
-            if (v.type instanceof NumberType && this.value!.type instanceof NumberType && this.value!.type.constantValue !== undefined) {
+            if (this.value!.type.constantValue !== undefined) {
                 v.type.constantValue = this.value!.type.constantValue;
             }
         }
@@ -588,10 +591,8 @@ export class OutToken extends Token {
     }
     setTypes(): void {
         this.value.setTypes();
-        this.type = this.value.type;
-        // if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
-        //     this.type.constantValue = undefined;
-        // }
+        // this.type = this.value.type.clone();
+        // this.type.constantValue = undefined;
     }
 
     emit(code: CodeWriter, isRoot: boolean) {
