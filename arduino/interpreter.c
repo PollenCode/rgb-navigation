@@ -167,7 +167,7 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
 
         case Halt:
 #ifdef DEBUG
-            printf("halt\n");
+            printf("halt (stackPointer at %x)\n", stackPointer);
 #endif
             return 0;
         case Add:
@@ -347,10 +347,10 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
 #if ARDUINO
             PRINTLN(*(INT *)(mem + stackPointer));
 #endif
-            stackPointer += sizeof(INT);
 #ifdef DEBUG
             printf("out %d\n", *(INT *)(mem + stackPointer));
 #endif
+            stackPointer += sizeof(INT);
             continue;
 
         default:

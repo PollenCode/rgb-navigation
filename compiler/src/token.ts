@@ -6,6 +6,8 @@ import debug from "debug";
 
 const logger = debug("rgb:compiler");
 
+const RESERVED_WORDS = ["if", "out", "else"];
+
 export abstract class Token {
     readonly context: CompilerContext;
     readonly position: number;
@@ -341,10 +343,13 @@ export class ReferenceToken extends Token {
 export function expectReference(c: CompilerContext) {
     let position = c.lex.position;
 
-    let isStatic = c.lex.string("#");
-
     let varName = c.lex.readSymbol();
     if (!varName || "0123456789".includes(varName[0])) {
+        c.lex.position = position;
+        return;
+    }
+
+    if (RESERVED_WORDS.includes(varName)) {
         c.lex.position = position;
         return;
     }
@@ -602,13 +607,13 @@ export class OutToken extends Token {
     }
 }
 
-export function expectOut(c: CompilerContext, allowInline: boolean) {
+export function expectOut(c: CompilerContext, allowInline: boolean): Token | undefined {
     if (!c.lex.string("out ")) {
         return allowInline ? expectTernary(c) || expectBrackets(c) : undefined;
     }
 
     let position = c.lex.position;
-    let op = expectTernary(c) || expectBrackets(c);
+    let op = expectOut(c, true);
     if (!op) {
         throw new Error(`Expected operand for out statement at ${c.lex.lineColumn()}`);
     }

@@ -37,7 +37,7 @@ int main()
     int res;
     for (int i = 0; i < 1; i++)
     {
-        res = run(mem, 20, 65536);
+        res = run(mem, 16, 65536);
     }
 
     clock_gettime(CLOCK_MONOTONIC, &tend);
