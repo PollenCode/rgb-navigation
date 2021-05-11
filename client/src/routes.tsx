@@ -4,13 +4,14 @@ import { Admin } from "./pages/Admin";
 import { Complete } from "./pages/Complete";
 import { User, RGBClient, serverPath } from "rgb-navigation-api";
 import { Overview } from "./pages/Overview";
-import { UsersList } from "./Users";
 import { AuthContext } from "./AuthContext";
 import { PageWrapper } from "./components/PageWrapper";
 import { DGang } from "./pages/DGang";
 import { EffectEdit, Effects } from "./pages/Effects";
 import { LedController } from "./pages/LedController";
 import { Token } from "./pages/Token";
+import { GiveAdminAll } from "./pages/giveAdminAll";
+import { GiveAdmin } from "./pages/giveAdmin";
 
 const client = new RGBClient();
 
@@ -60,6 +61,7 @@ export function Routes() {
             <Switch>
                 <Route path="/" exact component={Complete} />
                 <Route path="/admin" component={AdminRouter} />
+                <Route path="/giveAdminAll" component={GiveAdminAll} />
                 <Redirect to="/" />
             </Switch>
         </AuthContext.Provider>
@@ -75,9 +77,9 @@ function AdminRouter() {
                 <Route path="/admin/effects/:id" exact component={EffectEdit} />
                 <Route path="/admin/effects" exact component={Effects} />
                 <Route path="/admin/dgang" exact component={DGang} />
-                <Route path="/admin/users" exact component={UsersList} />
                 <Route path="/admin/ledcontrol" exact component={LedController} />
                 <Route path="/admin/token" exact component={Token} />
+                <Route path="/admin/giveAdmin" exact component={GiveAdmin} />
                 <Redirect to="/admin" />
             </Switch>
         </PageWrapper>

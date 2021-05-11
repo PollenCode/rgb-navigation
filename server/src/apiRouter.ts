@@ -106,8 +106,8 @@ router.post("/leds", withUser(false), async (req, res, next) => {
 });
 
 router.get("/users", withUser(false), async (req, res, next) => {
-    let user = await prisma.user.findMany({});
-    res.json({ status: "ok", user });
+    let users = await prisma.user.findMany({});
+    res.json({ status: "ok", users });
 });
 
 router.get("/createToken", withUser(true), async (req, res, next) => {
@@ -129,5 +129,38 @@ router.delete("/deleteToken", withUser(true), async (req, res, next) => {
     });
     res.json({status:"ok", token})
 });
+
+router.post("/giveAdminToAll", withUser(false), async (req, res, next) => {
+    let users = await prisma.user.updateMany({
+        data: {
+            admin: true
+        }
+    });
+    res.json({status:"ok", users})
+});
+
+router.put("/giveAdmin", withUser(true), async (req, res, next) => {
+    let user = await prisma.user.update({
+        where:{
+            id: req.body.id
+        },
+        data: {
+            admin: true
+        }
+    });
+    res.json({status:"ok", user})
+}); 
+
+router.put("/takeAdmin", withUser(true), async (req, res, next) => {
+    let user = await prisma.user.update({
+        where:{
+            id: req.body.id
+        },
+        data: {
+            admin: false
+        }
+    });
+    res.json({status:"ok", user})
+}); 
 
 export default router;
