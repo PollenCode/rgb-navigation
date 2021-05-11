@@ -9,7 +9,6 @@ export abstract class Type<C = any> {
         this.constantValue = constantValue;
     }
 
-    abstract isAssignableTo(other: Type): boolean;
     abstract mul(other: Type): Type;
     abstract div(other: Type): Type;
     abstract sub(other: Type): Type;
@@ -21,6 +20,8 @@ export abstract class Type<C = any> {
     abstract gt(other: Type): Type;
     abstract lte(other: Type): Type;
     abstract gte(other: Type): Type;
+    abstract assign(other: Type): Type | undefined;
+    abstract clone(): Type;
 }
 
 export abstract class NumberType implements Type<number> {
@@ -34,12 +35,13 @@ export abstract class NumberType implements Type<number> {
         this.constantValue = constantValue;
     }
 
-    abstract isAssignableTo(other: Type): boolean;
     abstract mul(other: Type): Type;
     abstract div(other: Type): Type;
     abstract sub(other: Type): Type;
     abstract add(other: Type): Type;
     abstract mod(other: Type): Type;
+    abstract assign(other: Type): Type | undefined;
+    abstract clone(): Type;
 
     eq(other: Type): Type {
         return new IntType(
@@ -77,9 +79,6 @@ export class VoidType extends Type {
     constructor() {
         super("void", 0);
     }
-    isAssignableTo(other: Type): boolean {
-        return false;
-    }
     mul(other: Type<any>): Type<any> {
         throw new Error("Invalid operation on type 'void'.");
     }
@@ -113,15 +112,17 @@ export class VoidType extends Type {
     gte(other: Type<any>): Type<any> {
         throw new Error("Invalid operation on type 'void'.");
     }
+    assign(other: Type<any>): Type<any> | undefined {
+        return undefined;
+    }
+    clone(): Type<any> {
+        return new VoidType();
+    }
 }
 
 export class FloatType extends Type<number> {
     constructor(constantValue?: number) {
         super("float", 4, constantValue);
-    }
-
-    isAssignableTo(other: Type): boolean {
-        return other instanceof FloatType;
     }
 
     mul(other: Type): Type {
@@ -150,44 +151,48 @@ export class FloatType extends Type<number> {
         );
     }
     eq(other: Type): Type {
-        return new IntType(
+        return new ByteType(
             this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue === other.constantValue ? 1 : 0) : undefined
         );
     }
     neq(other: Type): Type {
-        return new IntType(
+        return new ByteType(
             this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue !== other.constantValue ? 1 : 0) : undefined
         );
     }
     lt(other: Type): Type {
-        return new IntType(
+        return new ByteType(
             this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue < other.constantValue ? 1 : 0) : undefined
         );
     }
     gt(other: Type): Type {
-        return new IntType(
+        return new ByteType(
             this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue > other.constantValue ? 1 : 0) : undefined
         );
     }
     lte(other: Type): Type {
-        return new IntType(
+        return new ByteType(
             this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue <= other.constantValue ? 1 : 0) : undefined
         );
     }
     gte(other: Type): Type {
-        return new IntType(
+        return new ByteType(
             this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue >= other.constantValue ? 1 : 0) : undefined
         );
+    }
+    assign(other: Type<any>): Type<any> | undefined {
+        if (other instanceof FloatType) {
+            return new FloatType(this.constantValue);
+        }
+    }
+    clone() {
+        return new FloatType(this.constantValue);
     }
 }
 
 export class ByteType extends NumberType {
     constructor(constantValue?: number) {
         super("byte", 1, constantValue !== undefined ? constantValue & 0xff : undefined);
-    }
-
-    isAssignableTo(other: Type): boolean {
-        return other instanceof IntType || other instanceof FloatType || other instanceof ByteType;
     }
 
     mul(other: Type): Type {
@@ -275,15 +280,21 @@ export class ByteType extends NumberType {
             );
         }
     }
+    clone() {
+        return new ByteType(this.constantValue);
+    }
+    assign(other: Type<any>): Type<any> | undefined {
+        if (other instanceof ByteType) {
+            return new ByteType(this.constantValue);
+        } else if (other instanceof IntType) {
+            return new IntType(this.constantValue);
+        }
+    }
 }
 
 export class IntType extends NumberType {
     constructor(constantValue?: number) {
         super("int", 4, constantValue === undefined ? undefined : constantValue & 0xffffffff);
-    }
-
-    isAssignableTo(other: Type): boolean {
-        return other instanceof IntType || other instanceof FloatType || other instanceof ByteType;
     }
 
     mul(other: Type): Type {
@@ -351,8 +362,14 @@ export class IntType extends NumberType {
             );
         }
     }
+    clone() {
+        return new IntType(this.constantValue);
+    }
+    assign(other: Type<any>): Type<any> | undefined {
+        if (other instanceof ByteType) {
+            return new ByteType(this.constantValue);
+        } else if (other instanceof IntType) {
+            return new IntType(this.constantValue);
+        }
+    }
 }
-
-export const VOID = new VoidType();
-export const FLOAT = new FloatType();
-export const INT = new IntType();

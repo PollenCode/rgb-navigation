@@ -1,10 +1,12 @@
 import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
 import { CodeWriter } from "./target";
-import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType, FloatType, ByteType } from "./types";
+import { Type, VoidType, NumberType, IntType, FloatType, ByteType } from "./types";
 import debug from "debug";
 
-const logger = debug("rgb:compiler");
+const info = debug("rgb:compiler");
+const warning = debug("rgb:compiler:warning");
+const error = debug("rgb:compiler:error");
 
 const RESERVED_WORDS = ["if", "out", "else"];
 
@@ -254,9 +256,9 @@ export class SumToken extends Token {
     }
 
     emit(code: CodeWriter) {
-        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+        if (this.type.constantValue !== undefined) {
             code.pushConst(this.type.constantValue);
-        } else if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
+        } else {
             if (this.op1.type.constantValue !== undefined) {
                 code.pushConst(this.op1.type.constantValue);
                 // code.add8(this.op1.type.constantValue);
@@ -279,8 +281,6 @@ export class SumToken extends Token {
                     code.sub();
                     break;
             }
-        } else {
-            throw new Error(`Add/sub ${this.op1.type.name} and ${this.op2.type.name} not implemented`);
         }
     }
 }
@@ -360,7 +360,14 @@ export class ValueToken extends Token {
     }
 
     setTypes(): void {
-        this.type = new IntType(this.noInlining ? undefined : parseInt(this.value));
+        let val = parseInt(this.value);
+        if (val > 2147483647 || val < -2147483648) {
+            throw new Error(`Integer too large at ${this.context.lex.lineColumn(this.position)}`);
+        } else if (val > 127 || val < -128) {
+            this.type = new IntType(this.noInlining ? undefined : val);
+        } else {
+            this.type = new ByteType(this.noInlining ? undefined : val);
+        }
     }
 
     toString() {
@@ -406,7 +413,6 @@ export class AssignmentToken extends Token {
     setTypes(): void {
         if (this.value) {
             this.value.setTypes();
-            this.type = this.value.type;
         }
         if (this.typeName) {
             // Define variable
@@ -424,21 +430,29 @@ export class AssignmentToken extends Token {
                 case "byte":
                     type = new ByteType();
                     break;
-                case "float":
-                    type = new FloatType();
-                    break;
+                // case "float":
+                //     type = new FloatType();
+                //     break;
                 default:
                     throw new Error(`Unknown variable type ${this.typeName} at ${this.context.lex.lineColumn(this.position)}`);
             }
 
-            if (this.value && !this.value.type.isAssignableTo(type)) {
-                throw new Error(`Type ${this.value.type.name} is not assignable to ${type.name} at ${this.context.lex.lineColumn(this.position)}`);
-            }
-            if (this.value && this.value.type.constantValue !== undefined) {
-                type.constantValue = this.value.type.constantValue;
+            if (this.value) {
+                if (this.value.type.size > type.size) {
+                    warning(`data loss when assigning type ${this.value.type.name} to ${type.name} at ${this.context.lex.lineColumn(this.position)}`);
+                }
+                let a = this.value.type.assign(type);
+                if (!a) {
+                    throw new Error(
+                        `Type ${this.value.type.name} is not assignable to ${type.name} at ${this.context.lex.lineColumn(this.position)}`
+                    );
+                }
+                this.type = a;
+            } else {
+                this.type = type;
             }
 
-            this.context.defineVariable(this.varName, type);
+            this.context.defineVariable(this.varName, this.type);
         } else {
             // Set variable
             if (!this.context.vars.has(this.varName)) {
@@ -446,9 +460,12 @@ export class AssignmentToken extends Token {
             }
 
             let v = this.context.vars.get(this.varName)!;
-            if (this.value!.type.constantValue !== undefined) {
-                v.type.constantValue = this.value!.type.constantValue;
+            let a = this.value!.type.assign(v.type);
+            if (!a) {
+                throw new Error(`Type ${this.value!.type.name} is not assignable to ${v.type.name} at ${this.context.lex.lineColumn(this.position)}`);
             }
+            v.type = a;
+            this.type = a;
         }
     }
 
@@ -517,7 +534,7 @@ export class BlockToken extends Token {
 
     setTypes(): void {
         this.statements.forEach((e) => e.setTypes());
-        this.type = VOID;
+        this.type = new VoidType();
     }
 
     toString() {
@@ -591,8 +608,8 @@ export class OutToken extends Token {
     }
     setTypes(): void {
         this.value.setTypes();
-        // this.type = this.value.type.clone();
-        // this.type.constantValue = undefined;
+        this.type = this.value.type.clone();
+        this.type.constantValue = undefined;
     }
 
     emit(code: CodeWriter, isRoot: boolean) {
@@ -746,7 +763,7 @@ export class IfToken extends Token {
         else return `if ${this.condition} \n\t${this.ifBlock}\n`;
     }
     setTypes(): void {
-        this.type = VOID;
+        this.type = new VoidType();
         this.condition.setTypes();
         this.ifBlock.setTypes();
         this.elseBlock?.setTypes();

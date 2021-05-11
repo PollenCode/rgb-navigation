@@ -1,13 +1,8 @@
 // CHRISTMAS EFFECT
 
 
-int i = 6
+byte i = 33
 
-
-if (i > 10) {
-    out 10
-}
-else if (i > 5) {
-    out 5
-}
-else out out out out 0
+byte a = i + 100
+i = 44?
+byte bb = i + 100
