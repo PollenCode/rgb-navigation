@@ -54,3 +54,23 @@ body {
         transform: scale(1);
     }
 }
+
+.error-shake {
+    transform-origin: center center;
+    animation: error-shake 500ms;
+}
+
+@keyframes error-shake {
+    0% {
+        transform: translateX(+100px);
+    }
+    25% {
+        transform: translateX(-75px);
+    }
+    50% {
+        transform: translateX(+50px);
+    }
+    100% {
+        transform: translateX(0px);
+    }
+}

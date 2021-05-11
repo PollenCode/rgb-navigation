@@ -1,3 +1,5 @@
+import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useContext, useEffect, useState } from "react";
 import { RouteComponentProps } from "react-router";
 import { AuthContext } from "../AuthContext";
@@ -35,18 +37,38 @@ export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     }, []);
 
     return (
-        <div className="flex justify-center">
-            <div className="w-72 m-5  border border-gray-200 rounded" style={{ minHeight: "200px" }}>
-                <h2 className="font-semibold px-5 py-3 border-b border-gray-200">
-                    <span className="h-2.5 w-2.5 mr-1 inline-block bg-red-600 rounded-full" style={{ animation: "blinking linear 2s infinite" }} />{" "}
-                    Events
-                </h2>
-                <ul className="px-5 py-3">
-                    {messages.map((e, i) => (
-                        <li key={i}>{e}</li>
-                    ))}
-                </ul>
+        <div className="flex-col flex h-full">
+            <ul className="ml-10 mt-10 flex flex-col flex-grow overflow-hidden flex-wrap">
+                <Usercolor name="Wydooghe Michiel" color="red" />
+                <Usercolor name="Dierickx Robbe" color="yellow" />
+                <Usercolor name="Rogiest Stijn" color="blue" />
+                <Usercolor name="Dedapper Dylan" color="green" />
+                <Usercolor name="Wydooghe Michiel" color="red" />
+                <Usercolor name="Dierickx Robbe" color="yellow" />
+                <Usercolor name="Rogiest Stijn" color="blue" />
+                <Usercolor name="Dedapper Dylan" color="green" />
+                <Usercolor name="Wydooghe Michiel" color="red" />
+                <Usercolor name="Dierickx Robbe" color="yellow" />
+                <Usercolor name="Rogiest Stijn" color="blue" />
+                <Usercolor name="Dedapper Dylan" color="green" />
+            </ul>
+            <div className="bg-red-700 text-white mt-auto p-8 font-bold text-5xl overflow-hidden flex-shrink-0">
+                <div className="error-shake">
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="transform scale-125 mr-7 opacity-75" />
+                    stijns code is kapot
+                </div>
             </div>
         </div>
+    );
+}
+
+function Usercolor(props: { name: string; color: string }) {
+    return (
+        <li className="flex items-center mb-10">
+            <span className="text-5xl">
+                <span className="font-bold">{props.name}</span> <span className="font-bold opacity-50">volgt</span>
+            </span>
+            <div className="w-10 h-10 rounded-full ml-6" style={{ backgroundColor: props.color }}></div>
+        </li>
     );
 }

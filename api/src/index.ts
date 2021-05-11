@@ -11,6 +11,7 @@ export interface User {
     name: string;
     email: string;
     identifier: string | null;
+    admin: boolean;
 }
 
 interface Events {
@@ -150,6 +151,28 @@ export class RGBClient extends TypedEmitter<Events> {
             id: id,
         };
         return await this.doFetch("/api/deleteToken", "DELETE", req);
+    }
+
+    public async giveAdminToAll(){
+        return await this.doFetch("/api/giveAdminToAll", "POST");
+    }
+
+    public async getUsers(){
+        return await this.doFetch("/api/users", "GET");
+    }
+
+    public async giveAdmin(user:any){
+        let req = {
+            id: user.id,
+        };
+        return await this.doFetch("/api/giveAdmin", "PUT", req);
+    }
+
+    public async takeAdmin(user:any){
+        let req = {
+            id: user.id,
+        };
+        return await this.doFetch("/api/takeAdmin", "PUT", req);
     }
 }
 

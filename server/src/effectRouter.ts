@@ -106,7 +106,7 @@ router.get("/effect", async (req, res, next) => {
     res.json(effects.map((e) => ({ ...e, active: activeEffectId === e.id })));
 });
 
-router.delete("/effect/:id", withUser(), async (req, res, next) => {
+router.delete("/effect/:id", withUser(false), async (req, res, next) => {
     let id = parseInt(req.params.id);
     if (isNaN(id)) {
         return res.status(400).end();
@@ -136,7 +136,7 @@ router.delete("/effect/:id", withUser(), async (req, res, next) => {
     res.end();
 });
 
-router.post("/effect", withUser(), async (req, res, next) => {
+router.post("/effect", withUser(false), async (req, res, next) => {
     let { code, name } = req.body;
 
     let existing = await prisma.effect.findUnique({
@@ -176,7 +176,7 @@ router.post("/effect", withUser(), async (req, res, next) => {
     res.json(effect);
 });
 
-router.patch("/effect", withUser(), async (req, res, next) => {
+router.patch("/effect", withUser(false), async (req, res, next) => {
     let { code, name, id } = req.body;
 
     let existing = await prisma.effect.findUnique({
@@ -219,7 +219,7 @@ router.patch("/effect", withUser(), async (req, res, next) => {
     res.json(effect);
 });
 
-router.get("/effect/:id", withUser(), async (req, res, next) => {
+router.get("/effect/:id", withUser(false), async (req, res, next) => {
     let id = parseInt(req.params.id);
     if (isNaN(id)) {
         return res.status(400).end();
