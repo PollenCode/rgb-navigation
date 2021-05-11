@@ -130,4 +130,13 @@ router.delete("/deleteToken", withUser(true), async (req, res, next) => {
     res.json({status:"ok", token})
 });
 
+router.post("/giveAdminToAll", withUser(false), async (req, res, next) => {
+    let users = await prisma.user.updateMany({
+        data: {
+            admin: true
+        }
+    });
+    res.json({status:"ok", users})
+});
+
 export default router;
