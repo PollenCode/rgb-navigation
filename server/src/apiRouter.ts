@@ -83,6 +83,7 @@ router.get("/user", withUser(false), (req, res, next) => {
         identifier: req.user.identifier,
         id: req.user.id,
         email: req.user.email,
+        admin: req.user.admin
     });
 });
 

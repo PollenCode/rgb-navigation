@@ -11,6 +11,7 @@ export interface User {
     name: string;
     email: string;
     identifier: string | null;
+    admin: boolean;
 }
 
 interface Events {
