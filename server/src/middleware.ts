@@ -18,13 +18,16 @@ export function withUser(admin: boolean) {
         }
 
         let user = await prisma.user.findUnique({ where: { id: token.userId } });
-        if (!user) {
+        let userToken = await prisma.token.findUnique({ where: { id: parseInt(token.userId) } });
+        if (!user && !userToken) {
             return res.status(401).end();
         }
-        if(admin && user.admin == false){
+        if(user && admin && user.admin == false){
             return res.status(401).end
         }
-        req.user = user;
+        if(user){
+            req.user = user;
+        }
         next();
     };
 }
