@@ -12,11 +12,11 @@ async function compileFile(fileName: string) {
 
 async function compile(input: string) {
     let context = new CompilerContext();
-    context.defineVariableAt("r", new ByteType(), 0);
-    context.defineVariableAt("g", new ByteType(), 1);
-    context.defineVariableAt("b", new ByteType(), 2);
-    context.defineVariableAt("index", new IntType(), 4);
-    context.defineVariableAt("timer", new IntType(), 8);
+    context.defineVariableAt("r", new ByteType(), 0, true);
+    context.defineVariableAt("g", new ByteType(), 1, true);
+    context.defineVariableAt("b", new ByteType(), 2, true);
+    context.defineVariableAt("index", new IntType(), 4, true);
+    context.defineVariableAt("timer", new IntType(), 8, true);
 
     logger("parsing...");
     context.compile(input);

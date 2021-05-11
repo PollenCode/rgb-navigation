@@ -1,8 +1,5 @@
 // CHRISTMAS EFFECT
 
-
-byte i = 33
-
-byte a = i + 100
-i = 44?
-byte bb = i + 100
+r = 100
+g = 0
+b = 0

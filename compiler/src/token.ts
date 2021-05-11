@@ -474,7 +474,8 @@ export class AssignmentToken extends Token {
     }
 
     emit(code: CodeWriter, isRoot: boolean) {
-        if (this.value) {
+        let v = this.context.vars.get(this.varName)!;
+        if (this.value && (this.type.constantValue === undefined || v.volatile)) {
             this.value.emit(code);
             if (!isRoot) {
                 code.dup();
