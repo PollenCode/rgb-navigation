@@ -36,6 +36,7 @@ export function Token() {
                     {tokens.map((tokenList: any) => (
                         <li className="border-b last:border-0 text-gray-700 hover:bg-gray-50 transition flex items-center justify-between">
                             <p className="ml-5">Token Id: {tokenList.id}</p>
+                            <p className="ml-5">Datum aangevraagd: {tokenList.made}</p>
                             <Button
                                 style={{ margin: "0.5em" }}
                                 type="button"

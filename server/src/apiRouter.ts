@@ -111,7 +111,7 @@ router.get("/users", async (req, res, next) => {
 });
 
 router.get("/createToken", async (req, res, next) => {
-    let token = await prisma.token.create({});
+    let token = await prisma.token.create({data:{}});
     let jwt = createToken(String(token.id));
     res.json({ status: "ok", jwt });
 });

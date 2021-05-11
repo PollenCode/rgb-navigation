@@ -19,6 +19,7 @@ model User {
   // Auth token for google or kuleuven
   token        String?
   ownedEffects Effect[]
+  admin        Boolean @default(false)
 }
 
 // A custom arduino effect
