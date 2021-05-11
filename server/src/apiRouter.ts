@@ -77,7 +77,7 @@ router.get("/oauth/complete", async (req, res, next) => {
     res.redirect((isDevelopment ? "http://localhost:3000/oauth?s=" : "/oauth?s=") + createUserAccessToken(user.id));
 });
 
-router.get("/user", withUser(), (req, res, next) => {
+router.get("/user", withUser(false), (req, res, next) => {
     res.json({
         name: req.user.name,
         identifier: req.user.identifier,
@@ -86,7 +86,7 @@ router.get("/user", withUser(), (req, res, next) => {
     });
 });
 
-router.post("/unbind", withUser(), async (req, res, next) => {
+router.post("/unbind", withUser(false), async (req, res, next) => {
     let user = await prisma.user.update({
         where: {
             id: req.user!.id,
@@ -98,30 +98,30 @@ router.post("/unbind", withUser(), async (req, res, next) => {
     res.json({ status: "ok", user: user });
 });
 
-router.post("/leds", withUser(), async (req, res, next) => {
+router.post("/leds", withUser(false), async (req, res, next) => {
     let message = req.body;
     console.log(message);
     sendArduino(message);
     res.end();
 });
 
-router.get("/users", async (req, res, next) => {
+router.get("/users", withUser(false), async (req, res, next) => {
     let user = await prisma.user.findMany({});
     res.json({ status: "ok", user });
 });
 
-router.get("/createToken", async (req, res, next) => {
+router.get("/createToken", withUser(true), async (req, res, next) => {
     let token = await prisma.token.create({data:{}});
     let jwt = createToken(String(token.id));
     res.json({ status: "ok", jwt });
 });
 
-router.get("/getTokens", async (req, res, next) => {
+router.get("/getTokens", withUser(true), async (req, res, next) => {
     let tokens = await prisma.token.findMany({});
     res.json({status:"ok", tokens})
 });
 
-router.delete("/deleteToken", async (req, res, next) => {
+router.delete("/deleteToken", withUser(true), async (req, res, next) => {
     let token = await prisma.token.delete({
         where: {
             id: req.body.id
