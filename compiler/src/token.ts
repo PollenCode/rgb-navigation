@@ -344,12 +344,7 @@ export function expectReference(c: CompilerContext) {
     let position = c.lex.position;
 
     let varName = c.lex.readSymbol();
-    if (!varName || "0123456789".includes(varName[0])) {
-        c.lex.position = position;
-        return;
-    }
-
-    if (RESERVED_WORDS.includes(varName)) {
+    if (!varName || "0123456789".includes(varName[0]) || RESERVED_WORDS.includes(varName)) {
         c.lex.position = position;
         return;
     }
@@ -475,17 +470,22 @@ export function expectAssignment(c: CompilerContext) {
     let position = c.lex.position;
 
     let name0 = c.lex.readSymbol();
-    if (!name0) {
+    if (!name0 || RESERVED_WORDS.includes(name0)) {
         c.lex.position = position;
         return;
     }
     c.lex.readWhitespace();
 
     let name1 = c.lex.readSymbol();
+    if (RESERVED_WORDS.includes(name1)) {
+        c.lex.position = position;
+        return;
+    }
     c.lex.readWhitespace();
 
     let eq = c.lex.string("=");
     if (!name1 && !eq) {
+        // Assignment token must at least be `var = value;` or `type var;`
         c.lex.position = position;
         return;
     }
@@ -532,7 +532,7 @@ export function expectProgram(c: CompilerContext) {
     let statements: Token[] = [];
 
     while (c.lex.position < c.lex.buffer.length) {
-        let s = expectOut(c, false) || expectIf(c);
+        let s = expectOut(c, false);
         if (!s) {
             throw new Error(`Expected statement at ${c.lex.lineColumn()}`);
         }
@@ -552,7 +552,7 @@ export function expectBlock(c: CompilerContext) {
 
         let s: Token | undefined;
         do {
-            s = expectIf(c);
+            s = expectOut(c, false);
             if (s) statements.push(s);
 
             c.lex.string(";");
@@ -564,10 +564,8 @@ export function expectBlock(c: CompilerContext) {
         }
 
         c.lex.readWhitespace();
-    } else if (c.lex.string(":")) {
-        c.lex.readWhitespace();
-
-        let s = expectIf(c);
+    } else {
+        let s = expectOut(c, false);
         if (!s) {
             throw new Error(`Expected statement after : at ${c.lex.lineColumn()}`);
         }
@@ -576,8 +574,6 @@ export function expectBlock(c: CompilerContext) {
         c.lex.readWhitespace();
 
         statements.push(s);
-    } else {
-        return;
     }
     return new BlockToken(c, position, statements);
 }
@@ -607,9 +603,9 @@ export class OutToken extends Token {
     }
 }
 
-export function expectOut(c: CompilerContext, allowInline: boolean): Token | undefined {
+export function expectOut(c: CompilerContext, inline: boolean): Token | undefined {
     if (!c.lex.string("out ")) {
-        return allowInline ? expectTernary(c) || expectBrackets(c) : undefined;
+        return inline ? expectTernary(c) || expectBrackets(c) : expectIf(c);
     }
 
     let position = c.lex.position;
