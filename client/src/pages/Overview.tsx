@@ -1,8 +1,9 @@
+import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useContext, useEffect, useState } from "react";
 import { RouteComponentProps } from "react-router";
 import { AuthContext } from "../AuthContext";
 import { SocketContext } from "../SocketContext";
-import { UsersList } from "../Users";
 
 export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     let { socket } = useContext(AuthContext);
@@ -36,13 +37,19 @@ export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     }, []);
 
     return (
-        <div className="ml-28 mt-10">
-            <ul>
+        <div className="flex-col flex h-full">
+            <ul className="ml-28 mt-10">
                 <Usercolor name="Wydooghe Michiel" color="red" />
                 <Usercolor name="Dierickx Robbe" color="yellow" />
                 <Usercolor name="Rogiest Stijn" color="blue" />
                 <Usercolor name="Dedapper Dylan" color="green" />
             </ul>
+            <div className="bg-red-700 text-white mt-auto p-8 font-bold text-5xl overflow-hidden">
+                <div className="error-shake">
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="transform scale-125 mr-7 opacity-75" />
+                    stijns code is kapot
+                </div>
+            </div>
         </div>
     );
 }
