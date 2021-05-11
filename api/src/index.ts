@@ -155,6 +155,24 @@ export class RGBClient extends TypedEmitter<Events> {
     public async giveAdminToAll(){
         return await this.doFetch("/api/giveAdminToAll", "POST");
     }
+
+    public async getUsers(){
+        return await this.doFetch("/api/users", "GET");
+    }
+
+    public async giveAdmin(user:any){
+        let req = {
+            id: user.id,
+        };
+        return await this.doFetch("/api/giveAdmin", "PUT", req);
+    }
+
+    public async takeAdmin(user:any){
+        let req = {
+            id: user.id,
+        };
+        return await this.doFetch("/api/takeAdmin", "PUT", req);
+    }
 }
 
 export * from "./message";
