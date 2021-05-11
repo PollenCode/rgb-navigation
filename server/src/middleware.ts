@@ -17,17 +17,25 @@ export function withUser(admin: boolean) {
             return res.status(401).end();
         }
 
-        let user = await prisma.user.findUnique({ where: { id: token.userId } });
-        let userToken = await prisma.token.findUnique({ where: { id: token.userId } });
-        if (!user && !userToken) {
-            return res.status(401).end();
+        if(token.tokenId){
+            let userToken = await prisma.token.findUnique({ where: { id: token.tokenId } });
+            if(!userToken){
+                return res.status(401).end();
+            }
         }
-        if(user && admin && user.admin == false){
-            return res.status(401).end
+        if(token.userId){
+            let user = await prisma.user.findUnique({ where: { id: token.userId } });
+            if (!user) {
+                return res.status(401).end();
+            }
+            if(admin && user.admin == false){
+                return res.status(401).end
+            }
+            if(user){
+                req.user = user;
+            }
         }
-        if(user){
-            req.user = user;
-        }
+        
         next();
     };
 }

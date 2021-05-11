@@ -12,7 +12,7 @@ export function createToken(tokenId: string) {
 
 export function validateUserAccessToken(token: string) {
     try {
-        return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { userId: string };
+        return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { userId: string, tokenId: string };
     } catch (ex) {
         console.error("could not verify user jwt", ex, token);
         return null;
