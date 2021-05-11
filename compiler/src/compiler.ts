@@ -12,6 +12,10 @@ interface Variable {
     location: number;
 }
 
+function align4(n: number) {
+    return (n & ~0x3) + 4;
+}
+
 export class CompilerContext {
     lex!: Lexer;
     vars: Map<string, Variable>;
@@ -59,6 +63,19 @@ export class CompilerContext {
             }
         });
         return writer.buffer;
+    }
+
+    /**
+     * Combines memory and bytecode into one buffer, returning the entryPoint and buffer
+     */
+    getLinked(): [number, Buffer] {
+        let memory = this.getMemory();
+        let program = this.getCode();
+        let entryPoint = align4(memory.length);
+        let buffer = Buffer.alloc(entryPoint + program.length);
+        memory.copy(buffer, 0, 0, entryPoint);
+        program.copy(buffer, entryPoint, 0, program.length);
+        return [entryPoint, buffer];
     }
 
     compile(input: string) {
