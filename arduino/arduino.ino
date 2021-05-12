@@ -26,8 +26,11 @@ CRGB leds[LED_COUNT];
 uint32_t counter = 0;
 uint16_t fpsCounter = 0;
 uint64_t lastShown = 0;
+CRGB currentColors[MAX_LINES];
 int receivePosition = 0;
 int bytesToReceive = 0;
+bool isThereAnyEffect = false;
+
 
 int interlacing = 0;
 unsigned short entryPoint = 12;
@@ -147,46 +150,34 @@ void handleDisableLine()
 void handleSetRoom()
 {
     Serial.read();
-    uint8_t id = Serial.read();
-    if (id >= MAX_LINES)
-    {
-        Serial.println("Reached max lines");
-        return;
-    }
-
-    if (routes[id] != nullptr)
-    {
-        setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
-        delete routes[id];
-    }
-
+    Serial.read();
     uint8_t room = Serial.read();
     uint64_t endTime = millis() + 5 * 1000;
 
     switch (room)
     {
     case 0:
-        routes[id] = new LineEffect(0, 5, endTime, CRGB(255, 0, 0));
+        routes[room] = new LineEffect(0, 50, endTime, CRGB(255, 1, 0));
         Serial.println("Room 1");
         break;
     case 1:
-        routes[id] = new LineEffect(0, 10, endTime, CRGB(255, 0, 0));
+        routes[room] = new LineEffect(0, 50, endTime, CRGB(2, 255, 0));
         Serial.println("Room 2");
         break;
     case 2:
-        routes[id] = new LineEffect(0, 15, endTime, CRGB(255, 0, 0));
+        routes[room] = new LineEffect(0, 50, endTime, CRGB(3, 0, 255));
         Serial.println("Room 3");
         break;
     case 3:
-        routes[id] = new LineEffect(0, 20, endTime, CRGB(255, 0, 0));
+        routes[room] = new LineEffect(0, 50, endTime, CRGB(254, 4, 255));
         Serial.println("Room 4");
         break;
     case 4:
-        routes[id] = new LineEffect(0, 25, endTime, CRGB(255, 0, 0));
+        routes[room] = new LineEffect(0, 50, endTime, CRGB(253, 255, 5));
         Serial.println("Room 5");
         break;
     case 5:
-        routes[id] = new LineEffect(0, 30, endTime, CRGB(255, 0, 0));
+        routes[room] = new LineEffect(0, 50, endTime, CRGB(6, 255, 255));
         Serial.println("Room 6");
         break;
     }
@@ -232,6 +223,7 @@ void loop()
             break;
         case 1:
             if (Serial.available() >= 2)
+            Serial.println(packetType);
                 handleSetIdle();
             break;
         case 2:
@@ -303,7 +295,36 @@ void loop()
         }
     }
 
-    if (!anyRoute)
+    //line splitter
+    isThereAnyEffect = false;
+        for(byte i = 0; i < 32; i++) {
+            if (routes[i]) {
+                isThereAnyEffect = true;
+                break;
+            }
+        }
+    
+    if (isThereAnyEffect) {
+            for (byte i = 0; i < LED_COUNT; i++) {
+                byte currentColorCount = 0;
+                for (byte j = 0; j < MAX_LINES; j++) {
+                  if (((routes[j]->startLed <= i && routes[j]->endLed >= i) ||
+                      (routes[j]->startLed >= i && routes[j]->endLed <= i)) && routes[j] != nullptr) {
+                      currentColors[currentColorCount] = routes[j]->color;
+                      currentColorCount++;
+                  }      
+                }
+                if (currentColorCount == 0) {
+                    leds[i] = CRGB(0, 0, 0);
+                }
+                else{
+                    int colorId = (i / 1) % currentColorCount;
+                    leds[i] = currentColors[colorId];
+                }
+            }
+        }
+
+   /* if (!anyRoute)
     {
         *(INT *)(mem + 8) = (int)time;
         for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
@@ -320,13 +341,13 @@ void loop()
     fpsCounter++;
     if (time - lastShown >= 1000)
     {
-        Serial.print("FPS: ");
-        Serial.println(fpsCounter);
+        //Serial.print("FPS: ");
+        //Serial.println(fpsCounter);
         // Serial.print((int32_t)(executed & 0xFFFFFFFF));
         // Serial.println((int32_t)(executed >> 32) & 0xFFFFFFFF);
         lastShown = time;
         fpsCounter = 0;
-    }
+    }*/
 
     FastLED.show();
     counter++;
