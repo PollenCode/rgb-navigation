@@ -341,7 +341,7 @@ function getInfoForFunction(functionName: string): monaco.languages.SignatureInf
             return [
                 {
                     label: "void hsv(byte h, byte s, byte v)",
-                    documentation: "Sets the r, g and b variables using hsv values",
+                    documentation: "Sets the r, g and b variables using the hsv colorspace",
                     parameters: [
                         { label: "h", documentation: "The colors hue (0 -> 255)" },
                         { label: "s", documentation: "The colors saturation (0 -> 255)" },
@@ -349,10 +349,117 @@ function getInfoForFunction(functionName: string): monaco.languages.SignatureInf
                     ],
                 },
             ];
+        case "map":
+            return [
+                {
+                    label: "int map(int value, int fromLow, int fromHigh, int toLow, int toHigh)",
+                    documentation:
+                        "Re-maps a number from one range to another. That is, a value of fromLow would get mapped to toLow, a value of fromHigh to toHigh, values in-between to values in-between, etc.",
+                    parameters: [
+                        { label: "value", documentation: "The number to map." },
+                        { label: "fromLow", documentation: "The lower bound of the value’s current range" },
+                        { label: "fromHigh", documentation: "The upper bound of the value’s current range" },
+                        { label: "toLow", documentation: "The lower bound of the value’s target range" },
+                        { label: "toHigh", documentation: "The upper bound of the value’s target range" },
+                    ],
+                },
+            ];
+        case "max":
+            return [
+                {
+                    label: "int max(int value1, int value2)",
+                    documentation: "Returns the highest value of value1/value2",
+                    parameters: [{ label: "value1" }, { label: "value2" }],
+                },
+            ];
+        case "min":
+            return [
+                {
+                    label: "int min(int value1, int value2)",
+                    documentation: "Returns the lowest value of value1/value2",
+                    parameters: [{ label: "value1" }, { label: "value2" }],
+                },
+            ];
+        case "clamp":
+            return [
+                {
+                    label: "int clamp(int value, int min, int max)",
+                    documentation: "Limits value between min and max",
+                    parameters: [{ label: "value" }, { label: "min" }, { label: "max" }],
+                },
+            ];
+        case "lerp":
+            return [
+                {
+                    label: "int lerp(int a, int b, int percentage)",
+                    documentation: "Goes from a to b, percentage (0 -> 256) determines which number between a and b to return",
+                    parameters: [
+                        { label: "a" },
+                        { label: "b" },
+                        {
+                            label: "percentage",
+                            documentation: "(0 -> 255), when 0 returns a, when 255 returns b, otherwise a number between a and b",
+                        },
+                    ],
+                },
+            ];
+        case "out":
+            return [{ label: "int out(int value)", documentation: "Prints a value to the console and returns it", parameters: [{ label: "value" }] }];
         case "random":
+            return [{ label: "byte random()", documentation: "Returns a random value between 0 -> 255", parameters: [] }];
         default:
             return [];
     }
+}
+
+function getFunctions(): { name: string; documentation?: string }[] {
+    return [
+        // Macros
+        { name: "sin", documentation: "Calculates sine of a value" },
+        { name: "cos", documentation: "Calculates cosine of a value" },
+
+        // Functions
+        { name: "out", documentation: "Prints a value to the console and returns it" },
+        { name: "hsv", documentation: "Sets the r, g and b variables using the hsv colorspace" },
+        { name: "min", documentation: "Returns the lowest value of 2 values" },
+        { name: "max", documentation: "Returns the highest value of 2 values" },
+        { name: "random", documentation: "Returns a random byte" },
+        { name: "lerp", documentation: "Linearly interpolates between 2 values" },
+        { name: "clamp", documentation: "Limit a value between min and max" },
+        { name: "map", documentation: "Re-maps a number from one range to another. " },
+    ];
+}
+
+function findVariables(monaco: Monaco, model: monaco.editor.ITextModel): monaco.languages.CompletionItem[] {
+    let vars = Array.from(model!.findMatches("(int|float|byte)+\\s+([a-z0-9]+)\\s*(;|=)", false, true, false, null, true)).map(
+        (e) =>
+            ({
+                kind: monaco.languages.CompletionItemKind.Variable,
+                insertText: e.matches![2],
+                range: undefined as any,
+                label: e.matches![2],
+            } as monaco.languages.CompletionItem)
+    );
+
+    const DEFAULT_VARS: { name: string; documentation?: string }[] = [
+        { name: "index", documentation: "The number of the current led" },
+        { name: "timer", documentation: "Time in milliseconds since the program has started" },
+        { name: "r", documentation: "The red value of the current led" },
+        { name: "g", documentation: "The green value of the current led" },
+        { name: "b", documentation: "The blue value of the current led" },
+    ];
+    DEFAULT_VARS.forEach((e) =>
+        vars.push({
+            label: e.name,
+            insertText: e.name,
+            kind: monaco.languages.CompletionItemKind.Variable,
+            range: undefined as any,
+            documentation: e.documentation,
+            sortText: "a",
+        })
+    );
+
+    return vars;
 }
 
 function registerLanguage(monaco: Monaco) {
@@ -420,20 +527,19 @@ function registerLanguage(monaco: Monaco) {
         },
     });
     monaco.languages.registerCompletionItemProvider("rgb-lang", {
+        resolveCompletionItem: (e) => {
+            return {
+                ...e,
+                detail: e.documentation as string,
+            };
+        },
         provideCompletionItems: (model) => ({
             suggestions: [
-                // ...Array.from(code!.matchAll(/(int|float|byte)+\s+([a-z0-9]+)\s*(;|=)/gi)).map((e) => ({
-                //     kind: monaco.languages.CompletionItemKind.Variable,
-                //     insertText: e[2],
-                //     range: undefined as any,
-                //     label: e[2],
-                // })),
                 { kind: monaco.languages.CompletionItemKind.Class, insertText: "int", range: undefined as any, label: "int" },
                 { kind: monaco.languages.CompletionItemKind.Class, insertText: "float", range: undefined as any, label: "float" },
                 { kind: monaco.languages.CompletionItemKind.Class, insertText: "byte", range: undefined as any, label: "byte" },
                 { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "if", range: undefined as any, label: "if" },
                 { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "else", range: undefined as any, label: "else" },
-
                 {
                     kind: monaco.languages.CompletionItemKind.Keyword,
                     insertText: "halt",
@@ -441,39 +547,15 @@ function registerLanguage(monaco: Monaco) {
                     label: "halt",
                     documentation: "Exits this program",
                 },
-                {
+                ...findVariables(monaco, model),
+                ...getFunctions().map((e) => ({
                     kind: monaco.languages.CompletionItemKind.Function,
-                    insertText: "out",
+                    insertText: e.name,
                     range: undefined as any,
-                    label: "out",
-                    documentation: "Print number to console",
-                },
-                {
-                    kind: monaco.languages.CompletionItemKind.Function,
-                    insertText: "sin",
-                    range: undefined as any,
-                    label: "sin",
-                },
-                {
-                    kind: monaco.languages.CompletionItemKind.Function,
-                    insertText: "cos",
-                    range: undefined as any,
-                    label: "cos",
-                },
-                {
-                    kind: monaco.languages.CompletionItemKind.Function,
-                    insertText: "lerp",
-                    range: undefined as any,
-                    label: "lerp",
-                    documentation: "Returns a random byte (0->255)",
-                },
-                {
-                    kind: monaco.languages.CompletionItemKind.Function,
-                    insertText: "random",
-                    range: undefined as any,
-                    label: "random",
-                    documentation: "Returns a random byte (0->255)",
-                },
+                    label: e.name,
+                    documentation: e.documentation,
+                    sortText: "b",
+                })),
             ],
         }),
     });
