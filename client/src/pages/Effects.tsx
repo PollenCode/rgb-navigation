@@ -3,7 +3,7 @@ import { Prompt, RouteComponentProps, useHistory } from "react-router";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
-import Editor, { useMonaco } from "@monaco-editor/react";
+import Editor, { useMonaco, Monaco } from "@monaco-editor/react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faCheck,
@@ -20,6 +20,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
+import monaco from "monaco-editor";
 
 interface Effect {
     name: string;
@@ -167,68 +168,9 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
 
     useEffect(() => {
         if (!monaco) return;
-        monaco.languages.register({ id: "rgb-lang" });
-        monaco.languages.setMonarchTokensProvider("rgb-lang", {
-            tokenizer: {
-                root: [
-                    [/\/\/.*/, "comment"],
-                    [/\b(if|else|int|short|float|byte|halt)\b/, "keyword"],
-                    [/\b(=|==|>|<|>=|<=|\+|-|\*|%|\^)\b/, "operator"],
-                    [/\b(\d+)\b/, "number"],
-                ],
-            },
-        });
-        monaco.languages.registerCompletionItemProvider("rgb-lang", {
-            provideCompletionItems: () => ({
-                suggestions: [
-                    ...Array.from(code!.matchAll(/(int|float|byte)+\s+([a-z0-9]+)\s*(;|=)/gi)).map((e) => ({
-                        kind: monaco.languages.CompletionItemKind.Variable,
-                        insertText: e[2],
-                        range: undefined as any,
-                        label: e[2],
-                    })),
-                    { kind: monaco.languages.CompletionItemKind.Class, insertText: "int", range: undefined as any, label: "int" },
-                    { kind: monaco.languages.CompletionItemKind.Class, insertText: "float", range: undefined as any, label: "float" },
-                    { kind: monaco.languages.CompletionItemKind.Class, insertText: "byte", range: undefined as any, label: "byte" },
-                    { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "if", range: undefined as any, label: "if" },
-                    { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "else", range: undefined as any, label: "else" },
-
-                    {
-                        kind: monaco.languages.CompletionItemKind.Keyword,
-                        insertText: "halt",
-                        range: undefined as any,
-                        label: "halt",
-                        documentation: "Exits this program",
-                    },
-                    {
-                        kind: monaco.languages.CompletionItemKind.Function,
-                        insertText: "out",
-                        range: undefined as any,
-                        label: "out",
-                        documentation: "Print number to console",
-                    },
-                    {
-                        kind: monaco.languages.CompletionItemKind.Function,
-                        insertText: "sin",
-                        range: undefined as any,
-                        label: "sin",
-                    },
-                    {
-                        kind: monaco.languages.CompletionItemKind.Function,
-                        insertText: "cos",
-                        range: undefined as any,
-                        label: "cos",
-                    },
-                    {
-                        kind: monaco.languages.CompletionItemKind.Function,
-                        insertText: "random",
-                        range: undefined as any,
-                        label: "random",
-                        documentation: "Returns a random byte (0->255)",
-                    },
-                ],
-            }),
-        });
+        if (!monaco.languages.getLanguages().some((e) => e.id === "rgb-lang")) {
+            registerLanguage(monaco);
+        }
     }, [monaco]);
 
     useEffect(() => {
@@ -375,4 +317,164 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
             )}
         </div>
     );
+}
+
+function getInfoForFunction(functionName: string): monaco.languages.SignatureInformation[] {
+    switch (functionName) {
+        case "sin":
+            return [
+                {
+                    label: "int sin(int value)",
+                    documentation: "Calculates sine of a value",
+                    parameters: [{ label: "int value, 0 is mapped to 0pi and 256 is mapped to 2pi" }],
+                },
+            ];
+        case "cos":
+            return [
+                {
+                    label: "int cos(int value)",
+                    documentation: "Calculates cosine of a value",
+                    parameters: [{ label: "int value, 0 is mapped to 0pi and 256 is mapped to 2pi" }],
+                },
+            ];
+        case "hsv":
+            return [
+                {
+                    label: "void hsv(byte h, byte s, byte v)",
+                    documentation: "Sets the r, g and b variables using hsv values",
+                    parameters: [
+                        { label: "h", documentation: "The colors hue (0 -> 255)" },
+                        { label: "s", documentation: "The colors saturation (0 -> 255)" },
+                        { label: "v", documentation: "The brightness of the color (0 -> 255)" },
+                    ],
+                },
+            ];
+        case "random":
+        default:
+            return [];
+    }
+}
+
+function registerLanguage(monaco: Monaco) {
+    console.log("registering language...");
+    monaco.languages.register({ id: "rgb-lang" });
+    monaco.languages.setMonarchTokensProvider("rgb-lang", {
+        tokenizer: {
+            root: [
+                [/\/\/.*/, "comment"],
+                [/\b(if|else|int|short|float|byte|halt)\b/, "keyword"],
+                [/\b(=|==|>|<|>=|<=|\+|-|\*|%|\^)\b/, "operator"],
+                [/\b(\d+)\b/, "number"],
+            ],
+        },
+    });
+    monaco.languages.registerSignatureHelpProvider("rgb-lang", {
+        signatureHelpTriggerCharacters: ["(", ","],
+        signatureHelpRetriggerCharacters: [","],
+        provideSignatureHelp: (model, position, token) => {
+            let currentLine = model.getValueInRange({
+                startLineNumber: position.lineNumber,
+                startColumn: 1,
+                endLineNumber: position.lineNumber,
+                endColumn: position.column,
+            });
+
+            let functionName = "";
+            let parameterIndex = 0;
+            let depth = 0;
+            for (let i = currentLine.length - 1; i >= 1; i--) {
+                if (currentLine[i] === ",") {
+                    if (depth === 0) {
+                        parameterIndex++;
+                    }
+                } else if (currentLine[i] === ")") {
+                    depth++;
+                } else if (currentLine[i] === "(" && currentLine[i - 1].match(/[a-z0-9]/)) {
+                    if (depth > 0) {
+                        depth--;
+                    } else {
+                        let str: string[] = [];
+                        for (let j = i - 1; j >= 0; j--) {
+                            if (!currentLine[j].match(/[a-z0-9]/)) {
+                                break;
+                            }
+                            str.unshift(currentLine[j]);
+                        }
+                        functionName = str.join("");
+                        break;
+                    }
+                }
+            }
+            if (!functionName) return;
+            console.log("functionName", functionName, parameterIndex);
+
+            let functionInfo = getInfoForFunction(functionName);
+            return {
+                dispose: () => {},
+                value: {
+                    activeParameter: parameterIndex,
+                    activeSignature: 0,
+                    signatures: functionInfo,
+                },
+            };
+        },
+    });
+    monaco.languages.registerCompletionItemProvider("rgb-lang", {
+        provideCompletionItems: (model) => ({
+            suggestions: [
+                // ...Array.from(code!.matchAll(/(int|float|byte)+\s+([a-z0-9]+)\s*(;|=)/gi)).map((e) => ({
+                //     kind: monaco.languages.CompletionItemKind.Variable,
+                //     insertText: e[2],
+                //     range: undefined as any,
+                //     label: e[2],
+                // })),
+                { kind: monaco.languages.CompletionItemKind.Class, insertText: "int", range: undefined as any, label: "int" },
+                { kind: monaco.languages.CompletionItemKind.Class, insertText: "float", range: undefined as any, label: "float" },
+                { kind: monaco.languages.CompletionItemKind.Class, insertText: "byte", range: undefined as any, label: "byte" },
+                { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "if", range: undefined as any, label: "if" },
+                { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "else", range: undefined as any, label: "else" },
+
+                {
+                    kind: monaco.languages.CompletionItemKind.Keyword,
+                    insertText: "halt",
+                    range: undefined as any,
+                    label: "halt",
+                    documentation: "Exits this program",
+                },
+                {
+                    kind: monaco.languages.CompletionItemKind.Function,
+                    insertText: "out",
+                    range: undefined as any,
+                    label: "out",
+                    documentation: "Print number to console",
+                },
+                {
+                    kind: monaco.languages.CompletionItemKind.Function,
+                    insertText: "sin",
+                    range: undefined as any,
+                    label: "sin",
+                },
+                {
+                    kind: monaco.languages.CompletionItemKind.Function,
+                    insertText: "cos",
+                    range: undefined as any,
+                    label: "cos",
+                },
+                {
+                    kind: monaco.languages.CompletionItemKind.Function,
+                    insertText: "lerp",
+                    range: undefined as any,
+                    label: "lerp",
+                    documentation: "Returns a random byte (0->255)",
+                },
+                {
+                    kind: monaco.languages.CompletionItemKind.Function,
+                    insertText: "random",
+                    range: undefined as any,
+                    label: "random",
+                    documentation: "Returns a random byte (0->255)",
+                },
+            ],
+        }),
+    });
 }
