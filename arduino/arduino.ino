@@ -1,13 +1,15 @@
+#define FASTLED_ALLOW_INTERRUPTS 0
+#define FASTLED_INTERRUPT_RETRY_COUNT 1
 #include <FastLED.h>
 #define PRINTLN Serial.println
 #include "interpreter.c"
 
-#define LED_COUNT 50
+#define LED_COUNT 784
 #define DATA_PIN 4
 // Max amount of routes that can be drawn at once
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
-#define INTERLACE_LEVEL 1
+#define INTERLACE_LEVEL 2
 #define MAX_PROGRAM_SIZE 500
 
 // A route
