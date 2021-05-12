@@ -1,10 +1,4 @@
 // CHRISTMAS EFFECT
 
-int a = 100 - 20 + 20
 
-out sin(0)
-out sin(100)
-out sin(200)
-out sin(300)
-out sin(400)
-out sin(500)
+out 50? - 20?

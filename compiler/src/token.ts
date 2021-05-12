@@ -916,7 +916,11 @@ export class CallToken extends Token {
     emit(code: CodeWriter, isRoot: boolean) {
         let func = this.context.functions.get(this.functionName)!;
         this.parameters.forEach((e) => e.emit(code));
-        code.call(func.id);
+        if (func.type === "function") {
+            code.call(func.id);
+        } else if (func.type === "macro") {
+            func.emitter(code);
+        }
         if (isRoot && !(this.type instanceof VoidType)) {
             code.consume();
         }

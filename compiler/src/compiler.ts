@@ -19,12 +19,21 @@ interface Variable {
     volatile: boolean;
 }
 
-interface MacroFunction {
-    name: string;
-    returnType: Type;
-    id: number;
-    parameterCount: number;
-}
+type Function =
+    | {
+          type: "function";
+          name: string;
+          returnType: Type;
+          id: number;
+          parameterCount: number;
+      }
+    | {
+          type: "macro";
+          name: string;
+          returnType: Type;
+          parameterCount: number;
+          emitter: (output: CodeWriter) => void;
+      };
 
 function align4(n: number) {
     return (n & ~0x3) + 4;
@@ -33,7 +42,7 @@ function align4(n: number) {
 export class CompilerContext {
     lex!: Lexer;
     vars: Map<string, Variable>;
-    functions: Map<string, MacroFunction>;
+    functions: Map<string, Function>;
     root?: Token;
 
     private currentVarAllocation: number = 0;
@@ -45,20 +54,37 @@ export class CompilerContext {
     }
 
     /**
-     * Defines a function, returning the function id that will be used by the interpreter
+     * Defines builtin macros like sin, cos, tan ...
      */
-    defineFunction(name: string, returnType: Type, parameterCount: number) {
-        if (this.functions.has(name)) throw new Error("Function already declared");
-        this.functions.set(name, { id: this.currentFunctionAllocation++, name, returnType, parameterCount });
-        return this.currentFunctionAllocation - 1;
+    defineDefaultMacros() {
+        this.defineMacro("sin", new IntType(), 1, (output) => {
+            output.sin();
+        });
+        this.defineMacro("cos", new IntType(), 1, (output) => {
+            output.cos();
+        });
+        this.defineMacro("tan", new IntType(), 1, (output) => {
+            output.tan();
+        });
+        this.defineMacro("abs", new IntType(), 1, (output) => {
+            output.abs();
+        });
     }
 
     /**
      * Defines a function, with a fixed function id
      */
-    defineFunctionAt(name: string, id: number, returnType: Type, parameterCount: number) {
+    defineFunction(name: string, callId: number, returnType: Type, parameterCount: number) {
         if (this.functions.has(name)) throw new Error("Function already declared");
-        this.functions.set(name, { id, name, returnType, parameterCount });
+        this.functions.set(name, { type: "function", id: callId, name, returnType, parameterCount });
+    }
+
+    /**
+     * Defines a macro function
+     */
+    defineMacro(name: string, returnType: Type, parameterCount: number, emitter: (output: CodeWriter) => void) {
+        if (this.functions.has(name)) throw new Error("Function already declared");
+        this.functions.set(name, { type: "macro", emitter, name, returnType, parameterCount });
     }
 
     /**

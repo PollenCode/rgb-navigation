@@ -26,6 +26,7 @@ enum OpCode
     Pop8 = 0x08,
     Push8 = 0x09,
     Consume = 0x0A,
+    Out = 0x0E,
     Halt = 0x0F,
 
     Add = 0x10,
@@ -49,7 +50,9 @@ enum OpCode
     Lte = 0x34,
     Bte = 0x35,
 
-    Out = 0xA0,
+    Sin = 0x40,
+    Cos = 0x41,
+    Tan = 0x42,
 };
 
 // optimizations:
@@ -167,8 +170,18 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
             continue;
         case 0x0B:
         case 0x0C:
-        case 0x0E:
+        case 0x0D:
             return EINVOP;
+
+        case Out:
+#if ARDUINO
+            PRINTLN(*(INT *)(mem + stackPointer));
+#endif
+#ifdef DEBUG
+            printf("out %d\n", *(INT *)(mem + stackPointer));
+#endif
+            stackPointer += sizeof(INT);
+            continue;
 
         case Halt:
 #ifdef DEBUG
@@ -348,14 +361,26 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
 #endif
             continue;
 
-        case Out:
-#if ARDUINO
-            PRINTLN(*(INT *)(mem + stackPointer));
-#endif
-#ifdef DEBUG
-            printf("out %d\n", *(INT *)(mem + stackPointer));
-#endif
-            stackPointer += sizeof(INT);
+        case 0x36:
+        case 0x37:
+        case 0x38:
+        case 0x39:
+        case 0x3A:
+        case 0x3B:
+        case 0x3C:
+        case 0x3D:
+        case 0x3E:
+        case 0x3F:
+            return EINVOP;
+
+        case Sin:
+            *(INT *)(mem + stackPointer) = sin(*(INT *)(mem + stackPointer) * 1000) / 1000;
+            continue;
+        case Cos:
+            *(INT *)(mem + stackPointer) = cos(*(INT *)(mem + stackPointer) * 1000) / 1000;
+            continue;
+        case Tan:
+            *(INT *)(mem + stackPointer) = tan(*(INT *)(mem + stackPointer) * 1000) / 1000;
             continue;
 
         default:

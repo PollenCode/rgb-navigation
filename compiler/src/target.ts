@@ -53,6 +53,7 @@ export enum OpCode {
     Pop8 = 0x08,
     Push8 = 0x09,
     Consume = 0x0a,
+    Out = 0x0e,
     Halt = 0x0f,
 
     Add = 0x10,
@@ -76,7 +77,9 @@ export enum OpCode {
     Lte = 0x34,
     Bte = 0x35,
 
-    Out = 0xa0,
+    Sin = 0x40,
+    Cos = 0x41,
+    Tan = 0x42,
 }
 
 export class CodeWriter extends BinaryWriter {
@@ -226,5 +229,14 @@ export class CodeWriter extends BinaryWriter {
         logger("call", index);
         this.write8(OpCode.Call);
         this.write8(index);
+    }
+    sin() {
+        this.write8(OpCode.Sin);
+    }
+    cos() {
+        this.write8(OpCode.Cos);
+    }
+    tan() {
+        this.write8(OpCode.Tan);
     }
 }

@@ -12,12 +12,13 @@ async function compileFile(fileName: string) {
 
 async function compile(input: string) {
     let context = new CompilerContext();
+    context.defineDefaultMacros();
     context.defineVariableAt("r", new ByteType(), 0, true);
     context.defineVariableAt("g", new ByteType(), 1, true);
     context.defineVariableAt("b", new ByteType(), 2, true);
     context.defineVariableAt("index", new IntType(), 4, true);
     context.defineVariableAt("timer", new IntType(), 8, true);
-    context.defineFunction("sin", new IntType(), 1);
+    context.defineFunction("sinf", 1, new IntType(), 1);
 
     logger("parsing...");
     context.compile(input);
@@ -49,8 +50,7 @@ async function compile(input: string) {
     inter.callHandlers.set(0, () => {
         inter.push(Math.sin(inter.pop() / 100) * 100);
     });
-    // inter.debug = true;
-    inter.writeInt(12, 1000);
+    inter.debug = true;
 
     for (let i = 0; i < 1; i++) {
         inter.exePointer = entryPoint;

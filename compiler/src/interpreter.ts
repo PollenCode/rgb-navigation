@@ -214,10 +214,25 @@ export class Interpreter {
             }
             case OpCode.Call: {
                 let id = this.memory[this.exePointer++];
-                info("call", id);
+                if (this.debug) info("call", id);
                 let handler = this.callHandlers.get(id);
                 if (!handler) throw new Error(`Call function with id ${id} not found at ${this.exePointer - 1}`);
                 handler(this);
+                break;
+            }
+            case OpCode.Sin: {
+                if (this.debug) info("sin");
+                this.push(Math.sin(this.pop() / 1000) * 1000);
+                break;
+            }
+            case OpCode.Cos: {
+                if (this.debug) info("cos");
+                this.push(Math.cos(this.pop() / 1000) * 1000);
+                break;
+            }
+            case OpCode.Tan: {
+                if (this.debug) info("tan");
+                this.push(Math.tan(this.pop() / 1000) * 1000);
                 break;
             }
 
