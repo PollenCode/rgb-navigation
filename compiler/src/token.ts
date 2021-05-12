@@ -8,7 +8,7 @@ const info = debug("rgb:compiler");
 const warning = debug("rgb:compiler:warning");
 const error = debug("rgb:compiler:error");
 
-const RESERVED_WORDS = ["if", "out", "else"];
+const RESERVED_WORDS = ["if", "out", "else", "halt"];
 
 export abstract class Token {
     readonly context: CompilerContext;
@@ -166,9 +166,9 @@ export class MulToken extends Token {
     }
 
     emit(code: CodeWriter) {
-        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+        if (this.type.constantValue !== undefined) {
             code.pushConst(this.type.constantValue);
-        } else if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
+        } else {
             if (this.op1.type.constantValue !== undefined) {
                 code.pushConst(this.op1.type.constantValue);
             } else {
@@ -190,8 +190,6 @@ export class MulToken extends Token {
                     code.mod();
                     break;
             }
-        } else {
-            throw new Error(`Add/sub ${this.op1.type.name} and ${this.op2.type.name} not implemented`);
         }
     }
 }

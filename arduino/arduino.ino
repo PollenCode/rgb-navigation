@@ -10,7 +10,7 @@
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
 #define INTERLACE_LEVEL 2
-#define MAX_PROGRAM_SIZE 500
+#define MAX_PROGRAM_SIZE 1000
 
 // A route
 struct LineEffect
@@ -253,7 +253,9 @@ void loop()
         case 5:
             if (Serial.available() >= 5)
             {
+                // handle program receive
                 Serial.read();
+                memset(mem, 0, MAX_PROGRAM_SIZE);
                 bytesToReceive = Serial.read() << 8 | Serial.read();
                 receivePosition = 0;
                 entryPoint = Serial.read() << 8 | Serial.read();
@@ -313,6 +315,7 @@ void loop()
         for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
         {
             *(INT *)(mem + 4) = i;
+            *(INT *)(mem + 0) = 0;
             run(mem, entryPoint, MAX_PROGRAM_SIZE);
             leds[i] = CRGB(mem[0], mem[1], mem[2]);
         }

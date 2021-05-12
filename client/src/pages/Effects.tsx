@@ -172,9 +172,9 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
             tokenizer: {
                 root: [
                     [/\/\/.*/, "comment"],
-                    [/(if|out|else|int|short|float|byte)/, "keyword"],
-                    [/(=|==|>|<|>=|<=|\+|-|\*|%|\^)/, "operator"],
-                    [/\d+/, "number"],
+                    [/\b(if|out|else|int|short|float|byte|halt)\b/, "keyword"],
+                    [/\b(=|==|>|<|>=|<=|\+|-|\*|%|\^)\b/, "operator"],
+                    [/\b(\d+)\b/, "number"],
                 ],
             },
         });
@@ -192,7 +192,20 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                     { kind: monaco.languages.CompletionItemKind.Class, insertText: "byte", range: undefined as any, label: "byte" },
                     { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "if", range: undefined as any, label: "if" },
                     { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "else", range: undefined as any, label: "else" },
-                    { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "out", range: undefined as any, label: "out" },
+                    {
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "out",
+                        range: undefined as any,
+                        label: "out",
+                        documentation: "Print number to console",
+                    },
+                    {
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "halt",
+                        range: undefined as any,
+                        label: "halt",
+                        documentation: "Exits this program",
+                    },
                 ],
             }),
         });
