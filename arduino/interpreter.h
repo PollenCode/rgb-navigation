@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 #include "sintable.h"
 
 #ifdef ARDUINO
@@ -12,9 +13,13 @@
 
 #define EINVOP -2
 #define EOVERFLOW -1
+#define EINVCALL -3
 
+extern uint16_t exePointer;
+extern uint16_t stackPointer;
+extern uint8_t mem[];
 extern uint32_t executed;
-void (*callHandler)(unsigned char);
+bool (*callHandler)(uint8_t);
 
 enum OpCode
 {
@@ -58,4 +63,4 @@ enum OpCode
     Tan = 0x42,
 };
 
-int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPointer);
+int run();

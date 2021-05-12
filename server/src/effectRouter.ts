@@ -21,6 +21,7 @@ function compile(input: string): [Buffer, number] {
     context.defineVariableAt("b", new ByteType(), 2, true);
     context.defineVariableAt("index", new IntType(), 4, true);
     context.defineVariableAt("timer", new IntType(), 8, true);
+    context.defineFunction("random", 1, new ByteType(), 0);
     context.compile(input);
     context.typeCheck();
 

@@ -1,13 +1,15 @@
 #include "interpreter.h"
 
 uint32_t executed = 0;
+uint16_t exePointer = 0;
+uint16_t stackPointer = 0;
 
 // optimizations:
 // - push <addr:2> -> pushb <addr:1>
 // - pop <addr:2> -> popb <addr:1>
 // - instructions like add8
 
-int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPointer)
+int run()
 {
     while (1)
     {
@@ -116,17 +118,8 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
         case 0x0B:
         case 0x0C:
         case 0x0D:
+        case 0x0E:
             return EINVOP;
-
-        case Out:
-#if ARDUINO
-            // PRINTLN(*(INT *)(mem + stackPointer));
-#endif
-#ifdef DEBUG
-            printf("out %d\n", *(INT *)(mem + stackPointer));
-#endif
-            stackPointer += sizeof(INT);
-            continue;
 
         case Halt:
 #ifdef DEBUG
@@ -242,10 +235,11 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
         case Call:
         {
             unsigned char id = mem[exePointer++];
-            callHandler(mem[id]);
 #ifdef DEBUG
             printf("call %d\n", id);
 #endif
+            if (!callHandler(id))
+                return EINVCALL;
             continue;
         }
 
@@ -326,13 +320,8 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
             // *(INT *)(mem + stackPointer) = cos(*(INT *)(mem + stackPointer) / 1000.0f) * 1000;
             *(INT *)(mem + stackPointer) = fastCos(mem[stackPointer]);
             continue;
-        case Tan:
-            *(INT *)(mem + stackPointer) = tan(*(INT *)(mem + stackPointer) / 1000.0f) * 1000;
-            continue;
 
         default:
-            // PRINTLN("invalid opcode");
-            // PRINTLN(mem[exePointer - 1]);
 #ifdef DEBUG
             printf("unknown opcode %d\n", mem[exePointer - 1]);
 #endif

@@ -18,7 +18,7 @@ async function compile(input: string) {
     context.defineVariableAt("b", new ByteType(), 2, true);
     context.defineVariableAt("index", new IntType(), 4, true);
     context.defineVariableAt("timer", new IntType(), 8, true);
-    context.defineFunction("sinf", 1, new IntType(), 1);
+    context.defineFunction("random", 0, new ByteType(), 0);
 
     logger("parsing...");
     context.compile(input);
@@ -48,7 +48,7 @@ async function compile(input: string) {
 
     let inter = new Interpreter(linked, entryPoint);
     inter.callHandlers.set(0, () => {
-        inter.push(Math.sin(inter.pop() / 100) * 100);
+        inter.push(Math.floor(Math.random() * 256));
     });
     inter.debug = true;
 

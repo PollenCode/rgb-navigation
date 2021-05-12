@@ -1,4 +1,6 @@
 // CHRISTMAS EFFECT
 
 
-out 50? - 20?
+    r = 255
+    g = 255
+    b = random()

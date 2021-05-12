@@ -1,4 +1,4 @@
-#define PRINTLN Serial.println
+
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define FASTLED_INTERRUPT_RETRY_COUNT 1
 #include <FastLED.h>
@@ -27,7 +27,7 @@ struct LineEffect
 };
 
 unsigned char idleEffect = 0;
-LineEffect *routes[MAX_LINES];
+LineEffect *routes[MAX_LINES] = {0};
 CRGB leds[LED_COUNT];
 uint32_t counter = 0;
 uint16_t fpsCounter = 0;
@@ -37,18 +37,29 @@ int receivePosition = 0;
 int bytesToReceive = 0;
 bool isThereAnyEffect = false;
 
-
 int interlacing = 0;
 unsigned short entryPoint = 12;
-unsigned char mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x04, 0x03, 0x00, 0x22, 0x03, 0x04, 0xff, 0x00, 0x08, 0x00, 0x00, 0x03, 0x00, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x05, 0x04, 0xff, 0x00, 0x22, 0x02, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
+uint8_t mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x04, 0x03, 0x00, 0x22, 0x03, 0x04, 0xff, 0x00, 0x08, 0x00, 0x00, 0x03, 0x00, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x05, 0x04, 0xff, 0x00, 0x22, 0x02, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
 
 void setColorLine(int start, int end, CRGB color);
 
-void handler(unsigned char id)
+bool handler(uint8_t id)
 {
     switch (id)
     {
+    case 1:
+        stackPointer -= sizeof(INT);
+        *(INT *)(mem + stackPointer) = (INT)random(256);
+        break;
+    case 2:
+        Serial.println(*(INT *)(mem + stackPointer));
+        break;
+    default:
+        Serial.print("invalid call ");
+        Serial.println(id);
+        return false;
     }
+    return true;
 }
 
 void setup()
@@ -230,7 +241,6 @@ void loop()
             break;
         case 1:
             if (Serial.available() >= 2)
-            Serial.println(packetType);
                 handleSetIdle();
             break;
         case 2:
@@ -306,42 +316,64 @@ void loop()
 
     //line splitter
     isThereAnyEffect = false;
-        for(byte i = 0; i < 32; i++) {
-            if (routes[i]) {
-                isThereAnyEffect = true;
-                break;
-            }
+    for (byte i = 0; i < 32; i++)
+    {
+        if (routes[i])
+        {
+            isThereAnyEffect = true;
+            break;
         }
-    
-    if (isThereAnyEffect) {
-            for (byte i = 0; i < LED_COUNT; i++) {
-                byte currentColorCount = 0;
-                for (byte j = 0; j < MAX_LINES; j++) {
-                  if (((routes[j]->startLed <= i && routes[j]->endLed >= i) ||
-                      (routes[j]->startLed >= i && routes[j]->endLed <= i)) && routes[j] != nullptr) {
-                      currentColors[currentColorCount] = routes[j]->color;
-                      currentColorCount++;
-                  }      
-                }
-                if (currentColorCount == 0) {
-                    leds[i] = CRGB(0, 0, 0);
-                }
-                else{
-                    int colorId = (i / 1) % currentColorCount;
-                    leds[i] = currentColors[colorId];
-                }
-            }
-        }
+    }
 
-   /* if (!anyRoute)
+    if (isThereAnyEffect)
+    {
+        for (byte i = 0; i < LED_COUNT; i++)
+        {
+            byte currentColorCount = 0;
+            for (byte j = 0; j < MAX_LINES; j++)
+            {
+                if (((routes[j]->startLed <= i && routes[j]->endLed >= i) ||
+                     (routes[j]->startLed >= i && routes[j]->endLed <= i)) &&
+                    routes[j] != nullptr)
+                {
+                    currentColors[currentColorCount] = routes[j]->color;
+                    currentColorCount++;
+                }
+            }
+            if (currentColorCount == 0)
+            {
+                leds[i] = CRGB(0, 0, 0);
+            }
+            else
+            {
+                int colorId = (i / 1) % currentColorCount;
+                leds[i] = currentColors[colorId];
+            }
+        }
+    }
+
+    if (true)
     {
         *(INT *)(mem + 8) = (int)time;
+        int res;
         for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
         {
             *(INT *)(mem + 4) = i;
-            *(INT *)(mem + 0) = 0;
-            run(mem, entryPoint, MAX_PROGRAM_SIZE);
+            mem[0] = leds[i].r;
+            mem[1] = leds[i].g;
+            mem[2] = leds[i].b;
+            // *(INT *)(mem + 0) = 0; //leds[i]
+            stackPointer = MAX_PROGRAM_SIZE;
+            exePointer = entryPoint;
+            res = run();
+            if (res)
+                break;
             leds[i] = CRGB(mem[0], mem[1], mem[2]);
+        }
+        if (res)
+        {
+            Serial.print("non 0 exit code ");
+            Serial.println(res);
         }
         interlacing++;
         if (interlacing >= INTERLACE_LEVEL)
