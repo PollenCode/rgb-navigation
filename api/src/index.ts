@@ -26,7 +26,7 @@ function hexToRgb(hex: any) {
               g: parseInt(result[2], 16),
               b: parseInt(result[3], 16),
           }
-        : 0;
+        : undefined;
 }
 
 export class RGBClient extends TypedEmitter<Events> {
@@ -41,7 +41,6 @@ export class RGBClient extends TypedEmitter<Events> {
     }
 
     public async setAccessToken(token: string | undefined) {
-        console.log("set");
         this.accessToken = token;
         if (token) {
             // Try to get the user
@@ -124,16 +123,16 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect/build/" + id + (upload ? "?upload=true" : ""), "POST");
     }
 
-    public async ledController(startLed: number, endLed: number, duration: number, color: any) {
-        let r: any = hexToRgb(color);
+    public async ledController(startLed: number, endLed: number, duration: number, color: string) {
+        let c = hexToRgb(color)!;
         let req: LedControllerServerMessage = {
             type: "enableLine",
             duration: duration,
             startLed: startLed,
             endLed: endLed,
-            r: Number(hexToRgb(color)),
-            g: Number(hexToRgb(color)),
-            b: Number(hexToRgb(color)),
+            r: c.r,
+            g: c.g,
+            b: c.b,
         };
         return await this.doFetch("/api/leds", "POST", req);
     }
@@ -153,22 +152,18 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/deleteToken", "DELETE", req);
     }
 
-    public async giveAdminToAll(){
-        return await this.doFetch("/api/giveAdminToAll", "POST");
-    }
-
-    public async getUsers(){
+    public async getUsers() {
         return await this.doFetch("/api/users", "GET");
     }
 
-    public async giveAdmin(user:any){
+    public async giveAdmin(user: any) {
         let req = {
             id: user.id,
         };
         return await this.doFetch("/api/giveAdmin", "PUT", req);
     }
 
-    public async takeAdmin(user:any){
+    public async takeAdmin(user: any) {
         let req = {
             id: user.id,
         };

@@ -9,7 +9,18 @@ const logger = debug("rgb:compiler");
 interface Variable {
     name: string;
     type: Type;
+    /**
+     * The assigned location of this variable in memory
+     */
     location: number;
+    /**
+     * Whether this variable may be removed by the compiler if it is not needed.
+     */
+    volatile: boolean;
+}
+
+function align4(n: number) {
+    return (n & ~0x3) + 4;
 }
 
 export class CompilerContext {
@@ -23,17 +34,17 @@ export class CompilerContext {
         this.vars = new Map();
     }
 
-    defineVariableAt(name: string, type: Type, address: number) {
+    defineVariableAt(name: string, type: Type, address: number, volatile = false) {
         if (this.vars.has(name)) throw new Error("Variable already declared");
-        this.vars.set(name, { name, location: address, type });
+        this.vars.set(name, { name, location: address, type, volatile });
         if (address + type.size > this.currentVarAllocation) {
             this.currentVarAllocation = address + type.size;
         }
     }
 
-    defineVariable(name: string, type: Type) {
+    defineVariable(name: string, type: Type, volatile = false) {
         if (this.vars.has(name)) throw new Error("Variable already declared");
-        this.vars.set(name, { name, location: this.currentVarAllocation, type });
+        this.vars.set(name, { name, location: this.currentVarAllocation, type, volatile });
         this.currentVarAllocation += type.size;
     }
 
@@ -59,6 +70,19 @@ export class CompilerContext {
             }
         });
         return writer.buffer;
+    }
+
+    /**
+     * Combines memory and bytecode into one buffer, returning the entryPoint and buffer
+     */
+    getLinked(): [number, Buffer] {
+        let memory = this.getMemory();
+        let program = this.getCode();
+        let entryPoint = align4(memory.length);
+        let buffer = Buffer.alloc(entryPoint + program.length);
+        memory.copy(buffer, 0, 0, entryPoint);
+        program.copy(buffer, entryPoint, 0, program.length);
+        return [entryPoint, buffer];
     }
 
     compile(input: string) {

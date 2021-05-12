@@ -1,13 +1,16 @@
+#define FASTLED_ALLOW_INTERRUPTS 0
+#define FASTLED_INTERRUPT_RETRY_COUNT 1
 #include <FastLED.h>
+#define PRINTLN Serial.println
 #include "interpreter.c"
 
-#define LED_COUNT 50
+#define LED_COUNT 784 / 2
 #define DATA_PIN 4
 // Max amount of routes that can be drawn at once
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
-#define INTERLACE_LEVEL 1
-#define MAX_PROGRAM_SIZE 500
+#define INTERLACE_LEVEL 2
+#define MAX_PROGRAM_SIZE 1000
 
 // A route
 struct LineEffect
@@ -47,6 +50,7 @@ void handler(unsigned char id)
 
 void setup()
 {
+    executed = 0;
     callHandler = handler;
 
     // Increasing the baud rate will cause corruption and inconsistency
@@ -241,7 +245,9 @@ void loop()
         case 5:
             if (Serial.available() >= 5)
             {
+                // handle program receive
                 Serial.read();
+                memset(mem, 0, MAX_PROGRAM_SIZE);
                 bytesToReceive = Serial.read() << 8 | Serial.read();
                 receivePosition = 0;
                 entryPoint = Serial.read() << 8 | Serial.read();
@@ -330,6 +336,7 @@ void loop()
         for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
         {
             *(INT *)(mem + 4) = i;
+            *(INT *)(mem + 0) = 0;
             run(mem, entryPoint, MAX_PROGRAM_SIZE);
             leds[i] = CRGB(mem[0], mem[1], mem[2]);
         }
@@ -341,13 +348,18 @@ void loop()
     fpsCounter++;
     if (time - lastShown >= 1000)
     {
-        //Serial.print("FPS: ");
-        //Serial.println(fpsCounter);
+        Serial.print("FPS: ");
+        Serial.println(fpsCounter);
+        Serial.print("executed: ");
+        Serial.println(executed);
+        // Serial.print("a: ");
+        // Serial.println(*(INT *)(mem + 0xc));
         // Serial.print((int32_t)(executed & 0xFFFFFFFF));
         // Serial.println((int32_t)(executed >> 32) & 0xFFFFFFFF);
         lastShown = time;
         fpsCounter = 0;
-    }*/
+        executed = 0;
+    }
 
     FastLED.show();
     counter++;

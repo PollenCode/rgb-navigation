@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState, useContext } from "react";
 import { BrowserRouter as Router, Switch, Route, Redirect, useHistory } from "react-router-dom";
-import { Admin } from "./pages/Admin";
 import { Complete } from "./pages/Complete";
 import { User, RGBClient, serverPath } from "rgb-navigation-api";
 import { Overview } from "./pages/Overview";
@@ -10,8 +9,7 @@ import { DGang } from "./pages/DGang";
 import { EffectEdit, Effects } from "./pages/Effects";
 import { LedController } from "./pages/LedController";
 import { Token } from "./pages/Token";
-import { GiveAdminAll } from "./pages/giveAdminAll";
-import { GiveAdmin } from "./pages/giveAdmin";
+import { GiveAdmin } from "./pages/GiveAdmin";
 
 const client = new RGBClient();
 
@@ -30,14 +28,12 @@ export function Routes() {
                 localStorage.removeItem("s");
             }
 
-            if (!token) {
+            if (!user) {
                 window.location.href = serverPath + "/api/oauth";
             }
         }
-        
-        client.on("auth", onAuth);
 
-        
+        client.on("auth", onAuth);
 
         if (query.has("s")) {
             let accessToken = query.get("s")!;
@@ -49,14 +45,10 @@ export function Routes() {
             window.location.href = serverPath + "/api/oauth";
         }
 
-        
-
         return () => {
             client.off("auth", onAuth);
         };
     }, []);
-
-    
 
     if (!user) {
         return null;
@@ -68,7 +60,6 @@ export function Routes() {
                 <Route path="/" exact component={Complete} />
                 <Route path="/realtime" exact component={Overview} />
                 <Route path="/admin" component={AdminRouter} />
-                <Route path="/giveAdminAll" component={GiveAdminAll} />
                 <Redirect to="/" />
             </Switch>
         </AuthContext.Provider>
@@ -78,24 +69,22 @@ export function Routes() {
 function AdminRouter() {
     const history = useHistory();
     const client = useContext(AuthContext);
-    
-    if (client.user && !client.user.admin) {
-        history.push('/');
-        return (<p></p>);
-    }
 
+    if (client.user && !client.user.admin) {
+        history.push("/");
+        return <p></p>;
+    }
 
     return (
         <PageWrapper>
             <Switch>
-                <Route path="/admin" exact component={Admin} />
                 <Route path="/admin/effects/:id" exact component={EffectEdit} />
                 <Route path="/admin/effects" exact component={Effects} />
                 <Route path="/admin/dgang" exact component={DGang} />
                 <Route path="/admin/ledcontrol" exact component={LedController} />
                 <Route path="/admin/token" exact component={Token} />
-                <Route path="/admin/giveAdmin" exact component={GiveAdmin} />
-                <Redirect to="/admin" />
+                <Route path="/admin/users" exact component={GiveAdmin} />
+                <Redirect to="/admin/effects" />
             </Switch>
         </PageWrapper>
     );

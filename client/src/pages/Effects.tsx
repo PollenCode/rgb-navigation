@@ -19,6 +19,7 @@ import {
     IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { LedControllerMessage } from "rgb-navigation-api";
+import { List, ListItem } from "../components/List";
 
 interface Effect {
     name: string;
@@ -54,11 +55,7 @@ function EffectListItem(props: { effect: Effect; onClick?: () => void }) {
     const history = useHistory();
     const readOnly = !client.user || !props.effect.author || client.user.id !== props.effect.author.id;
     return (
-        <li
-            className={`border-b last:border-0 text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center ${
-                props.effect.active ? "bg-blue-50" : ""
-            }`}
-            onClick={props.onClick}>
+        <ListItem active={props.effect.active} onClick={props.onClick}>
             {props.effect.active && (
                 <span className="text-blue-600 text-lg overflow-hidden pl-3.5">
                     <FontAwesomeIcon className="pop-in" icon={faCheckCircle} />
@@ -79,7 +76,7 @@ function EffectListItem(props: { effect: Effect; onClick?: () => void }) {
                 }}>
                 {readOnly ? "Bekijken" : "Aanpassen"}
             </EffectListItemButton>
-        </li>
+        </ListItem>
     );
 }
 
@@ -123,7 +120,7 @@ export function Effects() {
                     }}>
                     Nieuw effect maken
                 </Button>
-                <ul className="mt-4 border-collapse border rounded overflow-hidden">
+                <List>
                     {effects.map((e) => (
                         <EffectListItem
                             key={e.id}
@@ -134,7 +131,7 @@ export function Effects() {
                             }}
                         />
                     ))}
-                </ul>
+                </List>
             </div>
         </div>
     );
@@ -175,9 +172,9 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
             tokenizer: {
                 root: [
                     [/\/\/.*/, "comment"],
-                    [/(if|out|else|int|short|float|byte)/, "keyword"],
-                    [/(=|==|>|<|>=|<=|\+|-|\*|%|\^)/, "operator"],
-                    [/\d+/, "number"],
+                    [/\b(if|out|else|int|short|float|byte|halt)\b/, "keyword"],
+                    [/\b(=|==|>|<|>=|<=|\+|-|\*|%|\^)\b/, "operator"],
+                    [/\b(\d+)\b/, "number"],
                 ],
             },
         });
@@ -195,7 +192,20 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                     { kind: monaco.languages.CompletionItemKind.Class, insertText: "byte", range: undefined as any, label: "byte" },
                     { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "if", range: undefined as any, label: "if" },
                     { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "else", range: undefined as any, label: "else" },
-                    { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "out", range: undefined as any, label: "out" },
+                    {
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "out",
+                        range: undefined as any,
+                        label: "out",
+                        documentation: "Print number to console",
+                    },
+                    {
+                        kind: monaco.languages.CompletionItemKind.Keyword,
+                        insertText: "halt",
+                        range: undefined as any,
+                        label: "halt",
+                        documentation: "Exits this program",
+                    },
                 ],
             }),
         });

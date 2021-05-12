@@ -183,7 +183,7 @@ export class CodeWriter extends BinaryWriter {
     }
     jrz(offset: number) {
         if (offset >= 127 || offset <= -128) throw new Error("Jump too far");
-        logger("jz", offset);
+        logger("jrz", offset);
         this.write8(OpCode.Jrz);
         this.write8(offset);
     }

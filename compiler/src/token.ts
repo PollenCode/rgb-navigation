@@ -1,10 +1,14 @@
 import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
 import { CodeWriter } from "./target";
-import { Type, VOID, INT, FLOAT, VoidType, NumberType, IntType, FloatType } from "./types";
+import { Type, VoidType, NumberType, IntType, FloatType, ByteType } from "./types";
 import debug from "debug";
 
-const logger = debug("rgb:compiler");
+const info = debug("rgb:compiler");
+const warning = debug("rgb:compiler:warning");
+const error = debug("rgb:compiler:error");
+
+const RESERVED_WORDS = ["if", "out", "else", "halt"];
 
 export abstract class Token {
     readonly context: CompilerContext;
@@ -29,7 +33,7 @@ function expectBrackets(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let op = expectTernary(c) || expectBrackets(c);
+    let op = expectOut(c, true) || expectBrackets(c);
     if (!op) {
         throw new Error(`Expected something after ( at ${c.lex.lineColumn(c.lex.position)}`);
     }
@@ -105,7 +109,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let trueOp = expectTernary(c) || expectBrackets(c);
+    let trueOp = expectOut(c, true) || expectBrackets(c);
     if (!trueOp) {
         throw new Error(`Expected something after ?, at ${c.lex.lineColumn(position)}`);
     }
@@ -116,7 +120,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let falseOp = expectTernary(c) || expectBrackets(c);
+    let falseOp = expectOut(c, true) || expectBrackets(c);
     if (!falseOp) {
         throw new Error(`Expected something after :, at ${c.lex.lineColumn(position)}`);
     }
@@ -162,9 +166,9 @@ export class MulToken extends Token {
     }
 
     emit(code: CodeWriter) {
-        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+        if (this.type.constantValue !== undefined) {
             code.pushConst(this.type.constantValue);
-        } else if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
+        } else {
             if (this.op1.type.constantValue !== undefined) {
                 code.pushConst(this.op1.type.constantValue);
             } else {
@@ -186,8 +190,6 @@ export class MulToken extends Token {
                     code.mod();
                     break;
             }
-        } else {
-            throw new Error(`Add/sub ${this.op1.type.name} and ${this.op2.type.name} not implemented`);
         }
     }
 }
@@ -252,9 +254,9 @@ export class SumToken extends Token {
     }
 
     emit(code: CodeWriter) {
-        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
+        if (this.type.constantValue !== undefined) {
             code.pushConst(this.type.constantValue);
-        } else if (this.op1.type instanceof IntType && this.op2.type instanceof IntType) {
+        } else {
             if (this.op1.type.constantValue !== undefined) {
                 code.pushConst(this.op1.type.constantValue);
                 // code.add8(this.op1.type.constantValue);
@@ -277,8 +279,6 @@ export class SumToken extends Token {
                     code.sub();
                     break;
             }
-        } else {
-            throw new Error(`Add/sub ${this.op1.type.name} and ${this.op2.type.name} not implemented`);
         }
     }
 }
@@ -341,10 +341,8 @@ export class ReferenceToken extends Token {
 export function expectReference(c: CompilerContext) {
     let position = c.lex.position;
 
-    let isStatic = c.lex.string("#");
-
     let varName = c.lex.readSymbol();
-    if (!varName || "0123456789".includes(varName[0])) {
+    if (!varName || "0123456789".includes(varName[0]) || RESERVED_WORDS.includes(varName)) {
         c.lex.position = position;
         return;
     }
@@ -360,7 +358,14 @@ export class ValueToken extends Token {
     }
 
     setTypes(): void {
-        this.type = new IntType(this.noInlining ? undefined : parseInt(this.value));
+        let val = parseInt(this.value);
+        if (val > 2147483647 || val < -2147483648) {
+            throw new Error(`Integer too large at ${this.context.lex.lineColumn(this.position)}`);
+        } else if (val > 127 || val < -128) {
+            this.type = new IntType(this.noInlining ? undefined : val);
+        } else {
+            this.type = new ByteType(this.noInlining ? undefined : val);
+        }
     }
 
     toString() {
@@ -406,7 +411,6 @@ export class AssignmentToken extends Token {
     setTypes(): void {
         if (this.value) {
             this.value.setTypes();
-            this.type = this.value.type;
         }
         if (this.typeName) {
             // Define variable
@@ -419,23 +423,34 @@ export class AssignmentToken extends Token {
             let type;
             switch (this.typeName) {
                 case "int":
-                    type = new IntType(undefined, 4);
+                    type = new IntType();
                     break;
                 case "byte":
-                    type = new IntType(undefined, 1);
+                    type = new ByteType();
                     break;
-                case "float":
-                    type = new FloatType();
-                    break;
+                // case "float":
+                //     type = new FloatType();
+                //     break;
                 default:
                     throw new Error(`Unknown variable type ${this.typeName} at ${this.context.lex.lineColumn(this.position)}`);
             }
 
-            if (this.value && type instanceof NumberType && this.value.type instanceof NumberType && this.value.type.constantValue !== undefined) {
-                type.constantValue = this.value.type.constantValue;
+            if (this.value) {
+                if (this.value.type.size > type.size) {
+                    warning(`data loss when assigning type ${this.value.type.name} to ${type.name} at ${this.context.lex.lineColumn(this.position)}`);
+                }
+                let a = this.value.type.assign(type);
+                if (!a) {
+                    throw new Error(
+                        `Type ${this.value.type.name} is not assignable to ${type.name} at ${this.context.lex.lineColumn(this.position)}`
+                    );
+                }
+                this.type = a;
+            } else {
+                this.type = type;
             }
 
-            this.context.defineVariable(this.varName, type);
+            this.context.defineVariable(this.varName, this.type);
         } else {
             // Set variable
             if (!this.context.vars.has(this.varName)) {
@@ -443,9 +458,12 @@ export class AssignmentToken extends Token {
             }
 
             let v = this.context.vars.get(this.varName)!;
-            if (v.type instanceof NumberType && this.value!.type instanceof NumberType && this.value!.type.constantValue !== undefined) {
-                v.type.constantValue = this.value!.type.constantValue;
+            let a = this.value!.type.assign(v.type);
+            if (!a) {
+                throw new Error(`Type ${this.value!.type.name} is not assignable to ${v.type.name} at ${this.context.lex.lineColumn(this.position)}`);
             }
+            v.type = a;
+            this.type = a;
         }
     }
 
@@ -454,7 +472,8 @@ export class AssignmentToken extends Token {
     }
 
     emit(code: CodeWriter, isRoot: boolean) {
-        if (this.value) {
+        let v = this.context.vars.get(this.varName)!;
+        if (this.value && (this.type.constantValue === undefined || v.volatile)) {
             this.value.emit(code);
             if (!isRoot) {
                 code.dup();
@@ -470,17 +489,22 @@ export function expectAssignment(c: CompilerContext) {
     let position = c.lex.position;
 
     let name0 = c.lex.readSymbol();
-    if (!name0) {
+    if (!name0 || RESERVED_WORDS.includes(name0)) {
         c.lex.position = position;
         return;
     }
     c.lex.readWhitespace();
 
     let name1 = c.lex.readSymbol();
+    if (RESERVED_WORDS.includes(name1)) {
+        c.lex.position = position;
+        return;
+    }
     c.lex.readWhitespace();
 
     let eq = c.lex.string("=");
     if (!name1 && !eq) {
+        // Assignment token must at least be `var = value;` or `type var;`
         c.lex.position = position;
         return;
     }
@@ -489,7 +513,7 @@ export function expectAssignment(c: CompilerContext) {
     if (eq) {
         c.lex.readWhitespace();
 
-        value = expectTernary(c) || expectBrackets(c);
+        value = expectOut(c, true) || expectBrackets(c);
         if (!value) {
             throw new Error(`Value was expected after value declaration at ${c.lex.lineColumn()}`);
         }
@@ -509,7 +533,7 @@ export class BlockToken extends Token {
 
     setTypes(): void {
         this.statements.forEach((e) => e.setTypes());
-        this.type = VOID;
+        this.type = new VoidType();
     }
 
     toString() {
@@ -527,7 +551,7 @@ export function expectProgram(c: CompilerContext) {
     let statements: Token[] = [];
 
     while (c.lex.position < c.lex.buffer.length) {
-        let s = expectOut(c) || expectIf(c);
+        let s = expectHalt(c);
         if (!s) {
             throw new Error(`Expected statement at ${c.lex.lineColumn()}`);
         }
@@ -547,7 +571,7 @@ export function expectBlock(c: CompilerContext) {
 
         let s: Token | undefined;
         do {
-            s = expectIf(c);
+            s = expectHalt(c);
             if (s) statements.push(s);
 
             c.lex.string(";");
@@ -559,10 +583,8 @@ export function expectBlock(c: CompilerContext) {
         }
 
         c.lex.readWhitespace();
-    } else if (c.lex.string(":")) {
-        c.lex.readWhitespace();
-
-        let s = expectIf(c);
+    } else {
+        let s = expectHalt(c);
         if (!s) {
             throw new Error(`Expected statement after : at ${c.lex.lineColumn()}`);
         }
@@ -571,8 +593,6 @@ export function expectBlock(c: CompilerContext) {
         c.lex.readWhitespace();
 
         statements.push(s);
-    } else {
-        return;
     }
     return new BlockToken(c, position, statements);
 }
@@ -587,25 +607,26 @@ export class OutToken extends Token {
     }
     setTypes(): void {
         this.value.setTypes();
-        this.type = this.value.type;
+        this.type = this.value.type.clone();
+        this.type.constantValue = undefined;
     }
 
     emit(code: CodeWriter, isRoot: boolean) {
         this.value.emit(code);
-        code.out();
         if (!isRoot) {
             code.dup();
         }
+        code.out();
     }
 }
 
-export function expectOut(c: CompilerContext) {
+export function expectOut(c: CompilerContext, inline: boolean): Token | undefined {
     if (!c.lex.string("out ")) {
-        return;
+        return inline ? expectTernary(c) || expectBrackets(c) : expectIf(c);
     }
 
     let position = c.lex.position;
-    let op = expectTernary(c) || expectBrackets(c);
+    let op = expectOut(c, true);
     if (!op) {
         throw new Error(`Expected operand for out statement at ${c.lex.lineColumn()}`);
     }
@@ -741,7 +762,7 @@ export class IfToken extends Token {
         else return `if ${this.condition} \n\t${this.ifBlock}\n`;
     }
     setTypes(): void {
-        this.type = VOID;
+        this.type = new VoidType();
         this.condition.setTypes();
         this.ifBlock.setTypes();
         this.elseBlock?.setTypes();
@@ -796,7 +817,7 @@ export function expectIf(c: CompilerContext) {
 
     c.lex.readWhitespace();
 
-    let condition = expectTernary(c) || expectBrackets(c);
+    let condition = expectOut(c, true) || expectBrackets(c);
     if (!condition) {
         throw new Error(`Expected if condition at ${c.lex.lineColumn()}`);
     }
@@ -816,4 +837,33 @@ export function expectIf(c: CompilerContext) {
     }
 
     return new IfToken(c, position, condition, ifBlock, elseBlock);
+}
+
+export class HaltToken extends Token {
+    constructor(context: CompilerContext, position: number) {
+        super(context, position);
+    }
+
+    toString(): string {
+        return "halt";
+    }
+
+    setTypes(): void {
+        this.type = new VoidType();
+    }
+
+    emit(code: CodeWriter) {
+        code.halt();
+    }
+}
+
+export function expectHalt(c: CompilerContext) {
+    let position = c.lex.position;
+    if (!c.lex.string("halt")) {
+        return expectOut(c, false);
+    }
+
+    c.lex.readWhitespace();
+
+    return new HaltToken(c, position);
 }
