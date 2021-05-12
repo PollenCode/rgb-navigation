@@ -553,7 +553,7 @@ export function expectProgram(c: CompilerContext) {
     let statements: Token[] = [];
 
     while (c.lex.position < c.lex.buffer.length) {
-        let s = expectOut(c, false);
+        let s = expectHalt(c);
         if (!s) {
             throw new Error(`Expected statement at ${c.lex.lineColumn()}`);
         }
@@ -573,7 +573,7 @@ export function expectBlock(c: CompilerContext) {
 
         let s: Token | undefined;
         do {
-            s = expectOut(c, false);
+            s = expectHalt(c);
             if (s) statements.push(s);
 
             c.lex.string(";");
@@ -586,7 +586,7 @@ export function expectBlock(c: CompilerContext) {
 
         c.lex.readWhitespace();
     } else {
-        let s = expectOut(c, false);
+        let s = expectHalt(c);
         if (!s) {
             throw new Error(`Expected statement after : at ${c.lex.lineColumn()}`);
         }
@@ -839,4 +839,33 @@ export function expectIf(c: CompilerContext) {
     }
 
     return new IfToken(c, position, condition, ifBlock, elseBlock);
+}
+
+export class HaltToken extends Token {
+    constructor(context: CompilerContext, position: number) {
+        super(context, position);
+    }
+
+    toString(): string {
+        return "halt";
+    }
+
+    setTypes(): void {
+        this.type = new VoidType();
+    }
+
+    emit(code: CodeWriter) {
+        code.halt();
+    }
+}
+
+export function expectHalt(c: CompilerContext) {
+    let position = c.lex.position;
+    if (!c.lex.string("halt")) {
+        return expectOut(c, false);
+    }
+
+    c.lex.readWhitespace();
+
+    return new HaltToken(c, position);
 }

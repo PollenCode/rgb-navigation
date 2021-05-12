@@ -3,7 +3,7 @@ import { Router } from "express";
 import debug from "debug";
 import { withUser } from "./middleware";
 import { sendArduino } from "./socketServer";
-import { CompareToken, CompilerContext, IntType } from "rgb-compiler";
+import { ByteType, CompareToken, CompilerContext, IntType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
 
@@ -15,25 +15,21 @@ let activeEffectId = -1;
 
 function compile(input: string): [Buffer, number] {
     let context = new CompilerContext();
-    context.defineVariableAt("r", new IntType(undefined, 1), 0);
-    context.defineVariableAt("g", new IntType(undefined, 1), 1);
-    context.defineVariableAt("b", new IntType(undefined, 1), 2);
-    context.defineVariableAt("index", new IntType(), 4);
-    context.defineVariableAt("timer", new IntType(), 8);
+    context.defineVariableAt("r", new ByteType(), 0, true);
+    context.defineVariableAt("g", new ByteType(), 1, true);
+    context.defineVariableAt("b", new ByteType(), 2, true);
+    context.defineVariableAt("index", new IntType(), 4, true);
+    context.defineVariableAt("timer", new IntType(), 8, true);
     context.compile(input);
     context.typeCheck();
 
-    let memory = context.getMemory();
-    let program = context.getCode();
-    let buffer = Buffer.alloc(memory.length + program.length);
-    memory.copy(buffer, 0, 0, memory.length);
-    program.copy(buffer, memory.length, 0, program.length);
+    let [entryPoint, buffer] = context.getLinked();
 
     if (isDevelopment) {
         fs.writeFileSync("../arduino/testing/input.hex", buffer);
     }
 
-    return [buffer, memory.length];
+    return [buffer, entryPoint];
 }
 
 router.post("/effect/build/:id", async (req, res, next) => {

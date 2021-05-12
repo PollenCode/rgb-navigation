@@ -4,7 +4,7 @@
 #define PRINTLN Serial.println
 #include "interpreter.c"
 
-#define LED_COUNT 784
+#define LED_COUNT 784 / 2
 #define DATA_PIN 4
 // Max amount of routes that can be drawn at once
 #define MAX_LINES 32
