@@ -10,8 +10,7 @@ import { DGang } from "./pages/DGang";
 import { EffectEdit, Effects } from "./pages/Effects";
 import { LedController } from "./pages/LedController";
 import { Token } from "./pages/Token";
-import { GiveAdminAll } from "./pages/giveAdminAll";
-import { GiveAdmin } from "./pages/giveAdmin";
+import { GiveAdmin } from "./pages/GiveAdmin";
 
 const client = new RGBClient();
 
@@ -62,7 +61,6 @@ export function Routes() {
                 <Route path="/" exact component={Complete} />
                 <Route path="/realtime" exact component={Overview} />
                 <Route path="/admin" component={AdminRouter} />
-                <Route path="/giveAdminAll" component={GiveAdminAll} />
                 <Redirect to="/" />
             </Switch>
         </AuthContext.Provider>

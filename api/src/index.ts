@@ -152,10 +152,6 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/deleteToken", "DELETE", req);
     }
 
-    public async giveAdminToAll() {
-        return await this.doFetch("/api/giveAdminToAll", "POST");
-    }
-
     public async getUsers() {
         return await this.doFetch("/api/users", "GET");
     }
