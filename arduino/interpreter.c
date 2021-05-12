@@ -25,6 +25,7 @@ enum OpCode
     Swap = 0x07,
     Pop8 = 0x08,
     Push8 = 0x09,
+    Consume = 0x0A,
     Halt = 0x0F,
 
     Add = 0x10,
@@ -152,14 +153,18 @@ int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPoint
         {
             unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
             stackPointer -= sizeof(INT);
-            // mem[stackPointer] = mem[addr];
             *(INT *)(mem + stackPointer) = mem[addr];
 #ifdef DEBUG
             printf("push8 %d\n", addr);
 #endif
             continue;
         }
-        case 0x0A:
+        case Consume:
+            stackPointer += sizeof(INT);
+#ifdef DEBUG
+            printf("consume\n");
+#endif
+            continue;
         case 0x0B:
         case 0x0C:
         case 0x0E:

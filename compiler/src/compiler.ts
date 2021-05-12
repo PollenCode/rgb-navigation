@@ -19,6 +19,13 @@ interface Variable {
     volatile: boolean;
 }
 
+interface MacroFunction {
+    name: string;
+    returnType: Type;
+    id: number;
+    parameterCount: number;
+}
+
 function align4(n: number) {
     return (n & ~0x3) + 4;
 }
@@ -26,12 +33,20 @@ function align4(n: number) {
 export class CompilerContext {
     lex!: Lexer;
     vars: Map<string, Variable>;
+    functions: Map<string, MacroFunction>;
     root?: Token;
 
     private currentVarAllocation: number = 0;
+    private currentFunctionAllocation: number = 0;
 
     constructor() {
         this.vars = new Map();
+        this.functions = new Map();
+    }
+
+    defineFunction(name: string, returnType: Type, parameterCount: number) {
+        if (this.functions.has(name)) throw new Error("Function already declared");
+        this.functions.set(name, { id: this.currentFunctionAllocation++, name, returnType, parameterCount });
     }
 
     defineVariableAt(name: string, type: Type, address: number, volatile = false) {

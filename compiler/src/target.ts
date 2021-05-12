@@ -52,6 +52,7 @@ export enum OpCode {
     Swap = 0x07,
     Pop8 = 0x08,
     Push8 = 0x09,
+    Consume = 0x0a,
     Halt = 0x0f,
 
     Add = 0x10,
@@ -160,6 +161,10 @@ export class CodeWriter extends BinaryWriter {
     abs() {
         logger("abs");
         this.write8(OpCode.Abs);
+    }
+    consume() {
+        logger("consume");
+        this.write8(OpCode.Consume);
     }
     add8(value: number) {
         if (value >= 127 || value <= -128) throw new Error("Add value too big");

@@ -338,18 +338,40 @@ export class ReferenceToken extends Token {
     }
 }
 
-export function expectReference(c: CompilerContext) {
+export function expectReferenceOrCall(c: CompilerContext) {
     let position = c.lex.position;
 
-    let varName = c.lex.readSymbol();
-    if (!varName || "0123456789".includes(varName[0]) || RESERVED_WORDS.includes(varName)) {
+    let varOrFunctionName = c.lex.readSymbol();
+    if (!varOrFunctionName || "0123456789".includes(varOrFunctionName[0]) || RESERVED_WORDS.includes(varOrFunctionName)) {
         c.lex.position = position;
         return;
     }
 
     c.lex.readWhitespace();
 
-    return new ReferenceToken(c, position, varName);
+    if (c.lex.string("(")) {
+        c.lex.readWhitespace();
+
+        let parameters: Token[] = [];
+
+        let firstParam = expectOut(c, true);
+        if (firstParam) parameters.push(firstParam);
+
+        while (c.lex.string(",")) {
+            c.lex.readWhitespace();
+            let param = expectOut(c, true);
+            if (!param) throw new Error(`Expected parameter at ${c.lex.lineColumn()}`);
+            parameters.push(param);
+        }
+
+        if (!c.lex.string(")")) {
+            throw new Error(`Expected closing ) after parameter list at ${c.lex.lineColumn()}`);
+        }
+
+        return new CallToken(c, position, varOrFunctionName, parameters);
+    } else {
+        return new ReferenceToken(c, position, varOrFunctionName);
+    }
 }
 
 export class ValueToken extends Token {
@@ -379,7 +401,7 @@ export class ValueToken extends Token {
 
 export function expectValue(c: CompilerContext) {
     let position = c.lex.position;
-    let ref = expectReference(c);
+    let ref = expectReferenceOrCall(c);
     if (ref) {
         return ref;
     }
@@ -866,4 +888,37 @@ export function expectHalt(c: CompilerContext) {
     c.lex.readWhitespace();
 
     return new HaltToken(c, position);
+}
+
+export class CallToken extends Token {
+    constructor(context: CompilerContext, position: number, public functionName: string, public parameters: Token[]) {
+        super(context, position);
+    }
+
+    toString(): string {
+        return `${this.functionName}()`;
+    }
+
+    setTypes(): void {
+        let func = this.context.functions.get(this.functionName);
+        if (!func) throw new Error(`Function '${this.functionName}' not found at ${this.context.lex.lineColumn(this.position)}`);
+        this.type = func.returnType;
+        if (this.parameters.length !== func.parameterCount) {
+            throw new Error(
+                `Expected ${func.parameterCount} parameters (got ${this.parameters.length}) for function call at ${this.context.lex.lineColumn(
+                    this.position
+                )}`
+            );
+        }
+        this.parameters.forEach((e) => e.setTypes());
+    }
+
+    emit(code: CodeWriter, isRoot: boolean) {
+        let func = this.context.functions.get(this.functionName)!;
+        this.parameters.forEach((e) => e.emit(code));
+        code.call(func.id);
+        if (isRoot && !(this.type instanceof VoidType)) {
+            code.consume();
+        }
+    }
 }
