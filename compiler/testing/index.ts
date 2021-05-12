@@ -1,7 +1,7 @@
 process.env.DEBUG = "rgb:*";
 import debug from "debug";
 import fs from "fs/promises";
-import { ByteType, CompilerContext, IntType } from "../src";
+import { ByteType, CompilerContext, IntType, Interpreter } from "../src";
 
 const logger = debug("rgb:compiler-test");
 
@@ -26,7 +26,7 @@ async function compile(input: string) {
 
     let [entryPoint, linked] = context.getLinked();
 
-    logger(`program uses ~${entryPoint} bytes for variables, starting at 0`);
+    logger(`program uses ${entryPoint} bytes for variables, starting at 0`);
     logger(`program uses ${linked.length - entryPoint} bytes for code, starting at ${entryPoint}`);
     logger(`total size ${linked.length} bytes`);
 
@@ -41,6 +41,19 @@ async function compile(input: string) {
     let outputFile = await fs.open("../arduino/testing/input.hex", "w");
     outputFile.write(linked);
     await outputFile.close();
+
+    logger("interpreting...");
+
+    let inter = new Interpreter(linked, entryPoint);
+    // inter.debug = true;
+    inter.writeInt(12, 1000);
+
+    for (let i = 0; i < 1; i++) {
+        inter.exePointer = entryPoint;
+        while (inter.executeNext()) {}
+    }
+
+    logger("interpret done");
 }
 
 compileFile("testing/input.rgb");
