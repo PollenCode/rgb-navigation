@@ -1,8 +1,11 @@
+#define PRINTLN Serial.println
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define FASTLED_INTERRUPT_RETRY_COUNT 1
 #include <FastLED.h>
-#define PRINTLN Serial.println
-#include "interpreter.c"
+extern "C"
+{
+#include "interpreter.h"
+}
 
 #define LED_COUNT 784 / 2
 #define DATA_PIN 4

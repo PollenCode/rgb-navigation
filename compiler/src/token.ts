@@ -347,8 +347,6 @@ export function expectReferenceOrCall(c: CompilerContext) {
         return;
     }
 
-    c.lex.readWhitespace();
-
     if (c.lex.string("(")) {
         c.lex.readWhitespace();
 
@@ -368,8 +366,11 @@ export function expectReferenceOrCall(c: CompilerContext) {
             throw new Error(`Expected closing ) after parameter list at ${c.lex.lineColumn()}`);
         }
 
+        c.lex.readWhitespace();
+
         return new CallToken(c, position, varOrFunctionName, parameters);
     } else {
+        c.lex.readWhitespace();
         return new ReferenceToken(c, position, varOrFunctionName);
     }
 }

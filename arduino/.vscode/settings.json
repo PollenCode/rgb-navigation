@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "interpreter.c": "cpp",
+        "cmath": "c"
+    }
+}

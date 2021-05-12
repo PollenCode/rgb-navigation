@@ -15,6 +15,7 @@ let activeEffectId = -1;
 
 function compile(input: string): [Buffer, number] {
     let context = new CompilerContext();
+    context.defineDefaultMacros();
     context.defineVariableAt("r", new ByteType(), 0, true);
     context.defineVariableAt("g", new ByteType(), 1, true);
     context.defineVariableAt("b", new ByteType(), 2, true);
