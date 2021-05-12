@@ -2,6 +2,7 @@ import { Button } from "../components/Button";
 import { AuthContext } from "../AuthContext";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
+import { List, ListItem } from "../components/List";
 
 export function GiveAdmin() {
     let client = useContext(AuthContext);
@@ -18,33 +19,35 @@ export function GiveAdmin() {
         <div className="flex justify-center px-1 md:px-4 pt-4">
             <div style={{ width: "1000px" }}>
                 <p className="mt-5">{message}</p>
-                <ul className="mt-4 border-collapse border rounded overflow-hidden">
+                <List>
                     {users.map((user: any) => (
-                        <li className="border-b last:border-0 text-gray-700 hover:bg-gray-50 transition flex items-center justify-between">
+                        <ListItem key={user.id}>
                             <p className="ml-5">Gebruiker: {user.name}</p>
-                            {!user.admin && 
-                            <Button
-                                style={{ margin: "0.5em" }}
-                                type="button"
-                                onClick={() => {
-                                    client.giveAdmin(user);
-                                    setMessage("Admin gegeven aan user: " + user.name);
-                                }}>
-                                Geef Admin
-                            </Button>}
-                            {user.admin && 
-                            <Button
-                                style={{ margin: "0.5em" }}
-                                type="button"
-                                onClick={() => {
-                                    client.takeAdmin(user);
-                                    setMessage("Admin afgenomen vam user: " + user.name);
-                                }}>
-                                Neem Admin
-                            </Button>}
-                        </li>
+                            {!user.admin && (
+                                <Button
+                                    style={{ margin: "0.5em 0.5em 0.5em auto" }}
+                                    type="button"
+                                    onClick={() => {
+                                        client.giveAdmin(user);
+                                        setMessage("Admin gegeven aan user: " + user.name);
+                                    }}>
+                                    Geef Admin
+                                </Button>
+                            )}
+                            {user.admin && (
+                                <Button
+                                    style={{ margin: "0.5em 0.5em 0.5em auto" }}
+                                    type="button"
+                                    onClick={() => {
+                                        client.takeAdmin(user);
+                                        setMessage("Admin afgenomen vam user: " + user.name);
+                                    }}>
+                                    Neem Admin
+                                </Button>
+                            )}
+                        </ListItem>
                     ))}
-                </ul>
+                </List>
             </div>
         </div>
     );

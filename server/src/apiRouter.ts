@@ -99,14 +99,14 @@ router.post("/unbind", withUser(false, true), async (req, res, next) => {
     res.json({ status: "ok", user: user });
 });
 
-router.post("/leds", withUser(false, false), async (req, res, next) => {
+router.post("/leds", withUser(true, false), async (req, res, next) => {
     let message = req.body;
     console.log(message);
     sendArduino(message);
     res.end();
 });
 
-router.get("/users", withUser(false, false), async (req, res, next) => {
+router.get("/users", withUser(true, false), async (req, res, next) => {
     let users = await prisma.user.findMany({});
     res.json({ status: "ok", users });
 });

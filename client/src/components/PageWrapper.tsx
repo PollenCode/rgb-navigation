@@ -43,7 +43,6 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                         <SidebarButton icon={faUsers} name="Gebruikers" to="/admin/users" />
                         <SidebarButton name="D-gang" to="/admin/dgang" />
                         <SidebarButton name="LedController" to="/admin/ledcontrol" />
-                        <Redirect to="/admin/effects" />
                     </ul>
                 </div>
                 <div className="flex-grow overflow-auto">{props.children}</div>

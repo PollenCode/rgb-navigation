@@ -19,6 +19,7 @@ import {
     IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { LedControllerMessage } from "rgb-navigation-api";
+import { List, ListItem } from "../components/List";
 
 interface Effect {
     name: string;
@@ -54,11 +55,7 @@ function EffectListItem(props: { effect: Effect; onClick?: () => void }) {
     const history = useHistory();
     const readOnly = !client.user || !props.effect.author || client.user.id !== props.effect.author.id;
     return (
-        <li
-            className={`border-b last:border-0 text-gray-700 hover:bg-gray-50 transition cursor-pointer flex items-center ${
-                props.effect.active ? "bg-blue-50" : ""
-            }`}
-            onClick={props.onClick}>
+        <ListItem active={props.effect.active} onClick={props.onClick}>
             {props.effect.active && (
                 <span className="text-blue-600 text-lg overflow-hidden pl-3.5">
                     <FontAwesomeIcon className="pop-in" icon={faCheckCircle} />
@@ -79,7 +76,7 @@ function EffectListItem(props: { effect: Effect; onClick?: () => void }) {
                 }}>
                 {readOnly ? "Bekijken" : "Aanpassen"}
             </EffectListItemButton>
-        </li>
+        </ListItem>
     );
 }
 
@@ -123,7 +120,7 @@ export function Effects() {
                     }}>
                     Nieuw effect maken
                 </Button>
-                <ul className="mt-4 border-collapse border rounded overflow-hidden">
+                <List>
                     {effects.map((e) => (
                         <EffectListItem
                             key={e.id}
@@ -134,7 +131,7 @@ export function Effects() {
                             }}
                         />
                     ))}
-                </ul>
+                </List>
             </div>
         </div>
     );
