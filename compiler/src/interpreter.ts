@@ -208,10 +208,6 @@ export class Interpreter {
                 this.push(this.pop() >= this.pop() ? 1 : 0);
                 break;
             }
-            case OpCode.Out: {
-                info("out", this.pop());
-                break;
-            }
             case OpCode.Call: {
                 let id = this.memory[this.exePointer++];
                 if (this.debug) info("call", id);

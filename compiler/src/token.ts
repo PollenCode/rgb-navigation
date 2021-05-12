@@ -8,7 +8,7 @@ const info = debug("rgb:compiler");
 const warning = debug("rgb:compiler:warning");
 const error = debug("rgb:compiler:error");
 
-const RESERVED_WORDS = ["if", "out", "else", "halt"];
+const RESERVED_WORDS = ["if", "else", "halt"];
 
 export abstract class Token {
     readonly context: CompilerContext;
@@ -33,7 +33,7 @@ function expectBrackets(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let op = expectOut(c, true) || expectBrackets(c);
+    let op = expectTernary(c) || expectBrackets(c);
     if (!op) {
         throw new Error(`Expected something after ( at ${c.lex.lineColumn(c.lex.position)}`);
     }
@@ -109,7 +109,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let trueOp = expectOut(c, true) || expectBrackets(c);
+    let trueOp = expectTernary(c) || expectBrackets(c);
     if (!trueOp) {
         throw new Error(`Expected something after ?, at ${c.lex.lineColumn(position)}`);
     }
@@ -120,7 +120,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
     c.lex.readWhitespace();
 
-    let falseOp = expectOut(c, true) || expectBrackets(c);
+    let falseOp = expectTernary(c) || expectBrackets(c);
     if (!falseOp) {
         throw new Error(`Expected something after :, at ${c.lex.lineColumn(position)}`);
     }
@@ -196,7 +196,7 @@ export class MulToken extends Token {
 
 export function expectMul(c: CompilerContext): Token | undefined {
     let position = c.lex.position;
-    let operand1 = expectValue(c) || expectBrackets(c);
+    let operand1 = expectCall(c, true) || expectBrackets(c);
     if (!operand1) {
         c.lex.position = position;
         return;
@@ -338,41 +338,17 @@ export class ReferenceToken extends Token {
     }
 }
 
-export function expectReferenceOrCall(c: CompilerContext) {
+export function expectReference(c: CompilerContext): Token | undefined {
     let position = c.lex.position;
 
-    let varOrFunctionName = c.lex.readSymbol();
-    if (!varOrFunctionName || "0123456789".includes(varOrFunctionName[0]) || RESERVED_WORDS.includes(varOrFunctionName)) {
+    let varName = c.lex.readSymbol();
+    if (!varName || "0123456789".includes(varName[0]) || RESERVED_WORDS.includes(varName)) {
         c.lex.position = position;
-        return;
+        return expectValue(c);
     }
 
-    if (c.lex.string("(")) {
-        c.lex.readWhitespace();
-
-        let parameters: Token[] = [];
-
-        let firstParam = expectOut(c, true);
-        if (firstParam) parameters.push(firstParam);
-
-        while (c.lex.string(",")) {
-            c.lex.readWhitespace();
-            let param = expectOut(c, true);
-            if (!param) throw new Error(`Expected parameter at ${c.lex.lineColumn()}`);
-            parameters.push(param);
-        }
-
-        if (!c.lex.string(")")) {
-            throw new Error(`Expected closing ) after parameter list at ${c.lex.lineColumn()}`);
-        }
-
-        c.lex.readWhitespace();
-
-        return new CallToken(c, position, varOrFunctionName, parameters);
-    } else {
-        c.lex.readWhitespace();
-        return new ReferenceToken(c, position, varOrFunctionName);
-    }
+    c.lex.readWhitespace();
+    return new ReferenceToken(c, position, varName);
 }
 
 export class ValueToken extends Token {
@@ -402,10 +378,6 @@ export class ValueToken extends Token {
 
 export function expectValue(c: CompilerContext) {
     let position = c.lex.position;
-    let ref = expectReferenceOrCall(c);
-    if (ref) {
-        return ref;
-    }
 
     let value = c.lex.read("0123456789");
     if (!value) {
@@ -536,9 +508,9 @@ export function expectAssignment(c: CompilerContext) {
     if (eq) {
         c.lex.readWhitespace();
 
-        value = expectOut(c, true) || expectBrackets(c);
+        value = expectTernary(c) || expectBrackets(c);
         if (!value) {
-            throw new Error(`Value was expected after value declaration at ${c.lex.lineColumn()}`);
+            throw new Error(`Value was expected after declaration at ${c.lex.lineColumn()}`);
         }
     }
 
@@ -618,43 +590,6 @@ export function expectBlock(c: CompilerContext) {
         statements.push(s);
     }
     return new BlockToken(c, position, statements);
-}
-
-export class OutToken extends Token {
-    constructor(context: CompilerContext, position: number, public value: Token) {
-        super(context, position);
-    }
-
-    toString(): string {
-        return `out ${this.value.toString()}`;
-    }
-    setTypes(): void {
-        this.value.setTypes();
-        this.type = this.value.type.clone();
-        this.type.constantValue = undefined;
-    }
-
-    emit(code: CodeWriter, isRoot: boolean) {
-        this.value.emit(code);
-        if (!isRoot) {
-            code.dup();
-        }
-        code.out();
-    }
-}
-
-export function expectOut(c: CompilerContext, inline: boolean): Token | undefined {
-    if (!c.lex.string("out ")) {
-        return inline ? expectTernary(c) || expectBrackets(c) : expectIf(c);
-    }
-
-    let position = c.lex.position;
-    let op = expectOut(c, true);
-    if (!op) {
-        throw new Error(`Expected operand for out statement at ${c.lex.lineColumn()}`);
-    }
-
-    return new OutToken(c, position, op);
 }
 
 export class CompareToken extends Token {
@@ -840,7 +775,7 @@ export function expectIf(c: CompilerContext) {
 
     c.lex.readWhitespace();
 
-    let condition = expectOut(c, true) || expectBrackets(c);
+    let condition = expectTernary(c) || expectBrackets(c);
     if (!condition) {
         throw new Error(`Expected if condition at ${c.lex.lineColumn()}`);
     }
@@ -883,7 +818,7 @@ export class HaltToken extends Token {
 export function expectHalt(c: CompilerContext) {
     let position = c.lex.position;
     if (!c.lex.string("halt")) {
-        return expectOut(c, false);
+        return expectCall(c, false);
     }
 
     c.lex.readWhitespace();
@@ -926,4 +861,43 @@ export class CallToken extends Token {
             code.consume();
         }
     }
+}
+
+export function expectCall(c: CompilerContext, inline: boolean) {
+    let position = c.lex.position;
+
+    let funcName = c.lex.readSymbol();
+    if (!funcName || "0123456789".includes(funcName[0]) || RESERVED_WORDS.includes(funcName)) {
+        c.lex.position = position;
+        return inline ? expectReference(c) : expectIf(c);
+    }
+
+    c.lex.readWhitespace();
+
+    if (!c.lex.string("(")) {
+        c.lex.position = position;
+        return inline ? expectReference(c) : expectIf(c);
+    }
+
+    c.lex.readWhitespace();
+
+    let parameters: Token[] = [];
+
+    let firstParam = expectTernary(c) || expectBrackets(c);
+    if (firstParam) parameters.push(firstParam);
+
+    while (c.lex.string(",")) {
+        c.lex.readWhitespace();
+        let param = expectTernary(c) || expectBrackets(c);
+        if (!param) throw new Error(`Expected parameter at ${c.lex.lineColumn()}`);
+        parameters.push(param);
+    }
+
+    if (!c.lex.string(")")) {
+        throw new Error(`Expected closing ) after parameter list at ${c.lex.lineColumn(c.lex.position)}`);
+    }
+
+    c.lex.readWhitespace();
+
+    return new CallToken(c, position, funcName, parameters);
 }

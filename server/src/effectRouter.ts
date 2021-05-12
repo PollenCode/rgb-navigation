@@ -3,7 +3,7 @@ import { Router } from "express";
 import debug from "debug";
 import { withUser } from "./middleware";
 import { sendArduino } from "./socketServer";
-import { ByteType, CompareToken, CompilerContext, IntType } from "rgb-compiler";
+import { ByteType, CompareToken, CompilerContext, IntType, VoidType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
 
@@ -22,6 +22,7 @@ function compile(input: string): [Buffer, number] {
     context.defineVariableAt("index", new IntType(), 4, true);
     context.defineVariableAt("timer", new IntType(), 8, true);
     context.defineFunction("random", 1, new ByteType(), 0);
+    context.defineFunction("out", 2, new VoidType(), 1);
     context.compile(input);
     context.typeCheck();
 

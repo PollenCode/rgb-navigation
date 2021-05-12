@@ -1,6 +1,5 @@
 // CHRISTMAS EFFECT
 
-
-    r = 255
-    g = 255
-    b = random()
+r = 255
+b = sin(100)
+g = 255

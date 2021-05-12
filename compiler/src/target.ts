@@ -53,7 +53,6 @@ export enum OpCode {
     Pop8 = 0x08,
     Push8 = 0x09,
     Consume = 0x0a,
-    Out = 0x0e,
     Halt = 0x0f,
 
     Add = 0x10,
@@ -174,10 +173,6 @@ export class CodeWriter extends BinaryWriter {
         logger("add8", value);
         this.write8(OpCode.Add8);
         this.write8(value);
-    }
-    out() {
-        logger("out");
-        this.write8(OpCode.Out);
     }
     halt() {
         logger("halt");

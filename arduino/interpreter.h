@@ -34,7 +34,6 @@ enum OpCode
     Pop8 = 0x08,
     Push8 = 0x09,
     Consume = 0x0A,
-    Out = 0x0E,
     Halt = 0x0F,
 
     Add = 0x10,
