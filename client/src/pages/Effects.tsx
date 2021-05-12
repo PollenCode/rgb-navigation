@@ -296,7 +296,7 @@ export function EffectEdit(props: RouteComponentProps<{ id: string }>) {
                         autoClosingBrackets: "always",
                     }}
                     defaultLanguage="rgb-lang"
-                    theme="vs-dark"
+                    theme="rgb-lang-theme"
                     value={code}
                     onChange={(ev) => setCode(ev)}
                 />
@@ -470,10 +470,19 @@ function registerLanguage(monaco: Monaco) {
             root: [
                 [/\/\/.*/, "comment"],
                 [/\b(if|else|int|short|float|byte|halt)\b/, "keyword"],
-                [/\b(=|==|>|<|>=|<=|\+|-|\*|%|\^)\b/, "operator"],
+                [/(=|==|>|<|>=|<=|\+|-|\*|%|\^|:|\?)/, "operator"],
                 [/\b(\d+)\b/, "number"],
             ],
         },
+    });
+    monaco.editor.defineTheme("rgb-lang-theme", {
+        base: "vs-dark", // can also be vs-dark or hc-black
+        inherit: true, // can also be false to completely replace the builtin rules
+        colors: {},
+        rules: [
+            { token: "operator", foreground: "bb7777" },
+            { token: "function", foreground: "11ffff" },
+        ],
     });
     monaco.languages.registerSignatureHelpProvider("rgb-lang", {
         signatureHelpTriggerCharacters: ["(", ","],
