@@ -1,11 +1,4 @@
 // CHRISTMAS EFFECT
 
-int o;
-
-if (o > 100) {
-    out 100
-}
-
-r = 100
-g = 0
-b = 0
+int a = 100 - 20 + 20
+out a;

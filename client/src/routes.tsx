@@ -30,14 +30,12 @@ export function Routes() {
                 localStorage.removeItem("s");
             }
 
-            if (!token) {
+            if (!user) {
                 window.location.href = serverPath + "/api/oauth";
             }
         }
-        
-        client.on("auth", onAuth);
 
-        
+        client.on("auth", onAuth);
 
         if (query.has("s")) {
             let accessToken = query.get("s")!;
@@ -49,14 +47,10 @@ export function Routes() {
             window.location.href = serverPath + "/api/oauth";
         }
 
-        
-
         return () => {
             client.off("auth", onAuth);
         };
     }, []);
-
-    
 
     if (!user) {
         return null;
@@ -78,12 +72,11 @@ export function Routes() {
 function AdminRouter() {
     const history = useHistory();
     const client = useContext(AuthContext);
-    
-    if (client.user && !client.user.admin) {
-        history.push('/');
-        return (<p></p>);
-    }
 
+    if (client.user && !client.user.admin) {
+        history.push("/");
+        return <p></p>;
+    }
 
     return (
         <PageWrapper>
