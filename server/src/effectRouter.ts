@@ -23,6 +23,12 @@ function compile(input: string): [Buffer, number] {
     context.defineVariableAt("timer", new IntType(), 8, true);
     context.defineFunction("random", 1, new ByteType(), 0);
     context.defineFunction("out", 2, new VoidType(), 1);
+    context.defineFunction("min", 3, new IntType(), 2);
+    context.defineFunction("max", 4, new IntType(), 2);
+    context.defineFunction("map", 5, new IntType(), 5);
+    context.defineFunction("lerp", 6, new IntType(), 3);
+    context.defineFunction("clamp", 7, new IntType(), 3);
+    context.defineFunction("hsv", 8, new VoidType(), 3);
     context.compile(input);
     context.typeCheck();
 

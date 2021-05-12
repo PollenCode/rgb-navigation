@@ -43,17 +43,108 @@ uint8_t mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00,
 
 void setColorLine(int start, int end, CRGB color);
 
-bool handler(uint8_t id)
+bool functionHandler(uint8_t id)
 {
+    // Handles the CALL instruction
+    // NOTE: function parameters are pushed on the stack from last to first
     switch (id)
     {
     case 1:
+    {
+        // byte random()
         stackPointer -= sizeof(INT);
         *(INT *)(mem + stackPointer) = (INT)random(256);
         break;
+    }
     case 2:
+    {
+        // int out(int)
+        // Return value is passed value
         Serial.println(*(INT *)(mem + stackPointer));
         break;
+    }
+    case 3:
+    {
+        // int min(int, int)
+        INT op1 = *(INT *)(mem + stackPointer);
+        stackPointer += sizeof(INT);
+        INT op2 = *(INT *)(mem + stackPointer);
+        *(INT *)(mem + stackPointer) = op1 > op2 ? op2 : op1;
+        break;
+    }
+    case 4:
+    {
+        // int max(int, int)
+        INT op1 = *(INT *)(mem + stackPointer);
+        stackPointer += sizeof(INT);
+        INT op2 = *(INT *)(mem + stackPointer);
+        *(INT *)(mem + stackPointer) = op1 < op2 ? op2 : op1;
+        break;
+    }
+    case 5:
+    {
+        // int map(int value, int fromLow, int fromHigh, int toLow, int toHigh)
+        // Does the same as https://www.arduino.cc/reference/en/language/functions/math/map/
+        INT toLow = *(INT *)(mem + stackPointer);
+        stackPointer += sizeof(INT);
+        INT toHigh = *(INT *)(mem + stackPointer);
+        stackPointer += sizeof(INT);
+        INT fromHigh = *(INT *)(mem + stackPointer);
+        stackPointer += sizeof(INT);
+        INT fromLow = *(INT *)(mem + stackPointer);
+        stackPointer += sizeof(INT);
+        INT value = *(INT *)(mem + stackPointer);
+        *(INT *)(mem + stackPointer) = map(value, fromLow, fromHigh, toLow, toHigh);
+        break;
+    }
+    case 6:
+    {
+        // int lerp(int from, int to, int percentage)
+        INT percentage = *(INT *)(mem + stackPointer);
+        stackPointer += sizeof(INT);
+        INT to = *(INT *)(mem + stackPointer);
+        stackPointer += sizeof(INT);
+        INT from = *(INT *)(mem + stackPointer);
+        *(INT *)(mem + stackPointer) = from + (percentage / 256.0f) * (to - from);
+        break;
+    }
+    case 7:
+    {
+        // int clamp(int value, int min, int max)
+        INT max = *(INT *)(mem + stackPointer);
+        stackPointer += sizeof(INT);
+        INT min = *(INT *)(mem + stackPointer);
+        stackPointer += sizeof(INT);
+        INT value = *(INT *)(mem + stackPointer);
+        if (value > max)
+        {
+            *(INT *)(mem + stackPointer) = max;
+        }
+        else if (value < min)
+        {
+            *(INT *)(mem + stackPointer) = min;
+        }
+        else
+        {
+            *(INT *)(mem + stackPointer) = value;
+        }
+        break;
+    }
+    case 8:
+    {
+        // void hsv(int h, int s, int v)
+        // Sets the r, g and b variables using hsv
+        INT v = mem[stackPointer];
+        stackPointer += sizeof(INT);
+        INT s = mem[stackPointer];
+        stackPointer += sizeof(INT);
+        INT h = mem[stackPointer];
+        stackPointer += sizeof(INT);
+        const CHSV hsv(h, s, v);
+        // Places rgb in 0,1,2 of mem
+        hsv2rgb_rainbow(hsv, *(CRGB *)mem);
+        break;
+    }
     default:
         Serial.print("invalid call ");
         Serial.println(id);
@@ -65,7 +156,7 @@ bool handler(uint8_t id)
 void setup()
 {
     executed = 0;
-    callHandler = handler;
+    callHandler = functionHandler;
 
     // Increasing the baud rate will cause corruption and inconsistency
     Serial.begin(19200);
