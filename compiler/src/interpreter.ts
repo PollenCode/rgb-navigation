@@ -8,6 +8,7 @@ export class Interpreter {
     stackPointer: number;
     exePointer: number;
     debug = false;
+    callHandlers = new Map<number, (i: Interpreter) => void>();
 
     constructor(memory: Uint8Array, entryPoint: number, memorySize = 2 ** 16) {
         this.memory = new Uint8Array(memorySize);
@@ -18,6 +19,9 @@ export class Interpreter {
         this.stackPointer = memorySize;
     }
 
+    /**
+     * Writes a 32 bit integer to memory at position
+     */
     writeInt(pos: number, value: number) {
         this.memory[pos] = value & 0x000000ff;
         this.memory[pos + 1] = value & 0x0000ff00;
@@ -25,8 +29,35 @@ export class Interpreter {
         this.memory[pos + 3] = value & 0xff000000;
     }
 
+    /**
+     * Reads a 32 bit integer from memory at position
+     */
     readInt(pos: number): number {
         return this.memory[pos] | (this.memory[pos + 1] << 8) | (this.memory[pos + 2] << 16) | (this.memory[pos + 3] << 24);
+    }
+
+    /**
+     * Pops a value from the stack and returns it
+     */
+    pop() {
+        let val = this.readInt(this.stackPointer);
+        this.stackPointer += 4;
+        return val;
+    }
+
+    /**
+     * Pushes a value onto the stack
+     */
+    push(value: number) {
+        this.stackPointer -= 4;
+        this.writeInt(this.stackPointer, value);
+    }
+
+    /**
+     * Returns the top-most stack item without consuming it
+     */
+    peek() {
+        return this.readInt(this.stackPointer);
     }
 
     executeNext() {
@@ -37,29 +68,25 @@ export class Interpreter {
             case OpCode.Push: {
                 let addr = this.memory[this.exePointer++] | (this.memory[this.exePointer++] << 8);
                 if (this.debug) info("push", addr);
-                this.stackPointer -= 4;
-                this.writeInt(this.stackPointer, this.readInt(addr));
+                this.push(this.readInt(addr));
                 break;
             }
             case OpCode.Pop: {
                 let addr = this.memory[this.exePointer++] | (this.memory[this.exePointer++] << 8);
                 if (this.debug) info("pop", addr);
-                this.writeInt(addr, this.readInt(this.stackPointer));
-                this.stackPointer += 4;
+                this.writeInt(addr, this.pop());
                 break;
             }
             case OpCode.PushConst8: {
                 let value = this.memory[this.exePointer++];
                 if (this.debug) info("pushconst8", value);
-                this.stackPointer -= 4;
-                this.writeInt(this.stackPointer, value);
+                this.push(value);
                 break;
             }
             case OpCode.PushConst16: {
                 let value = this.memory[this.exePointer++] | (this.memory[this.exePointer++] << 8);
                 if (this.debug) info("pushconst16", value);
-                this.stackPointer -= 4;
-                this.writeInt(this.stackPointer, value);
+                this.push(value);
                 break;
             }
             case OpCode.PushConst32: {
@@ -69,28 +96,24 @@ export class Interpreter {
                     (this.memory[this.exePointer++] << 16) |
                     (this.memory[this.exePointer++] << 24);
                 if (this.debug) info("pushconst32", value);
-                this.stackPointer -= 4;
-                this.writeInt(this.stackPointer, value);
+                this.push(value);
                 break;
             }
             case OpCode.Dup: {
                 if (this.debug) info("dup");
-                this.stackPointer -= 4;
-                this.writeInt(this.stackPointer, this.readInt(this.stackPointer + 4));
+                this.push(this.peek());
                 break;
             }
             case OpCode.Push8: {
                 let addr = this.memory[this.exePointer++] | (this.memory[this.exePointer++] << 8);
                 if (this.debug) info("push8", addr);
-                this.stackPointer -= 4;
-                this.writeInt(this.stackPointer, this.memory[addr]);
+                this.push(this.memory[addr]);
                 break;
             }
             case OpCode.Pop8: {
                 let addr = this.memory[this.exePointer++] | (this.memory[this.exePointer++] << 8);
                 if (this.debug) info("pop8", addr);
-                this.memory[addr] = this.memory[this.stackPointer];
-                this.stackPointer += 4;
+                this.memory[addr] = this.pop();
                 break;
             }
             case OpCode.Halt: {
@@ -99,61 +122,54 @@ export class Interpreter {
             }
             case OpCode.Add: {
                 if (this.debug) info("add");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) + this.readInt(this.stackPointer));
-                this.stackPointer += 4;
+                this.push(this.pop() + this.pop());
                 break;
             }
             case OpCode.Sub: {
                 if (this.debug) info("sub");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) - this.readInt(this.stackPointer));
-                this.stackPointer += 4;
+                this.push(this.pop() - this.pop());
                 break;
             }
             case OpCode.Mul: {
                 if (this.debug) info("mul");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) * this.readInt(this.stackPointer));
-                this.stackPointer += 4;
+                this.push(this.pop() * this.pop());
                 break;
             }
             case OpCode.Div: {
                 if (this.debug) info("div");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) / this.readInt(this.stackPointer));
-                this.stackPointer += 4;
+                this.push(this.pop() / this.pop());
                 break;
             }
             case OpCode.Mod: {
                 if (this.debug) info("mod");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) % this.readInt(this.stackPointer));
-                this.stackPointer += 4;
+                this.push(this.pop() % this.pop());
                 break;
             }
             case OpCode.Inv: {
                 if (this.debug) info("inv");
-                this.writeInt(this.stackPointer, -this.readInt(this.stackPointer));
+                this.push(-this.pop());
                 break;
             }
             case OpCode.Abs: {
                 if (this.debug) info("abs");
-                let val = this.readInt(this.stackPointer);
-                this.writeInt(this.stackPointer, val < 0 ? -val : val);
+                let val = this.pop();
+                this.push(val < 0 ? -val : val);
                 break;
             }
             case OpCode.Jrnz: {
                 if (this.debug) info("jrnz");
                 let rel = this.memory[this.exePointer++];
-                if (this.readInt(this.stackPointer)) {
+                if (this.pop()) {
                     this.exePointer += rel;
                 }
-                this.stackPointer += 4;
                 break;
             }
             case OpCode.Jrz: {
                 if (this.debug) info("jrz");
                 let rel = this.memory[this.exePointer++];
-                if (!this.readInt(this.stackPointer)) {
+                if (!this.pop()) {
                     this.exePointer += rel;
                 }
-                this.stackPointer += 4;
                 break;
             }
             case OpCode.Jr: {
@@ -164,43 +180,44 @@ export class Interpreter {
             }
             case OpCode.Eq: {
                 if (this.debug) info("eq");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) === this.readInt(this.stackPointer) ? 1 : 0);
-                this.stackPointer += 4;
+                this.push(this.pop() === this.pop() ? 1 : 0);
                 break;
             }
             case OpCode.Neq: {
                 if (this.debug) info("neq");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) !== this.readInt(this.stackPointer) ? 1 : 0);
-                this.stackPointer += 4;
+                this.push(this.pop() !== this.pop() ? 1 : 0);
                 break;
             }
             case OpCode.Lt: {
                 if (this.debug) info("lt");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) < this.readInt(this.stackPointer) ? 1 : 0);
-                this.stackPointer += 4;
+                this.push(this.pop() < this.pop() ? 1 : 0);
                 break;
             }
             case OpCode.Lte: {
                 if (this.debug) info("lte");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) <= this.readInt(this.stackPointer) ? 1 : 0);
-                this.stackPointer += 4;
+                this.push(this.pop() <= this.pop() ? 1 : 0);
                 break;
             }
             case OpCode.Bt: {
                 if (this.debug) info("bt");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) > this.readInt(this.stackPointer) ? 1 : 0);
-                this.stackPointer += 4;
+                this.push(this.pop() > this.pop() ? 1 : 0);
                 break;
             }
             case OpCode.Bte: {
                 if (this.debug) info("bte");
-                this.writeInt(this.stackPointer + 4, this.readInt(this.stackPointer + 4) >= this.readInt(this.stackPointer) ? 1 : 0);
-                this.stackPointer += 4;
+                this.push(this.pop() >= this.pop() ? 1 : 0);
                 break;
             }
             case OpCode.Out: {
-                info("out", this.readInt(this.stackPointer));
-                this.stackPointer += 4;
+                info("out", this.pop());
+                break;
+            }
+            case OpCode.Call: {
+                let id = this.memory[this.exePointer++];
+                info("call", id);
+                let handler = this.callHandlers.get(id);
+                if (!handler) throw new Error(`Call function with id ${id} not found at ${this.exePointer - 1}`);
+                handler(this);
                 break;
             }
 

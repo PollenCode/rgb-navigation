@@ -44,11 +44,29 @@ export class CompilerContext {
         this.functions = new Map();
     }
 
+    /**
+     * Defines a function, returning the function id that will be used by the interpreter
+     */
     defineFunction(name: string, returnType: Type, parameterCount: number) {
         if (this.functions.has(name)) throw new Error("Function already declared");
         this.functions.set(name, { id: this.currentFunctionAllocation++, name, returnType, parameterCount });
+        return this.currentFunctionAllocation - 1;
     }
 
+    /**
+     * Defines a function, with a fixed function id
+     */
+    defineFunctionAt(name: string, id: number, returnType: Type, parameterCount: number) {
+        if (this.functions.has(name)) throw new Error("Function already declared");
+        this.functions.set(name, { id, name, returnType, parameterCount });
+    }
+
+    /**
+     * Defines a variable in memory at a fixed location
+     * @param type The type of the variable, this will determine its size in memory
+     * @param address The fixed location the variable will be stored. Subsequent defineVariable calls will allocate after this address.
+     * @param volatile Whether this variable may not be removed/moved during the optimization phase.
+     */
     defineVariableAt(name: string, type: Type, address: number, volatile = false) {
         if (this.vars.has(name)) throw new Error("Variable already declared");
         this.vars.set(name, { name, location: address, type, volatile });
@@ -57,6 +75,11 @@ export class CompilerContext {
         }
     }
 
+    /**
+     * Defines a variable in memory
+     * @param type The type of the variable, this will determine its size in memory
+     * @param volatile Whether this variable may not be removed/moved during the optimization phase.
+     */
     defineVariable(name: string, type: Type, volatile = false) {
         if (this.vars.has(name)) throw new Error("Variable already declared");
         this.vars.set(name, { name, location: this.currentVarAllocation, type, volatile });
