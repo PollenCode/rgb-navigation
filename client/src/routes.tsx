@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState, useContext } from "react";
 import { BrowserRouter as Router, Switch, Route, Redirect, useHistory } from "react-router-dom";
-import { Admin } from "./pages/Admin";
 import { Complete } from "./pages/Complete";
 import { User, RGBClient, serverPath } from "rgb-navigation-api";
 import { Overview } from "./pages/Overview";
@@ -79,14 +78,13 @@ function AdminRouter() {
     return (
         <PageWrapper>
             <Switch>
-                <Route path="/admin" exact component={Admin} />
                 <Route path="/admin/effects/:id" exact component={EffectEdit} />
                 <Route path="/admin/effects" exact component={Effects} />
                 <Route path="/admin/dgang" exact component={DGang} />
                 <Route path="/admin/ledcontrol" exact component={LedController} />
                 <Route path="/admin/token" exact component={Token} />
-                <Route path="/admin/giveAdmin" exact component={GiveAdmin} />
-                <Redirect to="/admin" />
+                <Route path="/admin/users" exact component={GiveAdmin} />
+                <Redirect to="/admin/effects" />
             </Switch>
         </PageWrapper>
     );
