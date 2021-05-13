@@ -11,11 +11,11 @@ export interface Target {
     compile(root: BlockToken): void;
 }
 
-export interface Variable<L = unknown> {
+export interface Var<L = unknown> {
     name: string;
     type: Type;
     /**
-     * The assigned location of this variable
+     * The assigned location of this variable, this should be filled in by the target during its linking phase
      */
     location?: L;
     /**
@@ -24,26 +24,20 @@ export interface Variable<L = unknown> {
     volatile: boolean;
 }
 
-export type Function =
-    | {
-          type: "function";
-          name: string;
-          returnType: Type;
-          id: number;
-          parameterCount: number;
-      }
-    | {
-          type: "macro";
-          name: string;
-          returnType: Type;
-          parameterCount: number;
-          emitter: (output: CodeWriter) => void;
-      };
+export interface Func<L = unknown> {
+    name: string;
+    returnType: Type;
+    parameterCount: number;
+    /**
+     * The assigned location of this function, this should be filled in by the target during its linking phase
+     */
+    location?: L;
+}
 
 export class CompilerContext {
     lex!: Lexer;
-    vars: Map<string, Variable>;
-    functions: Map<string, Function>;
+    vars: Map<string, Var>;
+    functions: Map<string, Func>;
     root?: BlockToken;
 
     constructor() {
@@ -52,37 +46,11 @@ export class CompilerContext {
     }
 
     /**
-     * Defines builtin macros like sin, cos, tan ...
-     */
-    defineDefaultMacros() {
-        this.defineMacro("sin", new IntType(), 1, (output) => {
-            output.sin();
-        });
-        this.defineMacro("cos", new IntType(), 1, (output) => {
-            output.cos();
-        });
-        // this.defineMacro("tan", new IntType(), 1, (output) => {
-        //     output.tan();
-        // });
-        this.defineMacro("abs", new IntType(), 1, (output) => {
-            output.abs();
-        });
-    }
-
-    /**
      * Defines a function, with a fixed function id
      */
-    defineFunction(name: string, callId: number, returnType: Type, parameterCount: number) {
+    defineFunction<L = unknown>(name: string, returnType: Type, parameterCount: number, location?: L) {
         if (this.functions.has(name)) throw new Error("Function already declared");
-        this.functions.set(name, { type: "function", id: callId, name, returnType, parameterCount });
-    }
-
-    /**
-     * Defines a macro function
-     */
-    defineMacro(name: string, returnType: Type, parameterCount: number, emitter: (output: CodeWriter) => void) {
-        if (this.functions.has(name)) throw new Error("Function already declared");
-        this.functions.set(name, { type: "macro", emitter, name, returnType, parameterCount });
+        this.functions.set(name, { location, name, returnType, parameterCount });
     }
 
     /**

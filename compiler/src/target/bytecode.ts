@@ -15,11 +15,12 @@ import {
     TokenId,
     ValueToken,
 } from "../token";
-import { CompilerContext, Target, Variable } from "../compiler";
+import { CompilerContext, Func, Target, Var } from "../compiler";
 
 const logger = debug("rgb:compiler:emit");
 
-type Location = number;
+type VariableLocation = number;
+type FunctionLocation = (writer: CodeWriter) => void | number;
 
 function align4(n: number) {
     return (n & ~0x3) + 4;
@@ -30,17 +31,23 @@ export class ByteCodeTarget implements Target {
 
     private currentVarAllocation: number = 0;
 
-    allocateVariable(type: Type): Location {
+    allocateVariable(type: Type): VariableLocation {
         let address = this.currentVarAllocation;
         this.currentVarAllocation += type.size;
         return address;
     }
 
-    allocateVariableAt(address: number, type: Type): Location {
+    allocateVariableAt(address: number, type: Type): VariableLocation {
         if (address + type.size > this.currentVarAllocation) {
             this.currentVarAllocation = address + type.size;
         }
         return address;
+    }
+
+    allocateFunction(id: number): FunctionLocation;
+    allocateFunction(emitter: (writer: CodeWriter) => void): FunctionLocation;
+    allocateFunction(e: any): FunctionLocation {
+        return e;
     }
 
     /**
@@ -56,8 +63,8 @@ export class ByteCodeTarget implements Target {
     getInitializedData(context: CompilerContext) {
         let writer = new BinaryWriter();
         context.vars.forEach((e) => {
-            writer.position = e.location as Location;
-            logger(`${e.name} -> 0x${(e.location as Location).toString(16)}`);
+            writer.position = e.location as VariableLocation;
+            logger(`${e.name} -> 0x${(e.location as VariableLocation).toString(16)}`);
             let value = e.type instanceof NumberType && e.type.constantValue !== undefined ? e.type.constantValue : 0;
             switch (e.type.size) {
                 case 1:
@@ -204,8 +211,8 @@ export class ByteCodeTarget implements Target {
             this.writer.pushConst(token.type.constantValue!);
         } else {
             let v = token.context.vars.get(token.varName)!;
-            if (v.type.size === 1) this.writer.push8(v.location as Location);
-            else this.writer.push(v.location as Location);
+            if (v.type.size === 1) this.writer.push8(v.location as VariableLocation);
+            else this.writer.push(v.location as VariableLocation);
         }
     }
 
@@ -227,8 +234,8 @@ export class ByteCodeTarget implements Target {
                 this.writer.dup();
             }
             let v = token.context.vars.get(token.varName)!;
-            if (v.type.size === 1) this.writer.pop8(v.location as Location);
-            else this.writer.pop(v.location as Location);
+            if (v.type.size === 1) this.writer.pop8(v.location as VariableLocation);
+            else this.writer.pop(v.location as VariableLocation);
         }
     }
 
@@ -313,13 +320,17 @@ export class ByteCodeTarget implements Target {
     }
 
     compileCall(token: CallToken, isRoot: boolean) {
-        let func = token.context.functions.get(token.functionName)!;
+        let func = token.context.functions.get(token.functionName)! as Func<FunctionLocation>;
+        if (func.location === undefined) throw new Error(`Location of function ${token.functionName} must be known at compile time.`);
+
         token.parameters.forEach((e) => this.compileToken(e));
-        if (func.type === "function") {
-            this.writer.call(func.id);
-        } else if (func.type === "macro") {
-            func.emitter(this.writer);
+
+        if (typeof func.location === "number") {
+            this.writer.call(func.location);
+        } else {
+            func.location(this.writer);
         }
+
         if (isRoot && !(token.type instanceof VoidType)) {
             this.writer.consume();
         }
@@ -329,6 +340,36 @@ export class ByteCodeTarget implements Target {
         this.writer = new CodeWriter();
         token.statements.forEach((e) => this.compileToken(e, true));
         this.writer.halt();
+    }
+
+    defineDefaultMacros(context: CompilerContext) {
+        context.defineFunction(
+            "sin",
+            new IntType(),
+            1,
+            this.allocateFunction((writer) => {
+                writer.sin();
+            })
+        );
+        context.defineFunction(
+            "cos",
+            new IntType(),
+            1,
+            this.allocateFunction((writer) => {
+                writer.cos();
+            })
+        );
+        context.defineFunction(
+            "abs",
+            new IntType(),
+            1,
+            this.allocateFunction((writer) => {
+                writer.abs();
+            })
+        );
+        // context.defineFunction("tan", new IntType(), 1, (writer) => {
+        //     writer.tan();
+        // });
     }
 }
 

@@ -15,7 +15,7 @@ async function compile(input: string) {
     let context = new CompilerContext();
     let target = new ByteCodeTarget();
 
-    context.defineDefaultMacros();
+    target.defineDefaultMacros(context);
     // Define predefined variables at a fixed location in memory
     context.defineVariable("r", new ByteType(), true, target.allocateVariableAt(0, new ByteType()));
     context.defineVariable("g", new ByteType(), true, target.allocateVariableAt(1, new ByteType()));
@@ -23,7 +23,7 @@ async function compile(input: string) {
     context.defineVariable("index", new IntType(), true, target.allocateVariableAt(4, new IntType()));
     context.defineVariable("timer", new IntType(), true, target.allocateVariableAt(8, new IntType()));
 
-    context.defineFunction("random", 0, new ByteType(), 0);
+    context.defineFunction("random", new ByteType(), 0, target.allocateFunction(0));
 
     logger("parsing...");
     context.parse(input);
