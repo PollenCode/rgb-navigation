@@ -1,6 +1,6 @@
 import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
-import { CodeWriter } from "./target";
+import { CodeWriter } from "./target/bytecode";
 import { Type, VoidType, NumberType, IntType, FloatType, ByteType } from "./types";
 import debug from "debug";
 
@@ -10,20 +10,34 @@ const error = debug("rgb:compiler:error");
 
 const RESERVED_WORDS = ["if", "else", "halt"];
 
+export enum TokenId {
+    Block,
+    Sum,
+    Mul,
+    Ternary,
+    Reference,
+    Call,
+    Halt,
+    If,
+    Assignment,
+    Value,
+    Compare,
+}
+
 export abstract class Token {
+    readonly id: TokenId;
     readonly context: CompilerContext;
     readonly position: number;
     type!: Type;
 
-    constructor(context: CompilerContext, position: number) {
+    constructor(id: TokenId, context: CompilerContext, position: number) {
         this.context = context;
         this.position = position;
+        this.id = id;
     }
 
     abstract toString(): string;
     abstract setTypes(): void;
-
-    emit(target: CodeWriter, isRoot = false): void {}
 }
 
 function expectBrackets(c: CompilerContext): Token | undefined {
@@ -51,7 +65,7 @@ function expectBrackets(c: CompilerContext): Token | undefined {
 
 export class TernaryToken extends Token {
     constructor(context: CompilerContext, position: number, public op: Token, public trueOp: Token, public falseOp: Token) {
-        super(context, position);
+        super(TokenId.Ternary, context, position);
     }
 
     toString(): string {
@@ -67,31 +81,6 @@ export class TernaryToken extends Token {
         } else {
             this.type = new IntType();
         }
-    }
-    emit(code: CodeWriter) {
-        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
-            code.pushConst(this.type.constantValue);
-            return;
-        }
-
-        this.op.emit(code);
-
-        let jrzLocation = code.position;
-        code.position += 2;
-
-        this.trueOp.emit(code);
-        let jrLocation = code.position;
-        code.position += 2;
-
-        let falseLocation = code.position;
-        this.falseOp.emit(code);
-
-        let save = code.position;
-        code.position = jrzLocation;
-        code.jrz(falseLocation - jrzLocation - 2);
-        code.position = jrLocation;
-        code.jr(save - jrLocation - 2);
-        code.position = save;
     }
 }
 
@@ -132,7 +121,7 @@ function expectTernary(c: CompilerContext): Token | undefined {
 
 export class MulToken extends Token {
     constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public operator: "%" | "/" | "*") {
-        super(context, position);
+        super(TokenId.Mul, context, position);
     }
 
     setTypes(): void {
@@ -163,34 +152,6 @@ export class MulToken extends Token {
 
     toString() {
         return `${this.op1} ${this.operator} ${this.op2}`;
-    }
-
-    emit(code: CodeWriter) {
-        if (this.type.constantValue !== undefined) {
-            code.pushConst(this.type.constantValue);
-        } else {
-            if (this.op1.type.constantValue !== undefined) {
-                code.pushConst(this.op1.type.constantValue);
-            } else {
-                this.op1.emit(code);
-            }
-            if (this.op2.type.constantValue !== undefined) {
-                code.pushConst(this.op2.type.constantValue);
-            } else {
-                this.op2.emit(code);
-            }
-            switch (this.operator) {
-                case "*":
-                    code.mul();
-                    break;
-                case "/":
-                    code.div();
-                    break;
-                case "%":
-                    code.mod();
-                    break;
-            }
-        }
     }
 }
 
@@ -225,7 +186,7 @@ export function expectMul(c: CompilerContext): Token | undefined {
 
 export class SumToken extends Token {
     constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public operator: "+" | "-") {
-        super(context, position);
+        super(TokenId.Sum, context, position);
     }
 
     setTypes(): void {
@@ -253,34 +214,7 @@ export class SumToken extends Token {
         return `${this.op1} ${this.operator ? "+" : "-"} ${this.op2}`;
     }
 
-    emit(code: CodeWriter) {
-        if (this.type.constantValue !== undefined) {
-            code.pushConst(this.type.constantValue);
-        } else {
-            if (this.op1.type.constantValue !== undefined) {
-                code.pushConst(this.op1.type.constantValue);
-                // code.add8(this.op1.type.constantValue);
-                // return;
-            } else {
-                this.op1.emit(code);
-            }
-            if (this.op2.type.constantValue !== undefined) {
-                code.pushConst(this.op2.type.constantValue);
-                // code.add8(this.op2.type.constantValue);
-                // return;
-            } else {
-                this.op2.emit(code);
-            }
-            switch (this.operator) {
-                case "+":
-                    code.add();
-                    break;
-                case "-":
-                    code.sub();
-                    break;
-            }
-        }
-    }
+    emit(code: CodeWriter) {}
 }
 
 export function expectSum(c: CompilerContext): Token | undefined {
@@ -312,7 +246,7 @@ export function expectSum(c: CompilerContext): Token | undefined {
 
 export class ReferenceToken extends Token {
     constructor(context: CompilerContext, position: number, public varName: string) {
-        super(context, position);
+        super(TokenId.Reference, context, position);
     }
 
     setTypes(): void {
@@ -325,16 +259,6 @@ export class ReferenceToken extends Token {
 
     toString() {
         return `var:${this.varName}`;
-    }
-
-    emit(code: CodeWriter): void {
-        if (this.type instanceof IntType && this.type.constantValue !== undefined) {
-            code.pushConst(this.type.constantValue!);
-        } else {
-            let v = this.context.vars.get(this.varName)!;
-            if (v.type.size === 1) code.push8(v.location);
-            else code.push(v.location);
-        }
     }
 }
 
@@ -353,7 +277,7 @@ export function expectReference(c: CompilerContext): Token | undefined {
 
 export class ValueToken extends Token {
     constructor(context: CompilerContext, position: number, public value: string, public noInlining: boolean) {
-        super(context, position);
+        super(TokenId.Value, context, position);
     }
 
     setTypes(): void {
@@ -369,10 +293,6 @@ export class ValueToken extends Token {
 
     toString() {
         return `val:${this.value}`;
-    }
-
-    emit(code: CodeWriter) {
-        code.pushConst(parseInt(this.value));
     }
 }
 
@@ -400,7 +320,7 @@ export class AssignmentToken extends Token {
         public varName: string,
         public value: Token | undefined
     ) {
-        super(context, position);
+        super(TokenId.Assignment, context, position);
     }
 
     setTypes(): void {
@@ -465,19 +385,6 @@ export class AssignmentToken extends Token {
     toString() {
         return `var:${this.varName} = ${this.value}`;
     }
-
-    emit(code: CodeWriter, isRoot: boolean) {
-        let v = this.context.vars.get(this.varName)!;
-        if (this.value && (this.type.constantValue === undefined || v.volatile)) {
-            this.value.emit(code);
-            if (!isRoot) {
-                code.dup();
-            }
-            let v = this.context.vars.get(this.varName)!;
-            if (v.type.size === 1) code.pop8(v.location);
-            else code.pop(v.location);
-        }
-    }
 }
 
 export function expectAssignment(c: CompilerContext) {
@@ -521,9 +428,12 @@ export function expectAssignment(c: CompilerContext) {
     }
 }
 
+/**
+ * A token that represents a block of code, potentially containing multiple statements.
+ */
 export class BlockToken extends Token {
     constructor(context: CompilerContext, position: number, public statements: Token[]) {
-        super(context, position);
+        super(TokenId.Block, context, position);
     }
 
     setTypes(): void {
@@ -535,13 +445,9 @@ export class BlockToken extends Token {
         if (this.statements.length === 1) return `: ${this.statements[0]}`;
         else return `{\n${this.statements.map((e) => e.toString()).join("\n")}\n}\n`;
     }
-
-    emit(code: CodeWriter) {
-        this.statements.forEach((e) => e.emit(code, true));
-    }
 }
 
-export function expectProgram(c: CompilerContext) {
+export function expectRoot(c: CompilerContext) {
     let position = c.lex.position;
     let statements: Token[] = [];
 
@@ -600,7 +506,7 @@ export class CompareToken extends Token {
         public op2: Token,
         public operator: "==" | "!=" | ">" | ">=" | "<" | "<="
     ) {
-        super(context, position);
+        super(TokenId.Compare, context, position);
     }
 
     toString(): string {
@@ -634,38 +540,6 @@ export class CompareToken extends Token {
             }
         } else {
             this.type = new IntType();
-        }
-    }
-
-    emit(code: CodeWriter) {
-        if (this.type instanceof NumberType && this.type.constantValue !== undefined) {
-            code.pushConst(this.type.constantValue);
-            return;
-        }
-
-        this.op1.emit(code);
-        this.op2.emit(code);
-        switch (this.operator) {
-            case "!=":
-                code.neq();
-                break;
-            case "==":
-                code.eq();
-                break;
-            case ">":
-                code.bt();
-                break;
-            case ">=":
-                code.bte();
-                break;
-            case "<":
-                code.lt();
-                break;
-            case "<=":
-                code.lte();
-                break;
-            default:
-                throw new Error("Invalid compare operator");
         }
     }
 }
@@ -712,7 +586,7 @@ function expectCompare(c: CompilerContext) {
 
 export class IfToken extends Token {
     constructor(context: CompilerContext, position: number, public condition: Token, public ifBlock: Token, public elseBlock: Token | undefined) {
-        super(context, position);
+        super(TokenId.If, context, position);
     }
 
     toString(): string {
@@ -725,46 +599,7 @@ export class IfToken extends Token {
         this.ifBlock.setTypes();
         this.elseBlock?.setTypes();
     }
-    emit(code: CodeWriter): void {
-        if (this.condition.type instanceof NumberType && this.condition.type.constantValue !== undefined) {
-            if (this.condition.type.constantValue !== 0) {
-                this.ifBlock.emit(code);
-            } else {
-                this.elseBlock?.emit(code);
-            }
-            return;
-        }
-
-        this.condition.emit(code);
-        if (!this.elseBlock) {
-            let jrzLocation = code.position;
-            code.position += 2;
-
-            this.ifBlock.emit(code);
-
-            let save = code.position;
-            code.position = jrzLocation;
-            code.jrz(save - jrzLocation - 2);
-            code.position = save;
-        } else {
-            let jrzLocation = code.position;
-            code.position += 2;
-
-            this.ifBlock.emit(code);
-            let jrLocation = code.position;
-            code.position += 2;
-
-            let elseLocation = code.position;
-            this.elseBlock.emit(code);
-
-            let save = code.position;
-            code.position = jrzLocation;
-            code.jrz(elseLocation - jrzLocation - 2);
-            code.position = jrLocation;
-            code.jr(save - jrLocation - 2);
-            code.position = save;
-        }
-    }
+    emit(code: CodeWriter): void {}
 }
 
 export function expectIf(c: CompilerContext) {
@@ -799,7 +634,7 @@ export function expectIf(c: CompilerContext) {
 
 export class HaltToken extends Token {
     constructor(context: CompilerContext, position: number) {
-        super(context, position);
+        super(TokenId.Halt, context, position);
     }
 
     toString(): string {
@@ -808,10 +643,6 @@ export class HaltToken extends Token {
 
     setTypes(): void {
         this.type = new VoidType();
-    }
-
-    emit(code: CodeWriter) {
-        code.halt();
     }
 }
 
@@ -828,7 +659,7 @@ export function expectHalt(c: CompilerContext) {
 
 export class CallToken extends Token {
     constructor(context: CompilerContext, position: number, public functionName: string, public parameters: Token[]) {
-        super(context, position);
+        super(TokenId.Call, context, position);
     }
 
     toString(): string {
@@ -847,19 +678,6 @@ export class CallToken extends Token {
             );
         }
         this.parameters.forEach((e) => e.setTypes());
-    }
-
-    emit(code: CodeWriter, isRoot: boolean) {
-        let func = this.context.functions.get(this.functionName)!;
-        this.parameters.forEach((e) => e.emit(code));
-        if (func.type === "function") {
-            code.call(func.id);
-        } else if (func.type === "macro") {
-            func.emitter(code);
-        }
-        if (isRoot && !(this.type instanceof VoidType)) {
-            code.consume();
-        }
     }
 }
 

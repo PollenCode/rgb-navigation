@@ -1,9 +1,9 @@
 import fs from "fs/promises";
 import debug from "debug";
 import { Lexer } from "./lexer";
-import { expectProgram, Token } from "./token";
+import { expectRoot, Token } from "./token";
 import { IntType, NumberType, Type } from "./types";
-import { BinaryWriter, CodeWriter } from "./target";
+import { BinaryWriter, CodeWriter } from "./target/bytecode";
 
 const logger = debug("rgb:compiler");
 interface Variable {
@@ -152,7 +152,7 @@ export class CompilerContext {
     compile(input: string) {
         this.lex = new Lexer(input);
         this.lex.readWhitespace();
-        this.root = expectProgram(this);
+        this.root = expectRoot(this);
     }
 
     typeCheck() {
