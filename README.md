@@ -6,11 +6,12 @@ Help visitors traverse corridors with RGB ledstrips.
 
 -   `client/`: contains the client-side web application.
 -   `server/`: contains the server.
--   `arduino-client/`: contains source code for the application that lets the Arduino communicate with the server via serial communication.
--   `arduino/`: contains source code for the Arduino that controls the RGB.
--   `smartcard-client/`: contains code that connects NFC smartcard readers to the server.
--   `shared/`: contains shared code.
+-   `api/`: contains the api client to communicate with the server.
 -   `docs/`: contains documentation.
+-   `arduino/`: contains source code for the Arduino that controls the RGB.
+-   `compiler/`: contains the rgblang compiler, which is the programming language used to create effects on the ledstrip. Its bytecode is interpreted on the arduino.
+-   `arduino-client/`: contains source code for the application that lets the Arduino communicate with the server via serial communication.
+-   `smartcard-client/`: contains code that connects NFC smartcard readers to the server.
 
 ![architecture](https://git.ikdoeict.be/stijn.rogiest/rgb-navigation/-/raw/master/docs/images/architecture.png)
 
