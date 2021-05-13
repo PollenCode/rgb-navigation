@@ -1,14 +1,14 @@
-import { OpCode } from "./target";
+import { OpCode } from "./bytecode";
 import debug from "debug";
 
 const info = debug("rgb:interpreter");
 
-export class Interpreter {
+export class ByteCodeInterpreter {
     readonly memory: Uint8Array;
     stackPointer: number;
     exePointer: number;
     debug = false;
-    callHandlers = new Map<number, (i: Interpreter) => void>();
+    callHandlers = new Map<number, (i: ByteCodeInterpreter) => void>();
 
     constructor(memory: Uint8Array, entryPoint: number, memorySize = 2 ** 16) {
         this.memory = new Uint8Array(memorySize);

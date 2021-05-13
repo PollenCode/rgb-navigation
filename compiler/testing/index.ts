@@ -1,7 +1,8 @@
 process.env.DEBUG = "rgb:*";
 import debug from "debug";
 import fs from "fs/promises";
-import { ByteType, CompilerContext, IntType, Interpreter } from "../src";
+import { ByteType, CompilerContext, IntType, ByteCodeInterpreter } from "../src";
+import { ByteCodeTarget } from "../src/target/bytecode";
 
 const logger = debug("rgb:compiler-test");
 
@@ -12,21 +13,26 @@ async function compileFile(fileName: string) {
 
 async function compile(input: string) {
     let context = new CompilerContext();
+    let target = new ByteCodeTarget();
+
     context.defineDefaultMacros();
-    context.defineVariableAt("r", new ByteType(), 0, true);
-    context.defineVariableAt("g", new ByteType(), 1, true);
-    context.defineVariableAt("b", new ByteType(), 2, true);
-    context.defineVariableAt("index", new IntType(), 4, true);
-    context.defineVariableAt("timer", new IntType(), 8, true);
+    // Define predefined variables at a fixed location in memory
+    context.defineVariable("r", new ByteType(), true, target.allocateVariableAt(0, new ByteType()));
+    context.defineVariable("g", new ByteType(), true, target.allocateVariableAt(1, new ByteType()));
+    context.defineVariable("b", new ByteType(), true, target.allocateVariableAt(2, new ByteType()));
+    context.defineVariable("index", new IntType(), true, target.allocateVariableAt(4, new IntType()));
+    context.defineVariable("timer", new IntType(), true, target.allocateVariableAt(8, new IntType()));
+
     context.defineFunction("random", 0, new ByteType(), 0);
 
     logger("parsing...");
-    context.compile(input);
+    context.parse(input);
     logger("type checking...");
     context.typeCheck();
     logger("compiling...");
+    context.compile(target);
 
-    let [entryPoint, linked] = context.getLinked();
+    let [entryPoint, linked] = target.getLinkedProgram(context);
 
     logger(`program uses ${entryPoint} bytes for variables, starting at 0`);
     logger(`program uses ${linked.length - entryPoint} bytes for code, starting at ${entryPoint}`);
@@ -46,7 +52,7 @@ async function compile(input: string) {
 
     logger("interpreting...");
 
-    let inter = new Interpreter(linked, entryPoint);
+    let inter = new ByteCodeInterpreter(linked, entryPoint);
     inter.callHandlers.set(0, () => {
         inter.push(Math.floor(Math.random() * 256));
     });
