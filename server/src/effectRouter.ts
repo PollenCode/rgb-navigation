@@ -3,7 +3,7 @@ import { Router } from "express";
 import debug from "debug";
 import { withUser } from "./middleware";
 import { sendArduino } from "./socketServer";
-import { ByteType, CompareToken, CompilerContext, IntType, VoidType } from "rgb-compiler";
+import { ByteCodeTarget, ByteType, CompareToken, CompilerContext, IntType, VoidType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
 
@@ -15,24 +15,29 @@ let activeEffectId = -1;
 
 function compile(input: string): [Buffer, number] {
     let context = new CompilerContext();
-    context.defineDefaultMacros();
-    context.defineVariableAt("r", new ByteType(), 0, true);
-    context.defineVariableAt("g", new ByteType(), 1, true);
-    context.defineVariableAt("b", new ByteType(), 2, true);
-    context.defineVariableAt("index", new IntType(), 4, true);
-    context.defineVariableAt("timer", new IntType(), 8, true);
-    context.defineFunction("random", 1, new ByteType(), 0);
-    context.defineFunction("out", 2, new VoidType(), 1);
-    context.defineFunction("min", 3, new IntType(), 2);
-    context.defineFunction("max", 4, new IntType(), 2);
-    context.defineFunction("map", 5, new IntType(), 5);
-    context.defineFunction("lerp", 6, new IntType(), 3);
-    context.defineFunction("clamp", 7, new IntType(), 3);
-    context.defineFunction("hsv", 8, new VoidType(), 3);
-    context.compile(input);
-    context.typeCheck();
+    let target = new ByteCodeTarget();
 
-    let [entryPoint, buffer] = context.getLinked();
+    context.defineVariable("r", new ByteType(), true, target.allocateVariableAt(0, new ByteType()));
+    context.defineVariable("g", new ByteType(), true, target.allocateVariableAt(1, new ByteType()));
+    context.defineVariable("b", new ByteType(), true, target.allocateVariableAt(2, new ByteType()));
+    context.defineVariable("index", new IntType(), true, target.allocateVariableAt(4, new IntType()));
+    context.defineVariable("timer", new IntType(), true, target.allocateVariableAt(8, new IntType()));
+
+    target.defineDefaultMacros(context);
+    context.defineFunction("random", new ByteType(), 0, target.allocateFunction(1));
+    context.defineFunction("out", new VoidType(), 1, target.allocateFunction(2));
+    context.defineFunction("min", new IntType(), 2, target.allocateFunction(3));
+    context.defineFunction("max", new IntType(), 2, target.allocateFunction(4));
+    context.defineFunction("map", new IntType(), 5, target.allocateFunction(5));
+    context.defineFunction("lerp", new IntType(), 3, target.allocateFunction(6));
+    context.defineFunction("clamp", new IntType(), 3, target.allocateFunction(7));
+    context.defineFunction("hsv", new VoidType(), 3, target.allocateFunction(8));
+
+    context.parse(input);
+    context.typeCheck();
+    context.compile(target);
+
+    let [entryPoint, buffer] = target.getLinkedProgram(context);
 
     if (isDevelopment) {
         fs.writeFileSync("../arduino/testing/input.hex", buffer);
