@@ -9,6 +9,7 @@ import {
     faCheck,
     faCheckCircle,
     faChevronLeft,
+    faCircleNotch,
     faEye,
     faMagic,
     faPen,
@@ -57,18 +58,31 @@ function EffectListItemButton(props: {
     );
 }
 
-function EffectListItem(props: { effect: Effect; onClick?: () => void }) {
+function EffectListItem(props: { effect: Effect; onClick?: () => Promise<void> }) {
     const client = useContext(AuthContext);
     const history = useHistory();
     const readOnly = !client.user || !props.effect.author || client.user.id !== props.effect.author.id;
+    const [loading, setLoading] = useState(false);
     return (
-        <ListItem error={!!props.effect.lastError} active={props.effect.active} onClick={props.onClick}>
-            {props.effect.active && (
-                <span className="text-blue-600 text-lg overflow-hidden pl-3.5">
-                    <FontAwesomeIcon className="pop-in" icon={faCheckCircle} />
+        <ListItem
+            error={!!props.effect.lastError}
+            active={props.effect.active}
+            onClick={async () => {
+                setLoading(true);
+                await props.onClick?.();
+                setLoading(false);
+            }}>
+            {(props.effect.active || props.effect.lastError || loading) && (
+                <span className={`${props.effect.lastError ? "text-red-600" : "text-blue-600"} text-lg overflow-hidden pl-3.5`}>
+                    <FontAwesomeIcon
+                        className={`${loading ? "animate-spin" : "pop-in"}`}
+                        icon={loading ? faCircleNotch : props.effect.lastError ? faTimes : faCheckCircle}
+                    />
                 </span>
             )}
-            <span className={`font-semibold py-2 pl-3.5 ${props.effect.active ? "text-blue-600" : ""}`}>{props.effect.name}</span>
+            <span className={`font-semibold py-2 pl-3.5 ${props.effect.lastError ? "text-red-600" : props.effect.active ? "text-blue-600" : ""}`}>
+                {props.effect.name}
+            </span>
             {props.effect.author && (
                 <span className="ml-1.5 text-sm text-gray-400 py-2" title={props.effect.author.email}>
                     (door {props.effect.author.name})
@@ -144,13 +158,17 @@ export function Effects() {
                             key={e.id}
                             effect={e}
                             onClick={async () => {
+                                if (e.active) return;
                                 let res = await client.buildEffect(e.id, true);
                                 if (res.status === "ok") {
-                                    setEffects((effects) => effects!.map((t) => ({ ...t, active: t.id === e.id })));
+                                    setEffects((effects) =>
+                                        effects!.map((t) => (t.id === e.id ? { ...t, active: true, lastError: null } : { ...t, active: false }))
+                                    );
                                 } else {
                                     let error = res.error;
                                     setEffects((effects) => effects!.map((t) => (t.id === e.id ? { ...t, lastError: error } : t)));
                                 }
+                                await new Promise((res) => setTimeout(res, 1000));
                             }}
                         />
                     ))}

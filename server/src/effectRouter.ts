@@ -73,6 +73,7 @@ router.post("/effect/build/:id", async (req, res, next) => {
                 compiled: compiled,
                 entryPoint: entryPoint,
                 lastError: null,
+                modifiedAt: new Date(),
             },
         });
     } catch (ex) {
@@ -83,6 +84,7 @@ router.post("/effect/build/:id", async (req, res, next) => {
             },
             data: {
                 lastError: ex.message,
+                modifiedAt: new Date(),
             },
         });
         return res.json({
@@ -105,6 +107,8 @@ router.get("/effect", async (req, res, next) => {
             id: true,
             code: req.query.code === "true" ? true : false,
             lastError: true,
+            modifiedAt: true,
+            createdAt: true,
             author: {
                 select: {
                     id: true,
@@ -113,7 +117,17 @@ router.get("/effect", async (req, res, next) => {
                 },
             },
         },
+        orderBy: {
+            modifiedAt: "desc",
+        },
     });
+    // Move active effect to beginning of array
+    if (activeEffectId >= 0) {
+        let activeIndex = effects.findIndex((e) => e.id === activeEffectId);
+        if (activeIndex >= 0) {
+            effects.unshift(effects.splice(activeIndex, 1)[0]);
+        }
+    }
     res.json(effects.map((e) => ({ ...e, active: activeEffectId === e.id })));
 });
 
@@ -212,6 +226,7 @@ router.patch("/effect", withUser(false), async (req, res, next) => {
         data: {
             code: code,
             name: name,
+            modifiedAt: new Date(),
         },
         select: {
             code: true,
@@ -244,6 +259,9 @@ router.get("/effect/:id", withUser(false), async (req, res, next) => {
             code: true,
             name: true,
             id: true,
+            modifiedAt: true,
+            createdAt: true,
+            lastError: true,
             author: {
                 select: {
                     id: true,
