@@ -1,375 +1,193 @@
-export abstract class Type<C = any> {
+// IntType.assign(ByteType) -> IntType
+// ByteType.assign(IntType) -> IntType
+export abstract class Type {
     readonly name: string;
     readonly size: number;
-    constantValue?: C;
 
-    constructor(name: string, size: number, constantValue?: C) {
+    constructor(name: string, size: number) {
         this.name = name;
         this.size = size;
-        this.constantValue = constantValue;
     }
 
-    abstract mul(other: Type): Type;
-    abstract div(other: Type): Type;
-    abstract sub(other: Type): Type;
-    abstract add(other: Type): Type;
-    abstract mod(other: Type): Type;
-    abstract eq(other: Type): Type;
-    abstract neq(other: Type): Type;
-    abstract lt(other: Type): Type;
-    abstract gt(other: Type): Type;
-    abstract lte(other: Type): Type;
-    abstract gte(other: Type): Type;
-    abstract assign(other: Type): Type | undefined;
-    abstract clone(): Type;
-}
+    abstract mul(other: Type): Type | undefined;
+    abstract div(other: Type): Type | undefined;
+    abstract sub(other: Type): Type | undefined;
+    abstract add(other: Type): Type | undefined;
+    abstract mod(other: Type): Type | undefined;
+    abstract eq(other: Type): Type | undefined;
+    abstract neq(other: Type): Type | undefined;
+    abstract lt(other: Type): Type | undefined;
+    abstract lte(other: Type): Type | undefined;
 
-export abstract class NumberType implements Type<number> {
-    readonly name: string;
-    readonly size: number;
-    constantValue?: number;
-
-    constructor(name: string, size: number, constantValue?: number) {
-        this.name = name;
-        this.size = size;
-        this.constantValue = constantValue;
-    }
-
-    abstract mul(other: Type): Type;
-    abstract div(other: Type): Type;
-    abstract sub(other: Type): Type;
-    abstract add(other: Type): Type;
-    abstract mod(other: Type): Type;
-    abstract assign(other: Type): Type | undefined;
-    abstract clone(): Type;
-
-    eq(other: Type): Type {
-        return new IntType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue === other.constantValue ? 1 : 0) : undefined
-        );
-    }
-    neq(other: Type): Type {
-        return new IntType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue !== other.constantValue ? 1 : 0) : undefined
-        );
-    }
-    lt(other: Type): Type {
-        return new IntType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue < other.constantValue ? 1 : 0) : undefined
-        );
-    }
-    gt(other: Type): Type {
-        return new IntType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue > other.constantValue ? 1 : 0) : undefined
-        );
-    }
-    lte(other: Type): Type {
-        return new IntType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue <= other.constantValue ? 1 : 0) : undefined
-        );
-    }
-    gte(other: Type): Type {
-        return new IntType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue >= other.constantValue ? 1 : 0) : undefined
-        );
-    }
+    abstract isAssignableTo(other: Type): boolean;
 }
 
 export class VoidType extends Type {
     constructor() {
         super("void", 0);
     }
-    mul(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
+
+    mul(other: Type): Type | undefined {
+        throw new Error("Cannot mul void.");
     }
-    div(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
+    div(other: Type): Type | undefined {
+        throw new Error("Cannot div void.");
     }
-    sub(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
+    sub(other: Type): Type | undefined {
+        throw new Error("Cannot sub void.");
     }
-    add(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
+    add(other: Type): Type | undefined {
+        throw new Error("Cannot add void.");
     }
-    mod(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
+    mod(other: Type): Type | undefined {
+        throw new Error("Cannot mod void.");
     }
-    eq(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
+    eq(other: Type): Type | undefined {
+        throw new Error("Cannot eq void.");
     }
-    neq(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
+    neq(other: Type): Type | undefined {
+        throw new Error("Cannot neq void.");
     }
-    lt(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
+    lt(other: Type): Type | undefined {
+        throw new Error("Cannot lt void.");
     }
-    gt(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
+    lte(other: Type): Type | undefined {
+        throw new Error("Cannot lte void.");
     }
-    lte(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
-    }
-    gte(other: Type<any>): Type<any> {
-        throw new Error("Invalid operation on type 'void'.");
-    }
-    assign(other: Type<any>): Type<any> | undefined {
-        return undefined;
-    }
-    clone(): Type<any> {
-        return new VoidType();
+    isAssignableTo(other: Type) {
+        return false;
     }
 }
 
-export class FloatType extends Type<number> {
-    constructor(constantValue?: number) {
-        super("float", 4, constantValue);
+export class FloatType extends Type {
+    constructor() {
+        super("float", 4);
     }
 
     mul(other: Type): Type {
-        return new FloatType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue * other.constantValue : undefined
-        );
+        return new FloatType();
     }
     div(other: Type): Type {
-        return new FloatType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue / other.constantValue : undefined
-        );
+        return new FloatType();
     }
     sub(other: Type): Type {
-        return new FloatType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue - other.constantValue : undefined
-        );
+        return new FloatType();
     }
     add(other: Type): Type {
-        return new FloatType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue + other.constantValue : undefined
-        );
+        return new FloatType();
     }
     mod(other: Type): Type {
-        return new FloatType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue % other.constantValue : undefined
-        );
+        return new FloatType();
     }
     eq(other: Type): Type {
-        return new ByteType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue === other.constantValue ? 1 : 0) : undefined
-        );
+        return new ByteType();
     }
     neq(other: Type): Type {
-        return new ByteType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue !== other.constantValue ? 1 : 0) : undefined
-        );
+        return new ByteType();
     }
     lt(other: Type): Type {
-        return new ByteType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue < other.constantValue ? 1 : 0) : undefined
-        );
-    }
-    gt(other: Type): Type {
-        return new ByteType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue > other.constantValue ? 1 : 0) : undefined
-        );
+        return new ByteType();
     }
     lte(other: Type): Type {
-        return new ByteType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue <= other.constantValue ? 1 : 0) : undefined
-        );
+        return new ByteType();
     }
-    gte(other: Type): Type {
-        return new ByteType(
-            this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue >= other.constantValue ? 1 : 0) : undefined
-        );
-    }
-    assign(other: Type<any>): Type<any> | undefined {
-        if (other instanceof FloatType) {
-            return new FloatType(this.constantValue);
-        }
-    }
-    clone() {
-        return new FloatType(this.constantValue);
+    isAssignableTo(other: Type) {
+        return true;
     }
 }
 
-export class ByteType extends NumberType {
-    constructor(constantValue?: number) {
-        super("byte", 1, constantValue !== undefined ? constantValue & 0xff : undefined);
+export class ByteType extends Type {
+    constructor() {
+        super("byte", 1);
     }
 
-    mul(other: Type): Type {
-        if (other instanceof FloatType) {
-            return new FloatType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue * other.constantValue : undefined
-            );
-        } else if (other instanceof ByteType) {
-            return new ByteType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue * other.constantValue) & 0xff : undefined
-            );
-        } else {
-            return new IntType(
-                this.constantValue !== undefined && other.constantValue !== undefined
-                    ? (this.constantValue * other.constantValue) & 0xffffffff
-                    : undefined
-            );
-        }
-    }
-    div(other: Type): Type {
-        if (other instanceof FloatType) {
-            return new FloatType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue / other.constantValue : undefined
-            );
-        } else if (other instanceof ByteType) {
-            return new ByteType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue / other.constantValue) & 0xff : undefined
-            );
-        } else {
-            return new IntType(
-                this.constantValue !== undefined && other.constantValue !== undefined
-                    ? (this.constantValue / other.constantValue) & 0xffffffff
-                    : undefined
-            );
-        }
-    }
-    sub(other: Type): Type {
-        if (other instanceof FloatType) {
-            return new FloatType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue - other.constantValue : undefined
-            );
-        } else if (other instanceof ByteType) {
-            return new ByteType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue - other.constantValue) & 0xff : undefined
-            );
-        } else {
-            return new IntType(
-                this.constantValue !== undefined && other.constantValue !== undefined
-                    ? (this.constantValue - other.constantValue) & 0xffffffff
-                    : undefined
-            );
-        }
-    }
-    add(other: Type): Type {
-        if (other instanceof FloatType) {
-            return new FloatType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue + other.constantValue : undefined
-            );
-        } else if (other instanceof ByteType) {
-            return new ByteType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? (this.constantValue + other.constantValue) & 0xff : undefined
-            );
-        } else {
-            return new IntType(
-                this.constantValue !== undefined && other.constantValue !== undefined
-                    ? (this.constantValue + other.constantValue) & 0xffffffff
-                    : undefined
-            );
-        }
-    }
-    mod(other: Type): Type {
-        if (other instanceof FloatType) {
-            return new FloatType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue % other.constantValue : undefined
-            );
-        } else if (other instanceof ByteType) {
-            return new ByteType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue % other.constantValue & 0xff : undefined
-            );
-        } else {
-            return new IntType(
-                this.constantValue !== undefined && other.constantValue !== undefined
-                    ? this.constantValue % other.constantValue & 0xffffffff
-                    : undefined
-            );
-        }
-    }
-    clone() {
-        return new ByteType(this.constantValue);
-    }
-    assign(other: Type<any>): Type<any> | undefined {
+    private combine(other: Type): Type | undefined {
         if (other instanceof ByteType) {
-            return new ByteType(this.constantValue);
+            return new ByteType();
         } else if (other instanceof IntType) {
-            return new IntType(this.constantValue);
+            return new IntType();
+        } else if (other instanceof FloatType) {
+            return new FloatType();
+        } else {
+            return undefined;
         }
+    }
+
+    mul(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    div(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    sub(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    add(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    mod(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    eq(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    neq(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    lt(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    lte(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    isAssignableTo(other: Type): boolean {
+        return true;
     }
 }
 
-export class IntType extends NumberType {
-    constructor(constantValue?: number) {
-        super("int", 4, constantValue === undefined ? undefined : constantValue & 0xffffffff);
+export class IntType extends Type {
+    constructor() {
+        super("int", 4);
     }
 
-    mul(other: Type): Type {
-        if (other instanceof FloatType) {
-            return new FloatType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue * other.constantValue : undefined
-            );
+    private combine(other: Type): Type | undefined {
+        if (other instanceof ByteType || other instanceof IntType) {
+            return new IntType();
+        } else if (other instanceof FloatType) {
+            return new FloatType();
         } else {
-            return new IntType(
-                this.constantValue !== undefined && other.constantValue !== undefined
-                    ? (this.constantValue * other.constantValue) & 0xffffffff
-                    : undefined
-            );
+            return undefined;
         }
     }
-    div(other: Type): Type {
-        if (other instanceof FloatType) {
-            return new FloatType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue / other.constantValue : undefined
-            );
-        } else {
-            return new IntType(
-                this.constantValue !== undefined && other.constantValue !== undefined
-                    ? (this.constantValue / other.constantValue) & 0xffffffff
-                    : undefined
-            );
-        }
+
+    mul(other: Type): Type | undefined {
+        return this.combine(other);
     }
-    sub(other: Type): Type {
-        if (other instanceof FloatType) {
-            return new FloatType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue - other.constantValue : undefined
-            );
-        } else {
-            return new IntType(
-                this.constantValue !== undefined && other.constantValue !== undefined
-                    ? (this.constantValue - other.constantValue) & 0xffffffff
-                    : undefined
-            );
-        }
+    div(other: Type): Type | undefined {
+        return this.combine(other);
     }
-    add(other: Type): Type {
-        if (other instanceof FloatType) {
-            return new FloatType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue + other.constantValue : undefined
-            );
-        } else {
-            return new IntType(
-                this.constantValue !== undefined && other.constantValue !== undefined
-                    ? (this.constantValue + other.constantValue) & 0xffffffff
-                    : undefined
-            );
-        }
+    sub(other: Type): Type | undefined {
+        return this.combine(other);
     }
-    mod(other: Type): Type {
-        if (other instanceof FloatType) {
-            return new FloatType(
-                this.constantValue !== undefined && other.constantValue !== undefined ? this.constantValue % other.constantValue : undefined
-            );
-        } else {
-            return new IntType(
-                this.constantValue !== undefined && other.constantValue !== undefined
-                    ? this.constantValue % other.constantValue & 0xffffffff
-                    : undefined
-            );
-        }
+    add(other: Type): Type | undefined {
+        return this.combine(other);
     }
-    clone() {
-        return new IntType(this.constantValue);
+    mod(other: Type): Type | undefined {
+        return this.combine(other);
     }
-    assign(other: Type<any>): Type<any> | undefined {
-        if (other instanceof ByteType) {
-            return new ByteType(this.constantValue);
-        } else if (other instanceof IntType) {
-            return new IntType(this.constantValue);
-        }
+    eq(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    neq(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    lt(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    lte(other: Type): Type | undefined {
+        return this.combine(other);
+    }
+    isAssignableTo(other: Type): boolean {
+        return true;
     }
 }

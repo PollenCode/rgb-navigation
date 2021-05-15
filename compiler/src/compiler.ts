@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import debug from "debug";
 import { Lexer } from "./lexer";
 import { BlockToken, expectRoot, Token } from "./token";
-import { IntType, NumberType, Type } from "./types";
+import { IntType, Type } from "./types";
 import { BinaryWriter, CodeWriter } from "./target/bytecode";
 
 const logger = debug("rgb:compiler");
@@ -32,6 +32,75 @@ export interface Func<L = unknown> {
      * The assigned location of this function, this should be filled in by the target during its linking phase
      */
     location?: L;
+}
+
+export class Scope {
+    parent?: Scope;
+
+    private vars = new Map<string, Var>();
+    private knownValues = new Map<string, any>();
+    private functions = new Map<string, Func>();
+
+    constructor(parent?: Scope) {
+        this.parent = parent;
+    }
+
+    hasVar(name: string) {
+        return !!this.getVar(name);
+    }
+
+    getVar(name: string): Var | undefined {
+        if (this.vars.has(name)) {
+            return this.vars.get(name);
+        } else if (this.parent) {
+            return this.parent.getVar(name);
+        } else {
+            return undefined;
+        }
+    }
+
+    defineVar(name: string, v: Omit<Var, "name">) {
+        if (this.vars.has(name)) return false;
+        this.vars.set(name, { ...v, name });
+        return true;
+    }
+
+    hasFunc(name: string) {
+        return !!this.getFunc(name);
+    }
+
+    getFunc(name: string): Func | undefined {
+        if (this.functions.has(name)) {
+            return this.functions.get(name);
+        } else if (this.parent) {
+            return this.parent.getFunc(name);
+        } else {
+            return undefined;
+        }
+    }
+
+    defineFunc(name: string, f: Omit<Func, "name">) {
+        if (this.functions.has(name)) return false;
+        this.functions.set(name, { ...f, name });
+        return true;
+    }
+
+    setVarKnownValue(name: string, value: any | undefined) {
+        if (!this.vars.has(name)) throw new Error("Cannot set known value for unknown var");
+        // Do not set on parent!
+        if (value === undefined) this.knownValues.delete(name);
+        else this.knownValues.set(name, value);
+    }
+
+    getVarKnownValue(name: string): any | undefined {
+        if (this.knownValues.has(name)) {
+            return this.knownValues.get(name)!;
+        } else if (this.parent) {
+            return this.parent.getVarKnownValue(name);
+        } else {
+            return undefined;
+        }
+    }
 }
 
 export class CompilerContext {

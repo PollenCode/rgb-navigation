@@ -1,4 +1,4 @@
-import { IntType, NumberType, Type, VoidType } from "../types";
+import { IntType, Type, VoidType } from "../types";
 import debug from "debug";
 import {
     AssignmentToken,
@@ -65,7 +65,7 @@ export class ByteCodeTarget implements Target {
         context.vars.forEach((e) => {
             writer.position = e.location as VariableLocation;
             logger(`${e.name} -> 0x${(e.location as VariableLocation).toString(16)}`);
-            let value = e.type instanceof NumberType && e.type.constantValue !== undefined ? e.type.constantValue : 0;
+            let value = e.constantValue !== undefined ? e.constantValue : 0;
             switch (e.type.size) {
                 case 1:
                     writer.write8(value);
@@ -124,12 +124,12 @@ export class ByteCodeTarget implements Target {
     }
 
     private compileTernary(token: TernaryToken, isRoot: boolean) {
-        if (token.type instanceof NumberType && token.type.constantValue !== undefined) {
-            this.writer.pushConst(token.type.constantValue);
+        if (token.constantValue !== undefined) {
+            this.writer.pushConst(token.constantValue);
             return;
         }
 
-        this.compileToken(token.op);
+        this.compileToken(token.condition);
 
         let jrzLocation = this.writer.position;
         this.writer.position += 2;
@@ -150,16 +150,16 @@ export class ByteCodeTarget implements Target {
     }
 
     private compileMul(token: MulToken, isRoot: boolean) {
-        if (token.type.constantValue !== undefined) {
-            this.writer.pushConst(token.type.constantValue);
+        if (token.constantValue !== undefined) {
+            this.writer.pushConst(token.constantValue);
         } else {
-            if (token.op1.type.constantValue !== undefined) {
-                this.writer.pushConst(token.op1.type.constantValue);
+            if (token.op1.constantValue !== undefined) {
+                this.writer.pushConst(token.op1.constantValue);
             } else {
                 this.compileToken(token.op1);
             }
-            if (token.op2.type.constantValue !== undefined) {
-                this.writer.pushConst(token.op2.type.constantValue);
+            if (token.op2.constantValue !== undefined) {
+                this.writer.pushConst(token.op2.constantValue);
             } else {
                 this.compileToken(token.op2);
             }
@@ -178,19 +178,19 @@ export class ByteCodeTarget implements Target {
     }
 
     private compileSum(token: SumToken, isRoot: boolean) {
-        if (token.type.constantValue !== undefined) {
-            this.writer.pushConst(token.type.constantValue);
+        if (token.constantValue !== undefined) {
+            this.writer.pushConst(token.constantValue);
         } else {
-            if (token.op1.type.constantValue !== undefined) {
-                this.writer.pushConst(token.op1.type.constantValue);
-                // code.add8(this.op1.type.constantValue);
+            if (token.op1.constantValue !== undefined) {
+                this.writer.pushConst(token.op1.constantValue);
+                // code.add8(this.op1.constantValue);
                 // return;
             } else {
                 this.compileToken(token.op1);
             }
-            if (token.op2.type.constantValue !== undefined) {
-                this.writer.pushConst(token.op2.type.constantValue);
-                // code.add8(this.op2.type.constantValue);
+            if (token.op2.constantValue !== undefined) {
+                this.writer.pushConst(token.op2.constantValue);
+                // code.add8(this.op2.constantValue);
                 // return;
             } else {
                 this.compileToken(token.op2);
@@ -207,8 +207,8 @@ export class ByteCodeTarget implements Target {
     }
 
     private compileReference(token: ReferenceToken, isRoot: boolean) {
-        if (token.type instanceof IntType && token.type.constantValue !== undefined) {
-            this.writer.pushConst(token.type.constantValue!);
+        if (token.type instanceof IntType && token.constantValue !== undefined) {
+            this.writer.pushConst(token.constantValue!);
         } else {
             let v = token.context.vars.get(token.varName)!;
             if (v.type.size === 1) this.writer.push8(v.location as VariableLocation);
@@ -228,7 +228,7 @@ export class ByteCodeTarget implements Target {
             v.location = this.allocateVariable(token.type);
         }
 
-        if (token.value && (token.type.constantValue === undefined || v.volatile)) {
+        if (token.value && (token.constantValue === undefined || v.volatile)) {
             this.compileToken(token.value);
             if (!isRoot) {
                 this.writer.dup();
@@ -244,8 +244,8 @@ export class ByteCodeTarget implements Target {
     }
 
     private compileCompare(token: CompareToken, isRoot: boolean) {
-        if (token.type instanceof NumberType && token.type.constantValue !== undefined) {
-            this.writer.pushConst(token.type.constantValue);
+        if (token.constantValue !== undefined) {
+            this.writer.pushConst(token.constantValue);
             return;
         }
         this.compileToken(token.op1);
@@ -275,8 +275,8 @@ export class ByteCodeTarget implements Target {
     }
 
     private compileIf(token: IfToken) {
-        if (token.condition.type instanceof NumberType && token.condition.type.constantValue !== undefined) {
-            if (token.condition.type.constantValue !== 0) {
+        if (token.condition.constantValue !== undefined) {
+            if (token.condition.constantValue !== 0) {
                 this.compileToken(token.ifBlock);
             } else if (token.elseBlock) {
                 this.compileToken(token.elseBlock);

@@ -1,7 +1,7 @@
 import { CompilerContext } from "./compiler";
 import { Lexer } from "./lexer";
 import { CodeWriter } from "./target/bytecode";
-import { Type, VoidType, NumberType, IntType, FloatType, ByteType } from "./types";
+import { Type, VoidType, IntType, FloatType, ByteType } from "./types";
 import debug from "debug";
 
 const info = debug("rgb:compiler");
@@ -29,6 +29,7 @@ export abstract class Token {
     readonly context: CompilerContext;
     readonly position: number;
     type!: Type;
+    constantValue?: number;
 
     constructor(id: TokenId, context: CompilerContext, position: number) {
         this.context = context;
@@ -64,22 +65,33 @@ function expectBrackets(c: CompilerContext): Token | undefined {
 }
 
 export class TernaryToken extends Token {
-    constructor(context: CompilerContext, position: number, public op: Token, public trueOp: Token, public falseOp: Token) {
+    constructor(context: CompilerContext, position: number, public condition: Token, public trueOp: Token, public falseOp: Token) {
         super(TokenId.Ternary, context, position);
     }
 
     toString(): string {
-        return `${this.op} ? ${this.trueOp} : ${this.falseOp}`;
+        return `${this.condition} ? ${this.trueOp} : ${this.falseOp}`;
     }
 
     setTypes(): void {
-        this.op.setTypes();
+        this.condition.setTypes();
         this.trueOp.setTypes();
         this.falseOp.setTypes();
-        if (this.op.type instanceof NumberType && this.op.type.constantValue !== undefined) {
-            this.type = this.op.type.constantValue ? this.trueOp.type : this.falseOp.type;
+
+        if (this.trueOp.type.isAssignableTo(this.falseOp.type)) {
+            this.type = this.falseOp.type;
+        } else if (this.falseOp.type.isAssignableTo(this.trueOp.type)) {
+            this.type = this.trueOp.type;
         } else {
-            this.type = new IntType();
+            throw new Error("Cannot use ternary with 2 unrelated types");
+        }
+
+        if (this.condition.constantValue !== undefined) {
+            if (this.condition.constantValue === 0) {
+                this.constantValue = this.falseOp.constantValue;
+            } else {
+                this.constantValue = this.trueOp.constantValue;
+            }
         }
     }
 }
@@ -127,25 +139,24 @@ export class MulToken extends Token {
     setTypes(): void {
         this.op1.setTypes();
         this.op2.setTypes();
-        if (this.op1.type instanceof NumberType && this.op2.type instanceof NumberType) {
-            switch (this.operator) {
-                case "*":
-                    this.type = this.op1.type.mul(this.op2.type);
-                    break;
-                case "/":
-                    this.type = this.op1.type.div(this.op2.type);
-                    break;
-                case "%":
-                    this.type = this.op1.type.mod(this.op2.type);
-                    break;
-                default:
-                    throw new Error("Unimplemented");
-            }
-        } else {
+
+        switch (this.operator) {
+            case "*":
+                this.type = this.op1.type.mul(this.op2.type)!;
+                break;
+            case "/":
+                this.type = this.op1.type.div(this.op2.type)!;
+                break;
+            case "%":
+                this.type = this.op1.type.mod(this.op2.type)!;
+                break;
+            default:
+                throw new Error();
+        }
+
+        if (!this.type) {
             throw new Error(
-                `Can only modulus/multiply/divide number values at ${this.context.lex.lineColumn(this.position)} (${this.op1.type.name}, ${
-                    this.op2.type.name
-                })`
+                `Cannot modulus/multiply/divide ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lex.lineColumn(this.position)}`
             );
         }
     }
@@ -192,21 +203,20 @@ export class SumToken extends Token {
     setTypes(): void {
         this.op1.setTypes();
         this.op2.setTypes();
-        if (this.op1.type instanceof NumberType && this.op2.type instanceof NumberType) {
-            switch (this.operator) {
-                case "+":
-                    this.type = this.op1.type.add(this.op2.type);
-                    break;
-                case "-":
-                    this.type = this.op1.type.sub(this.op2.type);
-                    break;
-                default:
-                    throw new Error("Unimplemented");
-            }
-        } else {
-            throw new Error(
-                `Can only add/substract number values at ${this.context.lex.lineColumn(this.position)} (${this.op1.type.name}, ${this.op2.type.name})`
-            );
+
+        switch (this.operator) {
+            case "+":
+                this.type = this.op1.type.add(this.op2.type)!;
+                break;
+            case "-":
+                this.type = this.op1.type.sub(this.op2.type)!;
+                break;
+            default:
+                throw new Error();
+        }
+
+        if (!this.type) {
+            throw new Error(`Cannot add/substract ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lex.lineColumn(this.position)}`);
         }
     }
 
@@ -284,10 +294,12 @@ export class ValueToken extends Token {
         let val = parseInt(this.value);
         if (val > 2147483647 || val < -2147483648) {
             throw new Error(`Integer too large at ${this.context.lex.lineColumn(this.position)}`);
-        } else if (val > 127 || val < -128) {
-            this.type = new IntType(this.noInlining ? undefined : val);
+        } else if (val > 255 || val < 0) {
+            this.type = new IntType();
+            this.constantValue = this.noInlining ? undefined : val;
         } else {
-            this.type = new ByteType(this.noInlining ? undefined : val);
+            this.type = new ByteType();
+            this.constantValue = this.noInlining ? undefined : val;
         }
     }
 
@@ -352,19 +364,20 @@ export class AssignmentToken extends Token {
 
             if (this.value) {
                 if (this.value.type.size > type.size) {
-                    warning(`data loss when assigning type ${this.value.type.name} to ${type.name} at ${this.context.lex.lineColumn(this.position)}`);
+                    warning(
+                        `Possible data loss when assigning type ${this.value.type.name} to ${type.name} at ${this.context.lex.lineColumn(
+                            this.position
+                        )}`
+                    );
                 }
-                let a = this.value.type.assign(type);
-                if (!a) {
+                if (!this.value.type.isAssignableTo(type)) {
                     throw new Error(
                         `Type ${this.value.type.name} is not assignable to ${type.name} at ${this.context.lex.lineColumn(this.position)}`
                     );
                 }
-                this.type = a;
-            } else {
-                this.type = type;
             }
 
+            this.type = type;
             this.context.defineVariable(this.varName, this.type);
         } else {
             // Set variable
@@ -373,12 +386,9 @@ export class AssignmentToken extends Token {
             }
 
             let v = this.context.vars.get(this.varName)!;
-            let a = this.value!.type.assign(v.type);
-            if (!a) {
+            if (!this.value!.type.isAssignableTo(v.type)) {
                 throw new Error(`Type ${this.value!.type.name} is not assignable to ${v.type.name} at ${this.context.lex.lineColumn(this.position)}`);
             }
-            v.type = a;
-            this.type = a;
         }
     }
 
@@ -517,29 +527,41 @@ export class CompareToken extends Token {
         this.op1.setTypes();
         this.op2.setTypes();
 
-        if (this.op1.type instanceof NumberType && this.op2.type instanceof NumberType) {
+        if (this.op1.constantValue !== undefined && this.op2.constantValue !== undefined) {
             switch (this.operator) {
                 case "!=":
-                    this.type = this.op1.type.neq(this.op2.type);
+                    this.type = this.op1.type.neq(this.op2.type)!;
+                    this.constantValue = this.op1.constantValue !== this.op2.constantValue ? 1 : 0;
                     break;
                 case "==":
-                    this.type = this.op1.type.eq(this.op2.type);
+                    this.type = this.op1.type.eq(this.op2.type)!;
+                    this.constantValue = this.op1.constantValue === this.op2.constantValue ? 1 : 0;
                     break;
                 case ">":
-                    this.type = this.op1.type.gt(this.op2.type);
+                    this.type = this.op2.type.lt(this.op1.type)!;
+                    this.constantValue = this.op1.constantValue > this.op2.constantValue ? 1 : 0;
                     break;
                 case ">=":
-                    this.type = this.op1.type.gte(this.op2.type);
+                    this.type = this.op2.type.lte(this.op1.type)!;
+                    this.constantValue = this.op1.constantValue >= this.op2.constantValue ? 1 : 0;
                     break;
                 case "<":
-                    this.type = this.op1.type.lt(this.op2.type);
+                    this.type = this.op1.type.lt(this.op2.type)!;
+                    this.constantValue = this.op1.constantValue < this.op2.constantValue ? 1 : 0;
                     break;
                 case "<=":
-                    this.type = this.op1.type.lte(this.op2.type);
+                    this.type = this.op1.type.lte(this.op2.type)!;
+                    this.constantValue = this.op1.constantValue <= this.op2.constantValue ? 1 : 0;
                     break;
+                default:
+                    throw new Error();
             }
         } else {
-            this.type = new IntType();
+            this.constantValue = undefined;
+        }
+
+        if (!this.type) {
+            throw new Error(`Cannot compare ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lex.lineColumn(this.position)}`);
         }
     }
 }
