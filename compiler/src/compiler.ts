@@ -39,7 +39,15 @@ export class Scope {
 
     private vars = new Map<string, Var>();
     private knownValues = new Map<string, any>();
-    private functions = new Map<string, Func>();
+    private funcs = new Map<string, Func>();
+
+    get variables() {
+        return this.vars as ReadonlyMap<string, Var>;
+    }
+
+    get functions() {
+        return this.funcs as ReadonlyMap<string, Func>;
+    }
 
     constructor(parent?: Scope) {
         this.parent = parent;
@@ -59,10 +67,11 @@ export class Scope {
         }
     }
 
-    defineVar(name: string, v: Omit<Var, "name">) {
-        if (this.vars.has(name)) return false;
-        this.vars.set(name, { ...v, name });
-        return true;
+    defineVar(name: string, v: Omit<Var, "name">): Var | undefined {
+        if (this.vars.has(name)) return undefined;
+        let vv = { ...v, name };
+        this.vars.set(name, vv);
+        return vv;
     }
 
     hasFunc(name: string) {
@@ -70,8 +79,8 @@ export class Scope {
     }
 
     getFunc(name: string): Func | undefined {
-        if (this.functions.has(name)) {
-            return this.functions.get(name);
+        if (this.funcs.has(name)) {
+            return this.funcs.get(name);
         } else if (this.parent) {
             return this.parent.getFunc(name);
         } else {
@@ -79,10 +88,11 @@ export class Scope {
         }
     }
 
-    defineFunc(name: string, f: Omit<Func, "name">) {
-        if (this.functions.has(name)) return false;
-        this.functions.set(name, { ...f, name });
-        return true;
+    defineFunc(name: string, f: Omit<Func, "name">): Func | undefined {
+        if (this.funcs.has(name)) return undefined;
+        let ff = { ...f, name };
+        this.funcs.set(name, ff);
+        return ff;
     }
 
     setVarKnownValue(name: string, value: any | undefined) {
@@ -105,33 +115,28 @@ export class Scope {
 
 export class CompilerContext {
     lex!: Lexer;
-    vars: Map<string, Var>;
-    functions: Map<string, Func>;
+    // vars: Map<string, Var>;
+    // functions: Map<string, Func>;
     root?: BlockToken;
-
-    constructor() {
-        this.vars = new Map();
-        this.functions = new Map();
-    }
 
     /**
      * Defines a function, with a fixed function id
      */
-    defineFunction<L = unknown>(name: string, returnType: Type, parameterCount: number, location?: L) {
-        if (this.functions.has(name)) throw new Error("Function already declared");
-        this.functions.set(name, { location, name, returnType, parameterCount });
-    }
+    // defineFunction<L = unknown>(name: string, returnType: Type, parameterCount: number, location?: L) {
+    //     if (this.functions.has(name)) throw new Error("Function already declared");
+    //     this.functions.set(name, { location, name, returnType, parameterCount });
+    // }
 
-    /**
-     * Defines a variable
-     * @param type The type of the variable
-     * @param volatile Whether this variable should not be affected by compiler optimizations
-     * @param location The predefined location that should be compatible with the upcoming target, when left undefined, the target will fill it in
-     */
-    defineVariable<L = unknown>(name: string, type: Type, volatile = false, location?: L) {
-        if (this.vars.has(name)) throw new Error("Variable already declared");
-        this.vars.set(name, { name, type, volatile, location });
-    }
+    // /**
+    //  * Defines a variable
+    //  * @param type The type of the variable
+    //  * @param volatile Whether this variable should not be affected by compiler optimizations
+    //  * @param location The predefined location that should be compatible with the upcoming target, when left undefined, the target will fill it in
+    //  */
+    // defineVariable<L = unknown>(name: string, type: Type, volatile = false, location?: L) {
+    //     if (this.vars.has(name)) throw new Error("Variable already declared");
+    //     this.vars.set(name, { name, type, volatile, location });
+    // }
 
     parse(input: string) {
         this.lex = new Lexer(input);

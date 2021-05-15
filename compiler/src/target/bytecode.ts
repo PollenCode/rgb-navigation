@@ -15,7 +15,7 @@ import {
     TokenId,
     ValueToken,
 } from "../token";
-import { CompilerContext, Func, Target, Var } from "../compiler";
+import { CompilerContext, Func, Scope, Target, Var } from "../compiler";
 
 const logger = debug("rgb:compiler:emit");
 
@@ -30,16 +30,23 @@ export class ByteCodeTarget implements Target {
     writer!: CodeWriter;
 
     private currentVarAllocation: number = 0;
+    private maxVarAllocation: number = 0;
 
     allocateVariable(type: Type): VariableLocation {
         let address = this.currentVarAllocation;
         this.currentVarAllocation += type.size;
+        if (this.currentVarAllocation > this.maxVarAllocation) {
+            this.maxVarAllocation = this.currentVarAllocation;
+        }
         return address;
     }
 
     allocateVariableAt(address: number, type: Type): VariableLocation {
         if (address + type.size > this.currentVarAllocation) {
             this.currentVarAllocation = address + type.size;
+        }
+        if (this.currentVarAllocation > this.maxVarAllocation) {
+            this.maxVarAllocation = this.currentVarAllocation;
         }
         return address;
     }
@@ -60,32 +67,32 @@ export class ByteCodeTarget implements Target {
     /**
      * Returns the prealloced variables and their initial value in buffer format
      */
-    getInitializedData(context: CompilerContext) {
-        let writer = new BinaryWriter();
-        context.vars.forEach((e) => {
-            writer.position = e.location as VariableLocation;
-            logger(`${e.name} -> 0x${(e.location as VariableLocation).toString(16)}`);
-            let value = e.constantValue !== undefined ? e.constantValue : 0;
-            switch (e.type.size) {
-                case 1:
-                    writer.write8(value);
-                    break;
-                case 2:
-                    writer.write16(value);
-                    break;
-                case 4:
-                    writer.write32(value);
-                    break;
-            }
-        });
-        return writer.buffer;
-    }
+    // getInitializedData(scope: Scope) {
+    //     let writer = new BinaryWriter();
+    //     scope.variables.forEach((e) => {
+    //         writer.position = e.location as VariableLocation;
+    //         logger(`${e.name} -> 0x${(e.location as VariableLocation).toString(16)}`);
+    //         let value = 0;
+    //         switch (e.type.size) {
+    //             case 1:
+    //                 writer.write8(value);
+    //                 break;
+    //             case 2:
+    //                 writer.write16(value);
+    //                 break;
+    //             case 4:
+    //                 writer.write32(value);
+    //                 break;
+    //         }
+    //     });
+    //     return writer.buffer;
+    // }
 
     /**
      * Combines data and bytecode into one buffer, returning the entryPoint and buffer
      */
-    getLinkedProgram(context: CompilerContext): [number, Buffer] {
-        let memory = this.getInitializedData(context);
+    getLinkedProgram(): [number, Buffer] {
+        let memory = Buffer.alloc(this.maxVarAllocation);
         let program = this.getProgram();
         let entryPoint = align4(memory.length);
         let buffer = Buffer.alloc(entryPoint + program.length);
@@ -210,7 +217,7 @@ export class ByteCodeTarget implements Target {
         if (token.type instanceof IntType && token.constantValue !== undefined) {
             this.writer.pushConst(token.constantValue!);
         } else {
-            let v = token.context.vars.get(token.varName)!;
+            let v = token.variable;
             if (v.type.size === 1) this.writer.push8(v.location as VariableLocation);
             else this.writer.push(v.location as VariableLocation);
         }
@@ -221,19 +228,17 @@ export class ByteCodeTarget implements Target {
     }
 
     private compileAssignment(token: AssignmentToken, isRoot: boolean) {
-        let v = token.context.vars.get(token.varName)!;
-
+        let v = token.variable;
         if (token.type && v.location === undefined) {
             // This is a declaration
             v.location = this.allocateVariable(token.type);
         }
 
-        if (token.value && (token.constantValue === undefined || v.volatile)) {
+        if (token.value && token.constantValue === undefined) {
             this.compileToken(token.value);
             if (!isRoot) {
                 this.writer.dup();
             }
-            let v = token.context.vars.get(token.varName)!;
             if (v.type.size === 1) this.writer.pop8(v.location as VariableLocation);
             else this.writer.pop(v.location as VariableLocation);
         }
@@ -313,6 +318,8 @@ export class ByteCodeTarget implements Target {
             this.writer.jr(save - jrLocation - 2);
             this.writer.position = save;
         }
+
+        // <- TODO: deallocate variables allocated in if statement
     }
 
     compileHalt(token: HaltToken) {
@@ -320,7 +327,7 @@ export class ByteCodeTarget implements Target {
     }
 
     compileCall(token: CallToken, isRoot: boolean) {
-        let func = token.context.functions.get(token.functionName)! as Func<FunctionLocation>;
+        let func = token.function as Func<FunctionLocation>;
         if (func.location === undefined) throw new Error(`Location of function ${token.functionName} must be known at compile time.`);
 
         token.parameters.forEach((e) => this.compileToken(e));
@@ -342,31 +349,28 @@ export class ByteCodeTarget implements Target {
         this.writer.halt();
     }
 
-    defineDefaultMacros(context: CompilerContext) {
-        context.defineFunction(
-            "sin",
-            new IntType(),
-            1,
-            this.allocateFunction((writer) => {
+    defineDefaultMacros(scope: Scope) {
+        scope.defineFunc("sin", {
+            parameterCount: 1,
+            returnType: new IntType(),
+            location: this.allocateFunction((writer) => {
                 writer.sin();
-            })
-        );
-        context.defineFunction(
-            "cos",
-            new IntType(),
-            1,
-            this.allocateFunction((writer) => {
+            }),
+        });
+        scope.defineFunc("cos", {
+            parameterCount: 1,
+            returnType: new IntType(),
+            location: this.allocateFunction((writer) => {
                 writer.cos();
-            })
-        );
-        context.defineFunction(
-            "abs",
-            new IntType(),
-            1,
-            this.allocateFunction((writer) => {
+            }),
+        });
+        scope.defineFunc("abs", {
+            parameterCount: 1,
+            returnType: new IntType(),
+            location: this.allocateFunction((writer) => {
                 writer.abs();
-            })
-        );
+            }),
+        });
         // context.defineFunction("tan", new IntType(), 1, (writer) => {
         //     writer.tan();
         // });

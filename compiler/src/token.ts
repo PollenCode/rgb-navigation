@@ -1,4 +1,4 @@
-import { CompilerContext } from "./compiler";
+import { CompilerContext, Func, Scope, Var } from "./compiler";
 import { Lexer } from "./lexer";
 import { CodeWriter } from "./target/bytecode";
 import { Type, VoidType, IntType, FloatType, ByteType } from "./types";
@@ -38,7 +38,7 @@ export abstract class Token {
     }
 
     abstract toString(): string;
-    abstract setTypes(): void;
+    abstract setTypes(scope: Scope): void;
 }
 
 function expectBrackets(c: CompilerContext): Token | undefined {
@@ -73,10 +73,10 @@ export class TernaryToken extends Token {
         return `${this.condition} ? ${this.trueOp} : ${this.falseOp}`;
     }
 
-    setTypes(): void {
-        this.condition.setTypes();
-        this.trueOp.setTypes();
-        this.falseOp.setTypes();
+    setTypes(scope: Scope): void {
+        this.condition.setTypes(scope);
+        this.trueOp.setTypes(scope);
+        this.falseOp.setTypes(scope);
 
         if (this.trueOp.type.isAssignableTo(this.falseOp.type)) {
             this.type = this.falseOp.type;
@@ -136,9 +136,9 @@ export class MulToken extends Token {
         super(TokenId.Mul, context, position);
     }
 
-    setTypes(): void {
-        this.op1.setTypes();
-        this.op2.setTypes();
+    setTypes(scope: Scope): void {
+        this.op1.setTypes(scope);
+        this.op2.setTypes(scope);
 
         switch (this.operator) {
             case "*":
@@ -200,9 +200,9 @@ export class SumToken extends Token {
         super(TokenId.Sum, context, position);
     }
 
-    setTypes(): void {
-        this.op1.setTypes();
-        this.op2.setTypes();
+    setTypes(scope: Scope): void {
+        this.op1.setTypes(scope);
+        this.op2.setTypes(scope);
 
         switch (this.operator) {
             case "+":
@@ -255,16 +255,17 @@ export function expectSum(c: CompilerContext): Token | undefined {
 }
 
 export class ReferenceToken extends Token {
+    variable!: Var;
+
     constructor(context: CompilerContext, position: number, public varName: string) {
         super(TokenId.Reference, context, position);
     }
 
-    setTypes(): void {
-        if (!this.context.vars.has(this.varName)) {
-            throw new Error(`Unknown var '${this.varName}' at ${this.context.lex.lineColumn(this.position)}`);
-        } else {
-            this.type = this.context.vars.get(this.varName)!.type;
-        }
+    setTypes(scope: Scope): void {
+        this.variable = scope.getVar(this.varName)!;
+        if (!this.variable) throw new Error(`Unknown var '${this.varName}' at ${this.context.lex.lineColumn(this.position)}`);
+        this.type = this.variable.type;
+        if (!this.variable.volatile) this.constantValue = scope.getVarKnownValue(this.varName);
     }
 
     toString() {
@@ -325,6 +326,8 @@ export function expectValue(c: CompilerContext) {
 }
 
 export class AssignmentToken extends Token {
+    variable!: Var;
+
     constructor(
         context: CompilerContext,
         position: number,
@@ -335,25 +338,18 @@ export class AssignmentToken extends Token {
         super(TokenId.Assignment, context, position);
     }
 
-    setTypes(): void {
+    setTypes(scope: Scope): void {
         if (this.value) {
-            this.value.setTypes();
+            this.value.setTypes(scope);
         }
         if (this.typeName) {
             // Define variable
-            if (this.context.vars.has(this.varName)) {
-                throw new Error(
-                    `Variable ${this.varName} has already been declared, second declaration is at ${this.context.lex.lineColumn(this.position)}`
-                );
-            }
-
-            let type;
             switch (this.typeName) {
                 case "int":
-                    type = new IntType();
+                    this.type = new IntType();
                     break;
                 case "byte":
-                    type = new ByteType();
+                    this.type = new ByteType();
                     break;
                 // case "float":
                 //     type = new FloatType();
@@ -362,33 +358,41 @@ export class AssignmentToken extends Token {
                     throw new Error(`Unknown variable type ${this.typeName} at ${this.context.lex.lineColumn(this.position)}`);
             }
 
+            if (scope.hasVar(this.varName)) {
+                throw new Error(
+                    `Variable ${this.varName} has already been declared, second declaration is at ${this.context.lex.lineColumn(this.position)}`
+                );
+            }
+            this.variable = scope.defineVar(this.varName, { type: this.type, volatile: false })!;
+
             if (this.value) {
-                if (this.value.type.size > type.size) {
+                if (this.value.type.size > this.type.size) {
                     warning(
-                        `Possible data loss when assigning type ${this.value.type.name} to ${type.name} at ${this.context.lex.lineColumn(
+                        `Possible data loss when assigning type ${this.value.type.name} to ${this.type.name} at ${this.context.lex.lineColumn(
                             this.position
                         )}`
                     );
                 }
-                if (!this.value.type.isAssignableTo(type)) {
+                if (!this.value.type.isAssignableTo(this.type)) {
                     throw new Error(
-                        `Type ${this.value.type.name} is not assignable to ${type.name} at ${this.context.lex.lineColumn(this.position)}`
+                        `Type ${this.value.type.name} is not assignable to ${this.type.name} at ${this.context.lex.lineColumn(this.position)}`
                     );
                 }
+                scope.setVarKnownValue(this.varName, this.value.constantValue);
             }
-
-            this.type = type;
-            this.context.defineVariable(this.varName, this.type);
         } else {
             // Set variable
-            if (!this.context.vars.has(this.varName)) {
+            this.variable = scope.getVar(this.varName)!;
+            if (!this.variable) {
                 throw new Error(`Variable ${this.varName} was not found, at ${this.context.lex.lineColumn(this.position)}`);
             }
 
-            let v = this.context.vars.get(this.varName)!;
-            if (!this.value!.type.isAssignableTo(v.type)) {
-                throw new Error(`Type ${this.value!.type.name} is not assignable to ${v.type.name} at ${this.context.lex.lineColumn(this.position)}`);
+            if (!this.value!.type.isAssignableTo(this.variable.type)) {
+                throw new Error(
+                    `Type ${this.value!.type.name} is not assignable to ${this.variable.type.name} at ${this.context.lex.lineColumn(this.position)}`
+                );
             }
+            scope.setVarKnownValue(this.varName, this.value!.constantValue);
         }
     }
 
@@ -446,8 +450,8 @@ export class BlockToken extends Token {
         super(TokenId.Block, context, position);
     }
 
-    setTypes(): void {
-        this.statements.forEach((e) => e.setTypes());
+    setTypes(scope: Scope): void {
+        this.statements.forEach((e) => e.setTypes(scope));
         this.type = new VoidType();
     }
 
@@ -460,6 +464,8 @@ export class BlockToken extends Token {
 export function expectRoot(c: CompilerContext) {
     let position = c.lex.position;
     let statements: Token[] = [];
+
+    c.lex.readWhitespace();
 
     while (c.lex.position < c.lex.buffer.length) {
         let s = expectHalt(c);
@@ -523,9 +529,9 @@ export class CompareToken extends Token {
         return `${this.op1} ${this.operator} ${this.op2}`;
     }
 
-    setTypes(): void {
-        this.op1.setTypes();
-        this.op2.setTypes();
+    setTypes(scope: Scope): void {
+        this.op1.setTypes(scope);
+        this.op2.setTypes(scope);
 
         if (this.op1.constantValue !== undefined && this.op2.constantValue !== undefined) {
             switch (this.operator) {
@@ -615,13 +621,13 @@ export class IfToken extends Token {
         if (this.elseBlock) return `if ${this.condition} \n\t${this.ifBlock}\n else \n\t${this.elseBlock}\n`;
         else return `if ${this.condition} \n\t${this.ifBlock}\n`;
     }
-    setTypes(): void {
+
+    setTypes(scope: Scope): void {
         this.type = new VoidType();
-        this.condition.setTypes();
-        this.ifBlock.setTypes();
-        this.elseBlock?.setTypes();
+        this.condition.setTypes(scope);
+        this.ifBlock.setTypes(new Scope(scope));
+        this.elseBlock?.setTypes(new Scope(scope));
     }
-    emit(code: CodeWriter): void {}
 }
 
 export function expectIf(c: CompilerContext) {
@@ -680,6 +686,8 @@ export function expectHalt(c: CompilerContext) {
 }
 
 export class CallToken extends Token {
+    function!: Func<unknown>;
+
     constructor(context: CompilerContext, position: number, public functionName: string, public parameters: Token[]) {
         super(TokenId.Call, context, position);
     }
@@ -688,18 +696,19 @@ export class CallToken extends Token {
         return `${this.functionName}()`;
     }
 
-    setTypes(): void {
-        let func = this.context.functions.get(this.functionName);
-        if (!func) throw new Error(`Function '${this.functionName}' not found at ${this.context.lex.lineColumn(this.position)}`);
-        this.type = func.returnType;
-        if (this.parameters.length !== func.parameterCount) {
+    setTypes(scope: Scope): void {
+        this.function = scope.getFunc(this.functionName)!;
+        if (!this.function) throw new Error(`Function '${this.functionName}' not found at ${this.context.lex.lineColumn(this.position)}`);
+
+        this.type = this.function.returnType;
+        if (this.parameters.length !== this.function.parameterCount) {
             throw new Error(
-                `Expected ${func.parameterCount} parameters (got ${this.parameters.length}) for function call at ${this.context.lex.lineColumn(
-                    this.position
-                )}`
+                `Expected ${this.function.parameterCount} parameters (got ${
+                    this.parameters.length
+                }) for function call at ${this.context.lex.lineColumn(this.position)}`
             );
         }
-        this.parameters.forEach((e) => e.setTypes());
+        this.parameters.forEach((e) => e.setTypes(scope));
     }
 }
 

@@ -1,7 +1,7 @@
 process.env.DEBUG = "rgb:*";
 import debug from "debug";
 import fs from "fs/promises";
-import { ByteType, CompilerContext, IntType, ByteCodeInterpreter } from "../src";
+import { ByteType, CompilerContext, IntType, ByteCodeInterpreter, Scope } from "../src";
 import { ByteCodeTarget } from "../src/target/bytecode";
 
 const logger = debug("rgb:compiler-test");
@@ -14,16 +14,17 @@ async function compileFile(fileName: string) {
 async function compile(input: string) {
     let context = new CompilerContext();
     let target = new ByteCodeTarget();
+    let scope = new Scope();
 
-    target.defineDefaultMacros(context);
+    target.defineDefaultMacros(scope);
     // Define predefined variables at a fixed location in memory
-    context.defineVariable("r", new ByteType(), true, target.allocateVariableAt(0, new ByteType()));
-    context.defineVariable("g", new ByteType(), true, target.allocateVariableAt(1, new ByteType()));
-    context.defineVariable("b", new ByteType(), true, target.allocateVariableAt(2, new ByteType()));
-    context.defineVariable("index", new IntType(), true, target.allocateVariableAt(4, new IntType()));
-    context.defineVariable("timer", new IntType(), true, target.allocateVariableAt(8, new IntType()));
+    scope.defineVar("r", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(0, new ByteType()) });
+    scope.defineVar("g", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(1, new ByteType()) });
+    scope.defineVar("b", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(2, new ByteType()) });
+    scope.defineVar("index", { type: new IntType(), volatile: true, location: target.allocateVariableAt(4, new IntType()) });
+    scope.defineVar("timer", { type: new IntType(), volatile: true, location: target.allocateVariableAt(8, new IntType()) });
 
-    context.defineFunction("random", new ByteType(), 0, target.allocateFunction(0));
+    scope.defineFunc("random", { location: target.allocateFunction(0), returnType: new ByteType(), parameterCount: 0 });
 
     logger("parsing...");
     context.parse(input);
@@ -32,7 +33,7 @@ async function compile(input: string) {
     logger("compiling...");
     context.compile(target);
 
-    let [entryPoint, linked] = target.getLinkedProgram(context);
+    let [entryPoint, linked] = target.getLinkedProgram();
 
     logger(`program uses ${entryPoint} bytes for variables, starting at 0`);
     logger(`program uses ${linked.length - entryPoint} bytes for code, starting at ${entryPoint}`);
