@@ -104,6 +104,7 @@ router.get("/effect", async (req, res, next) => {
             name: true,
             id: true,
             code: req.query.code === "true" ? true : false,
+            lastError: true,
             author: {
                 select: {
                     id: true,

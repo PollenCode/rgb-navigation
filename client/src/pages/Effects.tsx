@@ -27,6 +27,7 @@ interface Effect {
     code: string;
     id: number;
     active?: boolean;
+    lastError: string | null;
     author?: {
         id: string;
         name: string;
@@ -39,12 +40,17 @@ function EffectListItemButton(props: {
     children?: React.ReactNode;
     style?: React.CSSProperties;
     onClick?: (ev: React.MouseEvent) => void;
+    title?: string;
 }) {
     return (
         <button
-            className="bg-gray-100 rounded py-1 px-2 text-blue-600 font-semibold text-sm hover:bg-opacity-100"
+            title={props.title}
+            className="bg-gray-200 rounded py-1 px-2 text-blue-600 font-semibold text-sm hover:bg-opacity-100 hover:bg-gray-300"
             style={props.style}
-            onClick={props.onClick}>
+            onClick={(ev) => {
+                ev.stopPropagation();
+                props.onClick?.(ev);
+            }}>
             <span className="hidden md:inline">{props.children}</span>
             {props.icon && <FontAwesomeIcon className="ml-1" icon={props.icon} />}
         </button>
@@ -56,7 +62,7 @@ function EffectListItem(props: { effect: Effect; onClick?: () => void }) {
     const history = useHistory();
     const readOnly = !client.user || !props.effect.author || client.user.id !== props.effect.author.id;
     return (
-        <ListItem active={props.effect.active} onClick={props.onClick}>
+        <ListItem error={!!props.effect.lastError} active={props.effect.active} onClick={props.onClick}>
             {props.effect.active && (
                 <span className="text-blue-600 text-lg overflow-hidden pl-3.5">
                     <FontAwesomeIcon className="pop-in" icon={faCheckCircle} />
@@ -68,9 +74,19 @@ function EffectListItem(props: { effect: Effect; onClick?: () => void }) {
                     (door {props.effect.author.name})
                 </span>
             )}
+            <span className="ml-auto"></span>
+            {props.effect.lastError && (
+                <EffectListItemButton
+                    icon={faTimes}
+                    style={{ color: "red" }}
+                    title={props.effect.lastError}
+                    onClick={() => alert(`Compilatie fout:\n${props.effect.lastError}`)}>
+                    Error
+                </EffectListItemButton>
+            )}
             <EffectListItemButton
                 icon={readOnly ? faEye : faPen}
-                style={{ marginLeft: "auto", marginRight: "0.4em" }}
+                style={{ margin: "0 0.4em" }}
                 onClick={(ev) => {
                     ev.stopPropagation();
                     history.push(`/admin/effects/${props.effect.id}`);
@@ -83,13 +99,14 @@ function EffectListItem(props: { effect: Effect; onClick?: () => void }) {
 
 const DEFAULT_CODE = `
 
-// This code will run for every led on the strip
-// index contains which led is currently 
-// timer contains the time in millis
+// This code will run for every led on the strip 
+// 'index' contains which led is currently 
+// 'timer' contains the time in millis
 
-// Example effect
-// Flashing red
-r = timer % 255
+// Use Ctrl+Space to see which utility functions are available
+
+// Example effect: pulsing red
+r = sin(timer / 5)
 g = 0
 b = 0
 
@@ -127,8 +144,13 @@ export function Effects() {
                             key={e.id}
                             effect={e}
                             onClick={async () => {
-                                await client.buildEffect(e.id, true);
-                                setEffects((effects) => effects!.map((t) => ({ ...t, active: t.id === e.id })));
+                                let res = await client.buildEffect(e.id, true);
+                                if (res.status === "ok") {
+                                    setEffects((effects) => effects!.map((t) => ({ ...t, active: t.id === e.id })));
+                                } else {
+                                    let error = res.error;
+                                    setEffects((effects) => effects!.map((t) => (t.id === e.id ? { ...t, lastError: error } : t)));
+                                }
                             }}
                         />
                     ))}
