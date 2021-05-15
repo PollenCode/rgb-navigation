@@ -1,5 +1,10 @@
 // CHRISTMAS EFFECT
 
-r = 255
-b = sin(100)
-g = 255
+
+int a;
+
+if a {
+    g = 255
+    r = 255
+    b = 255
+}

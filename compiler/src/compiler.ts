@@ -1,11 +1,7 @@
 import fs from "fs/promises";
-import debug from "debug";
 import { Lexer } from "./lexer";
 import { BlockToken, expectRoot, Token } from "./token";
-import { IntType, Type } from "./types";
-import { BinaryWriter, CodeWriter } from "./target/bytecode";
-
-const logger = debug("rgb:compiler");
+import { Type } from "./types";
 
 export interface Target {
     compile(root: BlockToken): void;
@@ -96,7 +92,6 @@ export class Scope {
     }
 
     setVarKnownValue(name: string, value: any | undefined) {
-        if (!this.vars.has(name)) throw new Error("Cannot set known value for unknown var");
         // Do not set on parent!
         if (value === undefined) this.knownValues.delete(name);
         else this.knownValues.set(name, value);
@@ -113,42 +108,8 @@ export class Scope {
     }
 }
 
-export class CompilerContext {
-    lex!: Lexer;
-    // vars: Map<string, Var>;
-    // functions: Map<string, Func>;
-    root?: BlockToken;
-
-    /**
-     * Defines a function, with a fixed function id
-     */
-    // defineFunction<L = unknown>(name: string, returnType: Type, parameterCount: number, location?: L) {
-    //     if (this.functions.has(name)) throw new Error("Function already declared");
-    //     this.functions.set(name, { location, name, returnType, parameterCount });
-    // }
-
-    // /**
-    //  * Defines a variable
-    //  * @param type The type of the variable
-    //  * @param volatile Whether this variable should not be affected by compiler optimizations
-    //  * @param location The predefined location that should be compatible with the upcoming target, when left undefined, the target will fill it in
-    //  */
-    // defineVariable<L = unknown>(name: string, type: Type, volatile = false, location?: L) {
-    //     if (this.vars.has(name)) throw new Error("Variable already declared");
-    //     this.vars.set(name, { name, type, volatile, location });
-    // }
-
-    parse(input: string) {
-        this.lex = new Lexer(input);
-        this.lex.readWhitespace();
-        this.root = expectRoot(this);
-    }
-
-    typeCheck() {
-        this.root!.setTypes();
-    }
-
-    compile(target: Target) {
-        target.compile(this.root!);
-    }
+export function parseProgram(input: string) {
+    let lexer = new Lexer(input);
+    lexer.readWhitespace();
+    return expectRoot(lexer);
 }

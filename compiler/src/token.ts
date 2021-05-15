@@ -1,4 +1,4 @@
-import { CompilerContext, Func, Scope, Var } from "./compiler";
+import { Func, Scope, Var } from "./compiler";
 import { Lexer } from "./lexer";
 import { CodeWriter } from "./target/bytecode";
 import { Type, VoidType, IntType, FloatType, ByteType } from "./types";
@@ -26,12 +26,12 @@ export enum TokenId {
 
 export abstract class Token {
     readonly id: TokenId;
-    readonly context: CompilerContext;
+    readonly context: Lexer;
     readonly position: number;
     type!: Type;
     constantValue?: number;
 
-    constructor(id: TokenId, context: CompilerContext, position: number) {
+    constructor(id: TokenId, context: Lexer, position: number) {
         this.context = context;
         this.position = position;
         this.id = id;
@@ -41,31 +41,31 @@ export abstract class Token {
     abstract setTypes(scope: Scope): void;
 }
 
-function expectBrackets(c: CompilerContext): Token | undefined {
-    if (!c.lex.string("(")) {
+function expectBrackets(c: Lexer): Token | undefined {
+    if (!c.string("(")) {
         return;
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     let op = expectTernary(c) || expectBrackets(c);
     if (!op) {
-        throw new Error(`Expected something after ( at ${c.lex.lineColumn(c.lex.position)}`);
+        throw new Error(`Expected something after ( at ${c.lineColumn(c.position)}`);
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
-    if (!c.lex.string(")")) {
-        throw new Error(`Expected closing ) at ${c.lex.lineColumn(c.lex.position)}`);
+    if (!c.string(")")) {
+        throw new Error(`Expected closing ) at ${c.lineColumn(c.position)}`);
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     return op;
 }
 
 export class TernaryToken extends Token {
-    constructor(context: CompilerContext, position: number, public condition: Token, public trueOp: Token, public falseOp: Token) {
+    constructor(context: Lexer, position: number, public condition: Token, public trueOp: Token, public falseOp: Token) {
         super(TokenId.Ternary, context, position);
     }
 
@@ -96,43 +96,43 @@ export class TernaryToken extends Token {
     }
 }
 
-function expectTernary(c: CompilerContext): Token | undefined {
+function expectTernary(c: Lexer): Token | undefined {
     let op = expectCompare(c) || expectBrackets(c);
     if (!op) {
         return;
     }
 
-    let position = c.lex.position;
-    if (!c.lex.string("?")) {
-        c.lex.position = position;
+    let position = c.position;
+    if (!c.string("?")) {
+        c.position = position;
         return op;
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     let trueOp = expectTernary(c) || expectBrackets(c);
     if (!trueOp) {
-        throw new Error(`Expected something after ?, at ${c.lex.lineColumn(position)}`);
+        throw new Error(`Expected something after ?, at ${c.lineColumn(position)}`);
     }
 
-    if (!c.lex.string(":")) {
-        throw new Error(`Expected : after ?, at ${c.lex.lineColumn(position)}`);
+    if (!c.string(":")) {
+        throw new Error(`Expected : after ?, at ${c.lineColumn(position)}`);
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     let falseOp = expectTernary(c) || expectBrackets(c);
     if (!falseOp) {
-        throw new Error(`Expected something after :, at ${c.lex.lineColumn(position)}`);
+        throw new Error(`Expected something after :, at ${c.lineColumn(position)}`);
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     return new TernaryToken(c, position, op, trueOp, falseOp);
 }
 
 export class MulToken extends Token {
-    constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public operator: "%" | "/" | "*") {
+    constructor(context: Lexer, position: number, public op1: Token, public op2: Token, public operator: "%" | "/" | "*") {
         super(TokenId.Mul, context, position);
     }
 
@@ -154,9 +154,25 @@ export class MulToken extends Token {
                 throw new Error();
         }
 
+        if (this.op1.constantValue !== undefined && this.op2.constantValue !== undefined) {
+            switch (this.operator) {
+                case "*":
+                    this.constantValue = this.op1.constantValue * this.op2.constantValue;
+                    break;
+                case "/":
+                    this.constantValue = this.op1.constantValue / this.op2.constantValue;
+                    break;
+                case "%":
+                    this.constantValue = this.op1.constantValue % this.op2.constantValue;
+                    break;
+                default:
+                    throw new Error();
+            }
+        }
+
         if (!this.type) {
             throw new Error(
-                `Cannot modulus/multiply/divide ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lex.lineColumn(this.position)}`
+                `Cannot modulus/multiply/divide ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lineColumn(this.position)}`
             );
         }
     }
@@ -166,37 +182,37 @@ export class MulToken extends Token {
     }
 }
 
-export function expectMul(c: CompilerContext): Token | undefined {
-    let position = c.lex.position;
+export function expectMul(c: Lexer): Token | undefined {
+    let position = c.position;
     let operand1 = expectCall(c, true) || expectBrackets(c);
     if (!operand1) {
-        c.lex.position = position;
+        c.position = position;
         return;
     }
 
     let type: "%" | "/" | "*";
-    if (c.lex.string("*")) {
+    if (c.string("*")) {
         type = "*";
-    } else if (c.lex.string("/")) {
+    } else if (c.string("/")) {
         type = "/";
-    } else if (c.lex.string("%")) {
+    } else if (c.string("%")) {
         type = "%";
     } else {
         return operand1;
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     let operand2 = expectMul(c) || expectBrackets(c);
     if (!operand2) {
-        throw new Error(`Expected second operand for multiplication at ${c.lex.lineColumn()}`);
+        throw new Error(`Expected second operand for multiplication at ${c.lineColumn()}`);
     }
 
     return new MulToken(c, position, operand1, operand2, type);
 }
 
 export class SumToken extends Token {
-    constructor(context: CompilerContext, position: number, public op1: Token, public op2: Token, public operator: "+" | "-") {
+    constructor(context: Lexer, position: number, public op1: Token, public op2: Token, public operator: "+" | "-") {
         super(TokenId.Sum, context, position);
     }
 
@@ -215,8 +231,21 @@ export class SumToken extends Token {
                 throw new Error();
         }
 
+        if (this.op1.constantValue !== undefined && this.op2.constantValue !== undefined) {
+            switch (this.operator) {
+                case "+":
+                    this.constantValue = this.op1.constantValue + this.op2.constantValue;
+                    break;
+                case "-":
+                    this.constantValue = this.op1.constantValue - this.op2.constantValue;
+                    break;
+                default:
+                    throw new Error();
+            }
+        }
+
         if (!this.type) {
-            throw new Error(`Cannot add/substract ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lex.lineColumn(this.position)}`);
+            throw new Error(`Cannot add/substract ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lineColumn(this.position)}`);
         }
     }
 
@@ -227,28 +256,28 @@ export class SumToken extends Token {
     emit(code: CodeWriter) {}
 }
 
-export function expectSum(c: CompilerContext): Token | undefined {
-    let position = c.lex.position;
+export function expectSum(c: Lexer): Token | undefined {
+    let position = c.position;
     let operand1 = expectMul(c) || expectBrackets(c);
     if (!operand1) {
-        c.lex.position = position;
+        c.position = position;
         return;
     }
 
     let type: "+" | "-";
-    if (c.lex.string("+")) {
+    if (c.string("+")) {
         type = "+";
-    } else if (c.lex.string("-")) {
+    } else if (c.string("-")) {
         type = "-";
     } else {
         return operand1;
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     let operand2 = expectSum(c) || expectBrackets(c);
     if (!operand2) {
-        throw new Error(`Expected second operand for sum at ${c.lex.lineColumn()}`);
+        throw new Error(`Expected second operand for sum at ${c.lineColumn()}`);
     }
 
     return new SumToken(c, position, operand1, operand2, type);
@@ -257,13 +286,13 @@ export function expectSum(c: CompilerContext): Token | undefined {
 export class ReferenceToken extends Token {
     variable!: Var;
 
-    constructor(context: CompilerContext, position: number, public varName: string) {
+    constructor(context: Lexer, position: number, public varName: string) {
         super(TokenId.Reference, context, position);
     }
 
     setTypes(scope: Scope): void {
         this.variable = scope.getVar(this.varName)!;
-        if (!this.variable) throw new Error(`Unknown var '${this.varName}' at ${this.context.lex.lineColumn(this.position)}`);
+        if (!this.variable) throw new Error(`Unknown var '${this.varName}' at ${this.context.lineColumn(this.position)}`);
         this.type = this.variable.type;
         if (!this.variable.volatile) this.constantValue = scope.getVarKnownValue(this.varName);
     }
@@ -273,28 +302,28 @@ export class ReferenceToken extends Token {
     }
 }
 
-export function expectReference(c: CompilerContext): Token | undefined {
-    let position = c.lex.position;
+export function expectReference(c: Lexer): Token | undefined {
+    let position = c.position;
 
-    let varName = c.lex.readSymbol();
+    let varName = c.readSymbol();
     if (!varName || "0123456789".includes(varName[0]) || RESERVED_WORDS.includes(varName)) {
-        c.lex.position = position;
+        c.position = position;
         return expectValue(c);
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
     return new ReferenceToken(c, position, varName);
 }
 
 export class ValueToken extends Token {
-    constructor(context: CompilerContext, position: number, public value: string, public noInlining: boolean) {
+    constructor(context: Lexer, position: number, public value: string, public noInlining: boolean) {
         super(TokenId.Value, context, position);
     }
 
     setTypes(): void {
         let val = parseInt(this.value);
         if (val > 2147483647 || val < -2147483648) {
-            throw new Error(`Integer too large at ${this.context.lex.lineColumn(this.position)}`);
+            throw new Error(`Integer too large at ${this.context.lineColumn(this.position)}`);
         } else if (val > 255 || val < 0) {
             this.type = new IntType();
             this.constantValue = this.noInlining ? undefined : val;
@@ -309,18 +338,18 @@ export class ValueToken extends Token {
     }
 }
 
-export function expectValue(c: CompilerContext) {
-    let position = c.lex.position;
+export function expectValue(c: Lexer) {
+    let position = c.position;
 
-    let value = c.lex.read("0123456789");
+    let value = c.read("0123456789");
     if (!value) {
-        c.lex.position = position;
+        c.position = position;
         return;
     }
 
-    let noInlining = c.lex.string("?");
+    let noInlining = c.string("?");
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     return new ValueToken(c, position, value, noInlining);
 }
@@ -328,13 +357,7 @@ export function expectValue(c: CompilerContext) {
 export class AssignmentToken extends Token {
     variable!: Var;
 
-    constructor(
-        context: CompilerContext,
-        position: number,
-        public typeName: string | undefined,
-        public varName: string,
-        public value: Token | undefined
-    ) {
+    constructor(context: Lexer, position: number, public typeName: string | undefined, public varName: string, public value: Token | undefined) {
         super(TokenId.Assignment, context, position);
     }
 
@@ -355,12 +378,12 @@ export class AssignmentToken extends Token {
                 //     type = new FloatType();
                 //     break;
                 default:
-                    throw new Error(`Unknown variable type ${this.typeName} at ${this.context.lex.lineColumn(this.position)}`);
+                    throw new Error(`Unknown variable type ${this.typeName} at ${this.context.lineColumn(this.position)}`);
             }
 
             if (scope.hasVar(this.varName)) {
                 throw new Error(
-                    `Variable ${this.varName} has already been declared, second declaration is at ${this.context.lex.lineColumn(this.position)}`
+                    `Variable ${this.varName} has already been declared, second declaration is at ${this.context.lineColumn(this.position)}`
                 );
             }
             this.variable = scope.defineVar(this.varName, { type: this.type, volatile: false })!;
@@ -368,30 +391,32 @@ export class AssignmentToken extends Token {
             if (this.value) {
                 if (this.value.type.size > this.type.size) {
                     warning(
-                        `Possible data loss when assigning type ${this.value.type.name} to ${this.type.name} at ${this.context.lex.lineColumn(
+                        `Possible data loss when assigning type ${this.value.type.name} to ${this.type.name} at ${this.context.lineColumn(
                             this.position
                         )}`
                     );
                 }
                 if (!this.value.type.isAssignableTo(this.type)) {
                     throw new Error(
-                        `Type ${this.value.type.name} is not assignable to ${this.type.name} at ${this.context.lex.lineColumn(this.position)}`
+                        `Type ${this.value.type.name} is not assignable to ${this.type.name} at ${this.context.lineColumn(this.position)}`
                     );
                 }
+                this.constantValue = this.value.constantValue;
                 scope.setVarKnownValue(this.varName, this.value.constantValue);
             }
         } else {
             // Set variable
             this.variable = scope.getVar(this.varName)!;
             if (!this.variable) {
-                throw new Error(`Variable ${this.varName} was not found, at ${this.context.lex.lineColumn(this.position)}`);
+                throw new Error(`Variable ${this.varName} was not found, at ${this.context.lineColumn(this.position)}`);
             }
 
             if (!this.value!.type.isAssignableTo(this.variable.type)) {
                 throw new Error(
-                    `Type ${this.value!.type.name} is not assignable to ${this.variable.type.name} at ${this.context.lex.lineColumn(this.position)}`
+                    `Type ${this.value!.type.name} is not assignable to ${this.variable.type.name} at ${this.context.lineColumn(this.position)}`
                 );
             }
+            this.constantValue = this.value!.constantValue;
             scope.setVarKnownValue(this.varName, this.value!.constantValue);
         }
     }
@@ -401,37 +426,37 @@ export class AssignmentToken extends Token {
     }
 }
 
-export function expectAssignment(c: CompilerContext) {
-    let position = c.lex.position;
+export function expectAssignment(c: Lexer) {
+    let position = c.position;
 
-    let name0 = c.lex.readSymbol();
+    let name0 = c.readSymbol();
     if (!name0 || RESERVED_WORDS.includes(name0)) {
-        c.lex.position = position;
+        c.position = position;
         return;
     }
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
-    let name1 = c.lex.readSymbol();
+    let name1 = c.readSymbol();
     if (RESERVED_WORDS.includes(name1)) {
-        c.lex.position = position;
+        c.position = position;
         return;
     }
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
-    let eq = c.lex.string("=");
+    let eq = c.string("=");
     if (!name1 && !eq) {
         // Assignment token must at least be `var = value;` or `type var;`
-        c.lex.position = position;
+        c.position = position;
         return;
     }
 
     let value: Token | undefined;
     if (eq) {
-        c.lex.readWhitespace();
+        c.readWhitespace();
 
         value = expectTernary(c) || expectBrackets(c);
         if (!value) {
-            throw new Error(`Value was expected after declaration at ${c.lex.lineColumn()}`);
+            throw new Error(`Value was expected after declaration at ${c.lineColumn()}`);
         }
     }
 
@@ -446,7 +471,7 @@ export function expectAssignment(c: CompilerContext) {
  * A token that represents a block of code, potentially containing multiple statements.
  */
 export class BlockToken extends Token {
-    constructor(context: CompilerContext, position: number, public statements: Token[]) {
+    constructor(context: Lexer, position: number, public statements: Token[]) {
         super(TokenId.Block, context, position);
     }
 
@@ -461,53 +486,53 @@ export class BlockToken extends Token {
     }
 }
 
-export function expectRoot(c: CompilerContext) {
-    let position = c.lex.position;
+export function expectRoot(c: Lexer) {
+    let position = c.position;
     let statements: Token[] = [];
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
-    while (c.lex.position < c.lex.buffer.length) {
+    while (c.position < c.buffer.length) {
         let s = expectHalt(c);
         if (!s) {
-            throw new Error(`Expected statement at ${c.lex.lineColumn()}`);
+            throw new Error(`Expected statement at ${c.lineColumn()}`);
         }
         statements.push(s);
-        c.lex.string(";");
-        c.lex.readWhitespace();
+        c.string(";");
+        c.readWhitespace();
     }
 
     return new BlockToken(c, position, statements);
 }
 
-export function expectBlock(c: CompilerContext) {
-    let position = c.lex.position;
+export function expectBlock(c: Lexer) {
+    let position = c.position;
     let statements: Token[] = [];
-    if (c.lex.string("{")) {
-        c.lex.readWhitespace();
+    if (c.string("{")) {
+        c.readWhitespace();
 
         let s: Token | undefined;
         do {
             s = expectHalt(c);
             if (s) statements.push(s);
 
-            c.lex.string(";");
-            c.lex.readWhitespace();
+            c.string(";");
+            c.readWhitespace();
         } while (s);
 
-        if (!c.lex.string("}")) {
-            throw new Error(`Expected closing } at ${c.lex.lineColumn()}`);
+        if (!c.string("}")) {
+            throw new Error(`Expected closing } at ${c.lineColumn()}`);
         }
 
-        c.lex.readWhitespace();
+        c.readWhitespace();
     } else {
         let s = expectHalt(c);
         if (!s) {
-            throw new Error(`Expected statement after : at ${c.lex.lineColumn()}`);
+            throw new Error(`Expected statement after : at ${c.lineColumn()}`);
         }
 
-        c.lex.string(";");
-        c.lex.readWhitespace();
+        c.string(";");
+        c.readWhitespace();
 
         statements.push(s);
     }
@@ -515,13 +540,7 @@ export function expectBlock(c: CompilerContext) {
 }
 
 export class CompareToken extends Token {
-    constructor(
-        context: CompilerContext,
-        position: number,
-        public op1: Token,
-        public op2: Token,
-        public operator: "==" | "!=" | ">" | ">=" | "<" | "<="
-    ) {
+    constructor(context: Lexer, position: number, public op1: Token, public op2: Token, public operator: "==" | "!=" | ">" | ">=" | "<" | "<=") {
         super(TokenId.Compare, context, position);
     }
 
@@ -533,87 +552,102 @@ export class CompareToken extends Token {
         this.op1.setTypes(scope);
         this.op2.setTypes(scope);
 
+        switch (this.operator) {
+            case "!=":
+                this.type = this.op1.type.neq(this.op2.type)!;
+                break;
+            case "==":
+                this.type = this.op1.type.eq(this.op2.type)!;
+                break;
+            case ">":
+                this.type = this.op2.type.lt(this.op1.type)!;
+                break;
+            case ">=":
+                this.type = this.op2.type.lte(this.op1.type)!;
+                break;
+            case "<":
+                this.type = this.op1.type.lt(this.op2.type)!;
+                break;
+            case "<=":
+                this.type = this.op1.type.lte(this.op2.type)!;
+                break;
+            default:
+                throw new Error();
+        }
+
         if (this.op1.constantValue !== undefined && this.op2.constantValue !== undefined) {
             switch (this.operator) {
                 case "!=":
-                    this.type = this.op1.type.neq(this.op2.type)!;
                     this.constantValue = this.op1.constantValue !== this.op2.constantValue ? 1 : 0;
                     break;
                 case "==":
-                    this.type = this.op1.type.eq(this.op2.type)!;
                     this.constantValue = this.op1.constantValue === this.op2.constantValue ? 1 : 0;
                     break;
                 case ">":
-                    this.type = this.op2.type.lt(this.op1.type)!;
                     this.constantValue = this.op1.constantValue > this.op2.constantValue ? 1 : 0;
                     break;
                 case ">=":
-                    this.type = this.op2.type.lte(this.op1.type)!;
                     this.constantValue = this.op1.constantValue >= this.op2.constantValue ? 1 : 0;
                     break;
                 case "<":
-                    this.type = this.op1.type.lt(this.op2.type)!;
                     this.constantValue = this.op1.constantValue < this.op2.constantValue ? 1 : 0;
                     break;
                 case "<=":
-                    this.type = this.op1.type.lte(this.op2.type)!;
                     this.constantValue = this.op1.constantValue <= this.op2.constantValue ? 1 : 0;
                     break;
                 default:
                     throw new Error();
             }
-        } else {
-            this.constantValue = undefined;
         }
 
         if (!this.type) {
-            throw new Error(`Cannot compare ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lex.lineColumn(this.position)}`);
+            throw new Error(`Cannot compare ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lineColumn(this.position)}`);
         }
     }
 }
 
-function expectCompare(c: CompilerContext) {
-    let position = c.lex.position;
+function expectCompare(c: Lexer) {
+    let position = c.position;
     let op1 = expectSum(c) || expectBrackets(c);
     if (!op1) {
         return;
     }
 
     let operator: "==" | "!=" | ">" | ">=" | "<" | "<=";
-    if (c.lex.string("===")) {
-        throw new Error(`Use == instead of === at ${c.lex.lineColumn()}`);
-    } else if (c.lex.string("!==")) {
-        throw new Error(`Use != instead of !== at ${c.lex.lineColumn()}`);
-    } else if (c.lex.string("==")) {
+    if (c.string("===")) {
+        throw new Error(`Use == instead of === at ${c.lineColumn()}`);
+    } else if (c.string("!==")) {
+        throw new Error(`Use != instead of !== at ${c.lineColumn()}`);
+    } else if (c.string("==")) {
         operator = "==";
-    } else if (c.lex.string("=")) {
-        throw new Error(`Use double equals signs (==) instead of a single one (=) to compare values at ${c.lex.lineColumn()}`);
-    } else if (c.lex.string("!=")) {
+    } else if (c.string("=")) {
+        throw new Error(`Use double equals signs (==) instead of a single one (=) to compare values at ${c.lineColumn()}`);
+    } else if (c.string("!=")) {
         operator = "!=";
-    } else if (c.lex.string(">=")) {
+    } else if (c.string(">=")) {
         operator = ">=";
-    } else if (c.lex.string(">")) {
+    } else if (c.string(">")) {
         operator = ">";
-    } else if (c.lex.string("<=")) {
+    } else if (c.string("<=")) {
         operator = "<=";
-    } else if (c.lex.string("<")) {
+    } else if (c.string("<")) {
         operator = "<";
     } else {
         return op1;
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     let op2 = expectSum(c) || expectBrackets(c);
     if (!op2) {
-        throw new Error(`Expected value to compare against at ${c.lex.lineColumn()}`);
+        throw new Error(`Expected value to compare against at ${c.lineColumn()}`);
     }
 
     return new CompareToken(c, position, op1, op2, operator);
 }
 
 export class IfToken extends Token {
-    constructor(context: CompilerContext, position: number, public condition: Token, public ifBlock: Token, public elseBlock: Token | undefined) {
+    constructor(context: Lexer, position: number, public condition: Token, public ifBlock: Token, public elseBlock: Token | undefined) {
         super(TokenId.If, context, position);
     }
 
@@ -627,33 +661,34 @@ export class IfToken extends Token {
         this.condition.setTypes(scope);
         this.ifBlock.setTypes(new Scope(scope));
         this.elseBlock?.setTypes(new Scope(scope));
+        this.constantValue = this.condition.constantValue;
     }
 }
 
-export function expectIf(c: CompilerContext) {
-    let position = c.lex.position;
-    if (!c.lex.string("if")) {
+export function expectIf(c: Lexer) {
+    let position = c.position;
+    if (!c.string("if")) {
         return expectAssignment(c);
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     let condition = expectTernary(c) || expectBrackets(c);
     if (!condition) {
-        throw new Error(`Expected if condition at ${c.lex.lineColumn()}`);
+        throw new Error(`Expected if condition at ${c.lineColumn()}`);
     }
 
     let ifBlock = expectBlock(c);
     if (!ifBlock) {
-        throw new Error(`Expected code block after if at ${c.lex.lineColumn()}`);
+        throw new Error(`Expected code block after if at ${c.lineColumn()}`);
     }
 
     let elseBlock: Token | undefined = undefined;
-    if (c.lex.string("else")) {
-        c.lex.readWhitespace();
+    if (c.string("else")) {
+        c.readWhitespace();
         elseBlock = expectBlock(c);
         if (!elseBlock) {
-            throw new Error(`Expected code block after else at ${c.lex.lineColumn()}`);
+            throw new Error(`Expected code block after else at ${c.lineColumn()}`);
         }
     }
 
@@ -661,7 +696,7 @@ export function expectIf(c: CompilerContext) {
 }
 
 export class HaltToken extends Token {
-    constructor(context: CompilerContext, position: number) {
+    constructor(context: Lexer, position: number) {
         super(TokenId.Halt, context, position);
     }
 
@@ -674,13 +709,13 @@ export class HaltToken extends Token {
     }
 }
 
-export function expectHalt(c: CompilerContext) {
-    let position = c.lex.position;
-    if (!c.lex.string("halt")) {
+export function expectHalt(c: Lexer) {
+    let position = c.position;
+    if (!c.string("halt")) {
         return expectCall(c, false);
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     return new HaltToken(c, position);
 }
@@ -688,7 +723,7 @@ export function expectHalt(c: CompilerContext) {
 export class CallToken extends Token {
     function!: Func<unknown>;
 
-    constructor(context: CompilerContext, position: number, public functionName: string, public parameters: Token[]) {
+    constructor(context: Lexer, position: number, public functionName: string, public parameters: Token[]) {
         super(TokenId.Call, context, position);
     }
 
@@ -698,55 +733,55 @@ export class CallToken extends Token {
 
     setTypes(scope: Scope): void {
         this.function = scope.getFunc(this.functionName)!;
-        if (!this.function) throw new Error(`Function '${this.functionName}' not found at ${this.context.lex.lineColumn(this.position)}`);
+        if (!this.function) throw new Error(`Function '${this.functionName}' not found at ${this.context.lineColumn(this.position)}`);
 
         this.type = this.function.returnType;
         if (this.parameters.length !== this.function.parameterCount) {
             throw new Error(
-                `Expected ${this.function.parameterCount} parameters (got ${
-                    this.parameters.length
-                }) for function call at ${this.context.lex.lineColumn(this.position)}`
+                `Expected ${this.function.parameterCount} parameters (got ${this.parameters.length}) for function call at ${this.context.lineColumn(
+                    this.position
+                )}`
             );
         }
         this.parameters.forEach((e) => e.setTypes(scope));
     }
 }
 
-export function expectCall(c: CompilerContext, inline: boolean) {
-    let position = c.lex.position;
+export function expectCall(c: Lexer, inline: boolean) {
+    let position = c.position;
 
-    let funcName = c.lex.readSymbol();
+    let funcName = c.readSymbol();
     if (!funcName || "0123456789".includes(funcName[0]) || RESERVED_WORDS.includes(funcName)) {
-        c.lex.position = position;
+        c.position = position;
         return inline ? expectReference(c) : expectIf(c);
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
-    if (!c.lex.string("(")) {
-        c.lex.position = position;
+    if (!c.string("(")) {
+        c.position = position;
         return inline ? expectReference(c) : expectIf(c);
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     let parameters: Token[] = [];
 
     let firstParam = expectTernary(c) || expectBrackets(c);
     if (firstParam) parameters.push(firstParam);
 
-    while (c.lex.string(",")) {
-        c.lex.readWhitespace();
+    while (c.string(",")) {
+        c.readWhitespace();
         let param = expectTernary(c) || expectBrackets(c);
-        if (!param) throw new Error(`Expected parameter at ${c.lex.lineColumn()}`);
+        if (!param) throw new Error(`Expected parameter at ${c.lineColumn()}`);
         parameters.push(param);
     }
 
-    if (!c.lex.string(")")) {
-        throw new Error(`Expected closing ) after parameter list at ${c.lex.lineColumn(c.lex.position)}`);
+    if (!c.string(")")) {
+        throw new Error(`Expected closing ) after parameter list at ${c.lineColumn(c.position)}`);
     }
 
-    c.lex.readWhitespace();
+    c.readWhitespace();
 
     return new CallToken(c, position, funcName, parameters);
 }

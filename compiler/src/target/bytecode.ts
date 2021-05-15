@@ -15,9 +15,9 @@ import {
     TokenId,
     ValueToken,
 } from "../token";
-import { CompilerContext, Func, Scope, Target, Var } from "../compiler";
+import { Func, Scope, Target, Var } from "../compiler";
 
-const logger = debug("rgb:compiler:emit");
+const logger = debug("rgb:compiler:bytecode");
 
 type VariableLocation = number;
 type FunctionLocation = (writer: CodeWriter) => void | number;
@@ -63,30 +63,6 @@ export class ByteCodeTarget implements Target {
     getProgram() {
         return this.writer.buffer;
     }
-
-    /**
-     * Returns the prealloced variables and their initial value in buffer format
-     */
-    // getInitializedData(scope: Scope) {
-    //     let writer = new BinaryWriter();
-    //     scope.variables.forEach((e) => {
-    //         writer.position = e.location as VariableLocation;
-    //         logger(`${e.name} -> 0x${(e.location as VariableLocation).toString(16)}`);
-    //         let value = 0;
-    //         switch (e.type.size) {
-    //             case 1:
-    //                 writer.write8(value);
-    //                 break;
-    //             case 2:
-    //                 writer.write16(value);
-    //                 break;
-    //             case 4:
-    //                 writer.write32(value);
-    //                 break;
-    //         }
-    //     });
-    //     return writer.buffer;
-    // }
 
     /**
      * Combines data and bytecode into one buffer, returning the entryPoint and buffer
@@ -234,7 +210,7 @@ export class ByteCodeTarget implements Target {
             v.location = this.allocateVariable(token.type);
         }
 
-        if (token.value && token.constantValue === undefined) {
+        if (token.value && (token.constantValue === undefined || v.volatile)) {
             this.compileToken(token.value);
             if (!isRoot) {
                 this.writer.dup();
@@ -481,7 +457,7 @@ export class CodeWriter extends BinaryWriter {
             throw new Error("Number too big");
         } else if (num >= 32768 || num < -32768) {
             this.pushConst32(num);
-        } else if (num >= 128 || num < -128) {
+        } else if (num >= 256 || num < 0) {
             this.pushConst16(num);
         } else {
             this.pushConst8(num);
@@ -600,12 +576,15 @@ export class CodeWriter extends BinaryWriter {
         this.write8(index);
     }
     sin() {
+        logger("sin");
         this.write8(OpCode.Sin);
     }
     cos() {
+        logger("cos");
         this.write8(OpCode.Cos);
     }
     tan() {
+        logger("tan");
         this.write8(OpCode.Tan);
     }
 }

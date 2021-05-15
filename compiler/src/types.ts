@@ -79,16 +79,16 @@ export class FloatType extends Type {
     mod(other: Type): Type {
         return new FloatType();
     }
-    eq(other: Type): Type {
+    eq(other: Type): Type | undefined {
         return new ByteType();
     }
-    neq(other: Type): Type {
+    neq(other: Type): Type | undefined {
         return new ByteType();
     }
-    lt(other: Type): Type {
+    lt(other: Type): Type | undefined {
         return new ByteType();
     }
-    lte(other: Type): Type {
+    lte(other: Type): Type | undefined {
         return new ByteType();
     }
     isAssignableTo(other: Type) {
@@ -129,16 +129,16 @@ export class ByteType extends Type {
         return this.combine(other);
     }
     eq(other: Type): Type | undefined {
-        return this.combine(other);
+        return new ByteType();
     }
     neq(other: Type): Type | undefined {
-        return this.combine(other);
+        return new ByteType();
     }
     lt(other: Type): Type | undefined {
-        return this.combine(other);
+        return new ByteType();
     }
     lte(other: Type): Type | undefined {
-        return this.combine(other);
+        return new ByteType();
     }
     isAssignableTo(other: Type): boolean {
         return true;
@@ -176,16 +176,16 @@ export class IntType extends Type {
         return this.combine(other);
     }
     eq(other: Type): Type | undefined {
-        return this.combine(other);
+        return new ByteType();
     }
     neq(other: Type): Type | undefined {
-        return this.combine(other);
+        return new ByteType();
     }
     lt(other: Type): Type | undefined {
-        return this.combine(other);
+        return new ByteType();
     }
     lte(other: Type): Type | undefined {
-        return this.combine(other);
+        return new ByteType();
     }
     isAssignableTo(other: Type): boolean {
         return true;

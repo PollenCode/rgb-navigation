@@ -1,7 +1,7 @@
 process.env.DEBUG = "rgb:*";
 import debug from "debug";
 import fs from "fs/promises";
-import { ByteType, CompilerContext, IntType, ByteCodeInterpreter, Scope } from "../src";
+import { ByteType, IntType, ByteCodeInterpreter, Scope, Lexer, parseProgram, VoidType, JavascriptTarget } from "../src";
 import { ByteCodeTarget } from "../src/target/bytecode";
 
 const logger = debug("rgb:compiler-test");
@@ -12,12 +12,17 @@ async function compileFile(fileName: string) {
 }
 
 async function compile(input: string) {
-    let context = new CompilerContext();
+    // ByteCodeTarget generates bytecode (bytes that represent a program, which it quick to interpret)
+    // this can later be interpreted by any device, in our case Arduino (see /arduino/interpreter.c)
     let target = new ByteCodeTarget();
-    let scope = new Scope();
+    let jsTarget = new JavascriptTarget();
 
-    target.defineDefaultMacros(scope);
+    // Create the global scope, a scope contains functions and variables
     // Define predefined variables at a fixed location in memory
+    let scope = new Scope();
+    target.defineDefaultMacros(scope);
+    scope.defineVar("LED_COUNT", { type: new IntType(), volatile: false });
+    scope.setVarKnownValue("LED_COUNT", 30);
     scope.defineVar("r", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(0, new ByteType()) });
     scope.defineVar("g", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(1, new ByteType()) });
     scope.defineVar("b", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(2, new ByteType()) });
@@ -25,13 +30,17 @@ async function compile(input: string) {
     scope.defineVar("timer", { type: new IntType(), volatile: true, location: target.allocateVariableAt(8, new IntType()) });
 
     scope.defineFunc("random", { location: target.allocateFunction(0), returnType: new ByteType(), parameterCount: 0 });
+    scope.defineFunc("out", { parameterCount: 1, returnType: new VoidType(), location: target.allocateFunction(1) });
 
     logger("parsing...");
-    context.parse(input);
+    let program = parseProgram(input);
     logger("type checking...");
-    context.typeCheck();
+    program.setTypes(scope);
     logger("compiling...");
-    context.compile(target);
+    target.compile(program);
+    jsTarget.compile(program);
+
+    scope.variables.forEach((e) => logger("%s -> 0x%d", e.name, (e.location as number)?.toString(16)));
 
     let [entryPoint, linked] = target.getLinkedProgram();
 
@@ -57,6 +66,7 @@ async function compile(input: string) {
     inter.callHandlers.set(0, () => {
         inter.push(Math.floor(Math.random() * 256));
     });
+    inter.decompileOnly = true;
     inter.debug = true;
 
     for (let i = 0; i < 1; i++) {
@@ -65,6 +75,7 @@ async function compile(input: string) {
     }
 
     logger("interpret done");
+    logger(jsTarget.code);
 }
 
 compileFile("testing/input.rgb");

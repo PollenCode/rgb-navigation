@@ -8,6 +8,7 @@ export class ByteCodeInterpreter {
     stackPointer: number;
     exePointer: number;
     debug = false;
+    decompileOnly = false;
     callHandlers = new Map<number, (i: ByteCodeInterpreter) => void>();
 
     constructor(memory: Uint8Array, entryPoint: number, memorySize = 2 ** 16) {
@@ -160,22 +161,28 @@ export class ByteCodeInterpreter {
                 if (this.debug) info("jrnz");
                 let rel = this.memory[this.exePointer++];
                 if (this.pop()) {
-                    this.exePointer += rel;
+                    if (!this.decompileOnly) {
+                        this.exePointer += rel;
+                    }
                 }
                 break;
             }
             case OpCode.Jrz: {
-                if (this.debug) info("jrz");
                 let rel = this.memory[this.exePointer++];
+                if (this.debug) info("jrz", rel);
                 if (!this.pop()) {
-                    this.exePointer += rel;
+                    if (!this.decompileOnly) {
+                        this.exePointer += rel;
+                    }
                 }
                 break;
             }
             case OpCode.Jr: {
-                if (this.debug) info("jr");
                 let rel = this.memory[this.exePointer++];
-                this.exePointer += rel;
+                if (this.debug) info("jr", rel);
+                if (!this.decompileOnly) {
+                    this.exePointer += rel;
+                }
                 break;
             }
             case OpCode.Eq: {
@@ -211,9 +218,11 @@ export class ByteCodeInterpreter {
             case OpCode.Call: {
                 let id = this.memory[this.exePointer++];
                 if (this.debug) info("call", id);
-                let handler = this.callHandlers.get(id);
-                if (!handler) throw new Error(`Call function with id ${id} not found at ${this.exePointer - 1}`);
-                handler(this);
+                if (!this.decompileOnly) {
+                    let handler = this.callHandlers.get(id);
+                    if (!handler) throw new Error(`Call function with id ${id} not found at ${this.exePointer - 1}`);
+                    handler(this);
+                }
                 break;
             }
             case OpCode.Sin: {
