@@ -1,10 +1,6 @@
 // CHRISTMAS EFFECT
 
 
-int a;
+int a = 100 - 10 - 10
 
-if a {
-    g = 255
-    r = 255
-    b = 255
-}
+out(a);

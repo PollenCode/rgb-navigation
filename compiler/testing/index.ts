@@ -34,6 +34,7 @@ async function compile(input: string) {
 
     logger("parsing...");
     let program = parseProgram(input);
+    logger(program.toString());
     logger("type checking...");
     program.setTypes(scope);
     logger("compiling...");

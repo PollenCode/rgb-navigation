@@ -455,9 +455,9 @@ export class CodeWriter extends BinaryWriter {
     pushConst(num: number) {
         if (num >= 2147483648 || num < -2147483648) {
             throw new Error("Number too big");
-        } else if (num >= 32768 || num < -32768) {
+        } else if (num >= 65536 || num < 0) {
             this.pushConst32(num);
-        } else if (num >= 256 || num < 0) {
+        } else if (num >= 256) {
             this.pushConst16(num);
         } else {
             this.pushConst8(num);

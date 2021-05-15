@@ -178,7 +178,7 @@ export class MulToken extends Token {
     }
 
     toString() {
-        return `${this.op1} ${this.operator} ${this.op2}`;
+        return `(${this.op1} ${this.operator} ${this.op2})`;
     }
 }
 
@@ -190,25 +190,29 @@ export function expectMul(c: Lexer): Token | undefined {
         return;
     }
 
-    let type: "%" | "/" | "*";
-    if (c.string("*")) {
-        type = "*";
-    } else if (c.string("/")) {
-        type = "/";
-    } else if (c.string("%")) {
-        type = "%";
-    } else {
-        return operand1;
+    while (true) {
+        let type: "%" | "/" | "*";
+        if (c.string("*")) {
+            type = "*";
+        } else if (c.string("/")) {
+            type = "/";
+        } else if (c.string("%")) {
+            type = "%";
+        } else {
+            break;
+        }
+
+        c.readWhitespace();
+
+        let operand2 = expectCall(c, true) || expectBrackets(c);
+        if (!operand2) {
+            throw new Error(`Expected second operand for multiplication at ${c.lineColumn()}`);
+        }
+
+        operand1 = new MulToken(c, position, operand1, operand2, type);
     }
 
-    c.readWhitespace();
-
-    let operand2 = expectMul(c) || expectBrackets(c);
-    if (!operand2) {
-        throw new Error(`Expected second operand for multiplication at ${c.lineColumn()}`);
-    }
-
-    return new MulToken(c, position, operand1, operand2, type);
+    return operand1;
 }
 
 export class SumToken extends Token {
@@ -250,7 +254,7 @@ export class SumToken extends Token {
     }
 
     toString() {
-        return `${this.op1} ${this.operator ? "+" : "-"} ${this.op2}`;
+        return `(${this.op1} ${this.operator} ${this.op2})`;
     }
 
     emit(code: CodeWriter) {}
@@ -264,23 +268,27 @@ export function expectSum(c: Lexer): Token | undefined {
         return;
     }
 
-    let type: "+" | "-";
-    if (c.string("+")) {
-        type = "+";
-    } else if (c.string("-")) {
-        type = "-";
-    } else {
-        return operand1;
+    while (true) {
+        let type: "+" | "-";
+        if (c.string("+")) {
+            type = "+";
+        } else if (c.string("-")) {
+            type = "-";
+        } else {
+            break;
+        }
+
+        c.readWhitespace();
+
+        let operand2 = expectMul(c) || expectBrackets(c);
+        if (!operand2) {
+            throw new Error(`Expected second operand for sum at ${c.lineColumn()}`);
+        }
+
+        operand1 = new SumToken(c, position, operand1, operand2, type);
     }
 
-    c.readWhitespace();
-
-    let operand2 = expectSum(c) || expectBrackets(c);
-    if (!operand2) {
-        throw new Error(`Expected second operand for sum at ${c.lineColumn()}`);
-    }
-
-    return new SumToken(c, position, operand1, operand2, type);
+    return operand1;
 }
 
 export class ReferenceToken extends Token {

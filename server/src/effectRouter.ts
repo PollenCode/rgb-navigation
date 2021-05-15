@@ -3,7 +3,7 @@ import { Router } from "express";
 import debug from "debug";
 import { withUser } from "./middleware";
 import { sendArduino } from "./socketServer";
-import { ByteCodeTarget, ByteType, CompareToken, CompilerContext, IntType, VoidType } from "rgb-compiler";
+import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, VoidType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
 
@@ -14,30 +14,30 @@ const prisma = new PrismaClient();
 let activeEffectId = -1;
 
 function compile(input: string): [Buffer, number] {
-    let context = new CompilerContext();
+    let scope = new Scope();
     let target = new ByteCodeTarget();
 
-    context.defineVariable("r", new ByteType(), true, target.allocateVariableAt(0, new ByteType()));
-    context.defineVariable("g", new ByteType(), true, target.allocateVariableAt(1, new ByteType()));
-    context.defineVariable("b", new ByteType(), true, target.allocateVariableAt(2, new ByteType()));
-    context.defineVariable("index", new IntType(), true, target.allocateVariableAt(4, new IntType()));
-    context.defineVariable("timer", new IntType(), true, target.allocateVariableAt(8, new IntType()));
+    scope.defineVar("r", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(0, new ByteType()) });
+    scope.defineVar("g", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(1, new ByteType()) });
+    scope.defineVar("b", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(2, new ByteType()) });
+    scope.defineVar("index", { type: new IntType(), volatile: true, location: target.allocateVariableAt(4, new IntType()) });
+    scope.defineVar("timer", { type: new IntType(), volatile: true, location: target.allocateVariableAt(8, new IntType()) });
 
-    target.defineDefaultMacros(context);
-    context.defineFunction("random", new ByteType(), 0, target.allocateFunction(1));
-    context.defineFunction("out", new VoidType(), 1, target.allocateFunction(2));
-    context.defineFunction("min", new IntType(), 2, target.allocateFunction(3));
-    context.defineFunction("max", new IntType(), 2, target.allocateFunction(4));
-    context.defineFunction("map", new IntType(), 5, target.allocateFunction(5));
-    context.defineFunction("lerp", new IntType(), 3, target.allocateFunction(6));
-    context.defineFunction("clamp", new IntType(), 3, target.allocateFunction(7));
-    context.defineFunction("hsv", new VoidType(), 3, target.allocateFunction(8));
+    target.defineDefaultMacros(scope);
+    scope.defineFunc("random", { returnType: new ByteType(), parameterCount: 0, location: target.allocateFunction(1) });
+    scope.defineFunc("out", { returnType: new VoidType(), parameterCount: 1, location: target.allocateFunction(2) });
+    scope.defineFunc("min", { returnType: new IntType(), parameterCount: 2, location: target.allocateFunction(3) });
+    scope.defineFunc("max", { returnType: new IntType(), parameterCount: 2, location: target.allocateFunction(4) });
+    scope.defineFunc("map", { returnType: new IntType(), parameterCount: 5, location: target.allocateFunction(5) });
+    scope.defineFunc("lerp", { returnType: new IntType(), parameterCount: 3, location: target.allocateFunction(6) });
+    scope.defineFunc("clamp", { returnType: new IntType(), parameterCount: 3, location: target.allocateFunction(7) });
+    scope.defineFunc("hsv", { returnType: new VoidType(), parameterCount: 3, location: target.allocateFunction(8) });
 
-    context.parse(input);
-    context.typeCheck();
-    context.compile(target);
+    let program = parseProgram(input);
+    program.setTypes(scope);
+    target.compile(program);
 
-    let [entryPoint, buffer] = target.getLinkedProgram(context);
+    let [entryPoint, buffer] = target.getLinkedProgram();
 
     if (isDevelopment) {
         fs.writeFileSync("../arduino/testing/input.hex", buffer);
