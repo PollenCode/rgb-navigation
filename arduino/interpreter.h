@@ -3,14 +3,6 @@
 #include <stdbool.h>
 #include "sintable.h"
 
-#ifdef ARDUINO
-#define INT int
-#else
-#include <stdio.h>
-#define PUTCHAR putchar
-#define INT uint32_t
-#endif
-
 #define EINVOP -2
 #define EOVERFLOW -1
 #define EINVCALL -3

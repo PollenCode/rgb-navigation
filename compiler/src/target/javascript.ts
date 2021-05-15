@@ -20,7 +20,7 @@ export class JavascriptTarget implements Target {
     private header: string[] = ['"use strict";\n'];
 
     get code() {
-        return this.header.join("") + this.buffer.join("");
+        return this.header.join("") + "function run()" + this.buffer.join("");
     }
 
     private compileToken(token: Token) {

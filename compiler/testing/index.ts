@@ -34,14 +34,13 @@ async function compile(input: string) {
 
     logger("parsing...");
     let program = parseProgram(input);
-    logger(program.toString());
     logger("type checking...");
     program.setTypes(scope);
     logger("compiling...");
     target.compile(program);
     jsTarget.compile(program);
 
-    scope.variables.forEach((e) => logger("%s -> 0x%d", e.name, (e.location as number)?.toString(16)));
+    // scope.variables.forEach((e) => logger("%s -> 0x%d", e.name, (e.location as number)?.toString(16)));
 
     let [entryPoint, linked] = target.getLinkedProgram();
 
@@ -51,31 +50,31 @@ async function compile(input: string) {
 
     let str = linked.toString("hex");
     logger("hex output:", str);
-    let parts = [];
-    for (let i = 0; i < str.length; i += 2) {
-        parts.push("0x" + str.substr(i, 2));
-    }
-    logger("c output", parts.join(", "));
+    // let parts = [];
+    // for (let i = 0; i < str.length; i += 2) {
+    //     parts.push("0x" + str.substr(i, 2));
+    // }
+    // logger("c output", parts.join(", "));
 
     let outputFile = await fs.open("../arduino/testing/input.hex", "w");
     outputFile.write(linked);
     await outputFile.close();
 
-    logger("interpreting...");
+    // logger("interpreting...");
 
-    let inter = new ByteCodeInterpreter(linked, entryPoint);
-    inter.callHandlers.set(0, () => {
-        inter.push(Math.floor(Math.random() * 256));
-    });
-    inter.decompileOnly = true;
-    inter.debug = true;
+    // let inter = new ByteCodeInterpreter(linked, entryPoint);
+    // inter.callHandlers.set(0, () => {
+    //     inter.push(Math.floor(Math.random() * 256));
+    // });
+    // inter.decompileOnly = true;
+    // inter.debug = true;
 
-    for (let i = 0; i < 1; i++) {
-        inter.exePointer = entryPoint;
-        while (inter.executeNext()) {}
-    }
+    // for (let i = 0; i < 1; i++) {
+    //     inter.exePointer = entryPoint;
+    //     while (inter.executeNext()) {}
+    // }
 
-    logger("interpret done");
+    // logger("interpret done");
     logger(jsTarget.code);
 }
 

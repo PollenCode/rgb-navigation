@@ -21,8 +21,8 @@ int run()
         case Push:
         {
             unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
-            stackPointer -= sizeof(INT);
-            *(INT *)(mem + stackPointer) = *(INT *)(mem + addr);
+            stackPointer -= 4;
+            *(uint32_t *)(mem + stackPointer) = *(uint32_t *)(mem + addr);
 #ifdef DEBUG
             printf("push %d\n", addr);
 #endif
@@ -31,19 +31,19 @@ int run()
         case Pop:
         {
             unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
-            *(INT *)(mem + addr) = *(INT *)(mem + stackPointer);
+            *(uint32_t *)(mem + addr) = *(uint32_t *)(mem + stackPointer);
 #ifdef DEBUG
             printf("pop %d\n", addr);
 #endif
-            stackPointer += sizeof(INT);
+            stackPointer += 4;
             continue;
         }
         case PushConst8:
         {
             int val = mem[exePointer++];
-            stackPointer -= sizeof(INT);
+            stackPointer -= 4;
             // mem[stackPointer] = val;
-            *(INT *)(mem + stackPointer) = val;
+            *(uint32_t *)(mem + stackPointer) = val;
 #ifdef DEBUG
             printf("pushconst8 %d\n", val);
 #endif
@@ -52,8 +52,8 @@ int run()
         case PushConst16:
         {
             int val = mem[exePointer++] | (mem[exePointer++] << 8);
-            stackPointer -= sizeof(INT);
-            *(INT *)(mem + stackPointer) = val;
+            stackPointer -= 4;
+            *(uint32_t *)(mem + stackPointer) = val;
 #ifdef DEBUG
             printf("pushconst16 %d\n", val);
 #endif
@@ -63,8 +63,8 @@ int run()
         {
             int val = mem[exePointer++] | (mem[exePointer++] << 8) | (mem[exePointer++] << 16) | (mem[exePointer++] << 24);
             exePointer += 4;
-            stackPointer -= sizeof(INT);
-            *(INT *)(mem + stackPointer) = val;
+            stackPointer -= 4;
+            *(uint32_t *)(mem + stackPointer) = val;
 #ifdef DEBUG
             printf("pushconst32 %d\n", val);
 #endif
@@ -72,8 +72,8 @@ int run()
         }
         case Dup:
         {
-            stackPointer -= sizeof(INT);
-            *(INT *)(mem + stackPointer) = *(INT *)(mem + stackPointer + sizeof(INT));
+            stackPointer -= 4;
+            *(uint32_t *)(mem + stackPointer) = *(uint32_t *)(mem + stackPointer + 4);
 #ifdef DEBUG
             printf("dup\n");
 #endif
@@ -81,9 +81,9 @@ int run()
         }
         case Swap:
         {
-            INT temp = *(INT *)(mem + stackPointer + sizeof(INT));
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer);
-            *(INT *)(mem + stackPointer) = temp;
+            uint32_t temp = *(uint32_t *)(mem + stackPointer + 4);
+            *(uint32_t *)(mem + stackPointer + 4) = *(uint32_t *)(mem + stackPointer);
+            *(uint32_t *)(mem + stackPointer) = temp;
 #ifdef DEBUG
             printf("swap\n");
 #endif
@@ -96,25 +96,27 @@ int run()
 #ifdef DEBUG
             printf("pop8 %d\n", addr);
 #endif
-            stackPointer += sizeof(INT);
+            stackPointer += 4;
             continue;
         }
         case Push8:
         {
             unsigned short addr = mem[exePointer++] | (mem[exePointer++] << 8);
-            stackPointer -= sizeof(INT);
-            *(INT *)(mem + stackPointer) = mem[addr];
+            stackPointer -= 4;
+            *(uint32_t *)(mem + stackPointer) = mem[addr];
 #ifdef DEBUG
             printf("push8 %d\n", addr);
 #endif
             continue;
         }
         case Consume:
-            stackPointer += sizeof(INT);
+        {
+            stackPointer += 4;
 #ifdef DEBUG
             printf("consume\n");
 #endif
             continue;
+        }
         case 0x0B:
         case 0x0C:
         case 0x0D:
@@ -122,55 +124,78 @@ int run()
             return EINVOP;
 
         case Halt:
+        {
 #ifdef DEBUG
             printf("halt (stackPointer at %x)\n", stackPointer);
 #endif
             return 0;
+        }
         case Add:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) + *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) += val;
 #ifdef DEBUG
             printf("add\n");
 #endif
             continue;
+        }
         case Sub:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) - *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) -= val;
 #ifdef DEBUG
             printf("sub\n");
 #endif
             continue;
+        }
         case Mul:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) * *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) *= val;
 #ifdef DEBUG
             printf("mul\n");
 #endif
             continue;
+        }
         case Div:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) / *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) /= val;
 #ifdef DEBUG
             printf("div\n");
 #endif
             continue;
+        }
         case Mod:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) % *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) %= val;
 #ifdef DEBUG
             printf("mod\n");
 #endif
             continue;
+        }
         case Inv:
-            *(INT *)(mem + stackPointer) = -(*(INT *)(mem + stackPointer));
+        {
+
+            *(uint32_t *)(mem + stackPointer) = -(*(uint32_t *)(mem + stackPointer));
 #ifdef DEBUG
             printf("inv\n");
 #endif
             continue;
+        }
         case Abs:
         {
-            INT val = *(INT *)(mem + stackPointer);
-            *(INT *)(mem + stackPointer) = val < 0 ? -val : val;
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            *(uint32_t *)(mem + stackPointer) = val < 0 ? -val : val;
 #ifdef DEBUG
             printf("abs\n");
 #endif
@@ -179,7 +204,7 @@ int run()
         case Add8:
         {
             char val = mem[exePointer++];
-            *(INT *)(mem + stackPointer) += val;
+            *(uint32_t *)(mem + stackPointer) += val;
 #ifdef DEBUG
             printf("add8 %d\n", val);
 #endif
@@ -201,11 +226,11 @@ int run()
 #ifdef DEBUG
             printf("jrnz %d\n", rel);
 #endif
-            if (*(INT *)(mem + stackPointer))
+            if (*(uint32_t *)(mem + stackPointer))
             {
                 exePointer += rel;
             }
-            stackPointer += sizeof(INT);
+            stackPointer += 4;
             continue;
         }
 
@@ -215,11 +240,11 @@ int run()
 #ifdef DEBUG
             printf("jrz %d\n", rel);
 #endif
-            if (!*(INT *)(mem + stackPointer))
+            if (!*(uint32_t *)(mem + stackPointer))
             {
                 exePointer += rel;
             }
-            stackPointer += sizeof(INT);
+            stackPointer += 4;
             continue;
         }
         case Jr:
@@ -231,7 +256,6 @@ int run()
             exePointer += rel;
             continue;
         }
-
         case Call:
         {
             unsigned char id = mem[exePointer++];
@@ -258,47 +282,65 @@ int run()
             return EINVOP;
 
         case Eq:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) == *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) = *(uint32_t *)(mem + stackPointer) == val;
 #ifdef DEBUG
             printf("eq\n");
 #endif
             continue;
+        }
         case Neq:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) != *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) = *(uint32_t *)(mem + stackPointer) != val;
 #ifdef DEBUG
             printf("neq\n");
 #endif
             continue;
+        }
         case Lt:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) < *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) = *(uint32_t *)(mem + stackPointer) < val;
 #ifdef DEBUG
             printf("lt\n");
 #endif
             continue;
+        }
         case Bt:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) > *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) = *(uint32_t *)(mem + stackPointer) > val;
 #ifdef DEBUG
             printf("bt\n");
 #endif
             continue;
+        }
         case Lte:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) <= *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) = *(uint32_t *)(mem + stackPointer) <= val;
 #ifdef DEBUG
             printf("lte\n");
 #endif
             continue;
+        }
         case Bte:
-            *(INT *)(mem + stackPointer + sizeof(INT)) = *(INT *)(mem + stackPointer + sizeof(INT)) >= *(INT *)(mem + stackPointer);
-            stackPointer += sizeof(INT);
+        {
+            uint32_t val = *(uint32_t *)(mem + stackPointer);
+            stackPointer += 4;
+            *(uint32_t *)(mem + stackPointer) = *(uint32_t *)(mem + stackPointer) >= val;
 #ifdef DEBUG
             printf("bte\n");
 #endif
             continue;
+        }
 
         case 0x36:
         case 0x37:
@@ -313,13 +355,17 @@ int run()
             return EINVOP;
 
         case Sin:
-            // *(INT *)(mem + stackPointer) = sin(*(INT *)(mem + stackPointer) / 1000.0f) * 1000;
-            *(INT *)(mem + stackPointer) = fastSin(mem[stackPointer]);
+        {
+            // *(uint32_t *)(mem + stackPointer) = sin(*(uint32_t *)(mem + stackPointer) / 1000.0f) * 1000;
+            *(uint32_t *)(mem + stackPointer) = fastSin(mem[stackPointer]);
             continue;
+        }
         case Cos:
-            // *(INT *)(mem + stackPointer) = cos(*(INT *)(mem + stackPointer) / 1000.0f) * 1000;
-            *(INT *)(mem + stackPointer) = fastCos(mem[stackPointer]);
+        {
+            // *(uint32_t *)(mem + stackPointer) = cos(*(uint32_t *)(mem + stackPointer) / 1000.0f) * 1000;
+            *(uint32_t *)(mem + stackPointer) = fastCos(mem[stackPointer]);
             continue;
+        }
 
         default:
 #ifdef DEBUG

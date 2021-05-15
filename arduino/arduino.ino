@@ -52,81 +52,81 @@ bool functionHandler(uint8_t id)
     case 1:
     {
         // byte random()
-        stackPointer -= sizeof(INT);
-        *(INT *)(mem + stackPointer) = (INT)random(256);
+        stackPointer -= 4;
+        *(uint32_t *)(mem + stackPointer) = (uint32_t)random(256);
         break;
     }
     case 2:
     {
         // int out(int)
         // Return value is passed value
-        Serial.println(*(INT *)(mem + stackPointer));
+        Serial.println(*(uint32_t *)(mem + stackPointer));
         break;
     }
     case 3:
     {
         // int min(int, int)
-        INT op1 = *(INT *)(mem + stackPointer);
-        stackPointer += sizeof(INT);
-        INT op2 = *(INT *)(mem + stackPointer);
-        *(INT *)(mem + stackPointer) = op1 > op2 ? op2 : op1;
+        uint32_t op1 = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t op2 = *(uint32_t *)(mem + stackPointer);
+        *(uint32_t *)(mem + stackPointer) = op1 > op2 ? op2 : op1;
         break;
     }
     case 4:
     {
         // int max(int, int)
-        INT op1 = *(INT *)(mem + stackPointer);
-        stackPointer += sizeof(INT);
-        INT op2 = *(INT *)(mem + stackPointer);
-        *(INT *)(mem + stackPointer) = op1 < op2 ? op2 : op1;
+        uint32_t op1 = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t op2 = *(uint32_t *)(mem + stackPointer);
+        *(uint32_t *)(mem + stackPointer) = op1 < op2 ? op2 : op1;
         break;
     }
     case 5:
     {
         // int map(int value, int fromLow, int fromHigh, int toLow, int toHigh)
         // Does the same as https://www.arduino.cc/reference/en/language/functions/math/map/
-        INT toLow = *(INT *)(mem + stackPointer);
-        stackPointer += sizeof(INT);
-        INT toHigh = *(INT *)(mem + stackPointer);
-        stackPointer += sizeof(INT);
-        INT fromHigh = *(INT *)(mem + stackPointer);
-        stackPointer += sizeof(INT);
-        INT fromLow = *(INT *)(mem + stackPointer);
-        stackPointer += sizeof(INT);
-        INT value = *(INT *)(mem + stackPointer);
-        *(INT *)(mem + stackPointer) = map(value, fromLow, fromHigh, toLow, toHigh);
+        uint32_t toLow = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t toHigh = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t fromHigh = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t fromLow = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t value = *(uint32_t *)(mem + stackPointer);
+        *(uint32_t *)(mem + stackPointer) = map(value, fromLow, fromHigh, toLow, toHigh);
         break;
     }
     case 6:
     {
         // int lerp(int from, int to, int percentage)
-        INT percentage = *(INT *)(mem + stackPointer);
-        stackPointer += sizeof(INT);
-        INT to = *(INT *)(mem + stackPointer);
-        stackPointer += sizeof(INT);
-        INT from = *(INT *)(mem + stackPointer);
-        *(INT *)(mem + stackPointer) = from + (percentage / 256.0f) * (to - from);
+        uint32_t percentage = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t to = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t from = *(uint32_t *)(mem + stackPointer);
+        *(uint32_t *)(mem + stackPointer) = from + (percentage / 256.0f) * (to - from);
         break;
     }
     case 7:
     {
         // int clamp(int value, int min, int max)
-        INT max = *(INT *)(mem + stackPointer);
-        stackPointer += sizeof(INT);
-        INT min = *(INT *)(mem + stackPointer);
-        stackPointer += sizeof(INT);
-        INT value = *(INT *)(mem + stackPointer);
+        uint32_t max = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t min = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t value = *(uint32_t *)(mem + stackPointer);
         if (value > max)
         {
-            *(INT *)(mem + stackPointer) = max;
+            *(uint32_t *)(mem + stackPointer) = max;
         }
         else if (value < min)
         {
-            *(INT *)(mem + stackPointer) = min;
+            *(uint32_t *)(mem + stackPointer) = min;
         }
         else
         {
-            *(INT *)(mem + stackPointer) = value;
+            *(uint32_t *)(mem + stackPointer) = value;
         }
         break;
     }
@@ -134,12 +134,12 @@ bool functionHandler(uint8_t id)
     {
         // void hsv(int h, int s, int v)
         // Sets the r, g and b variables using hsv
-        INT v = mem[stackPointer];
-        stackPointer += sizeof(INT);
-        INT s = mem[stackPointer];
-        stackPointer += sizeof(INT);
-        INT h = mem[stackPointer];
-        stackPointer += sizeof(INT);
+        uint32_t v = mem[stackPointer];
+        stackPointer += 4;
+        uint32_t s = mem[stackPointer];
+        stackPointer += 4;
+        uint32_t h = mem[stackPointer];
+        stackPointer += 4;
         const CHSV hsv(h, s, v);
         // Places rgb in 0,1,2 of mem
         hsv2rgb_rainbow(hsv, *(CRGB *)mem);
@@ -445,15 +445,15 @@ void loop()
 
     if (true)
     {
-        *(INT *)(mem + 8) = (int)time;
+        *(uint32_t *)(mem + 8) = (int)time;
         int res;
         for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
         {
-            *(INT *)(mem + 4) = i;
+            *(uint32_t *)(mem + 4) = i;
             mem[0] = leds[i].r;
             mem[1] = leds[i].g;
             mem[2] = leds[i].b;
-            // *(INT *)(mem + 0) = 0; //leds[i]
+            // *(uint32_t *)(mem + 0) = 0; //leds[i]
             stackPointer = MAX_PROGRAM_SIZE;
             exePointer = entryPoint;
             res = run();
@@ -479,7 +479,7 @@ void loop()
         Serial.print("executed: ");
         Serial.println(executed);
         // Serial.print("a: ");
-        // Serial.println(*(INT *)(mem + 0xc));
+        // Serial.println(*(uint32_t *)(mem + 0xc));
         // Serial.print((int32_t)(executed & 0xFFFFFFFF));
         // Serial.println((int32_t)(executed >> 32) & 0xFFFFFFFF);
         lastShown = time;
