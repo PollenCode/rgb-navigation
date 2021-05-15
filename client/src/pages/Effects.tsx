@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { HTMLProps, useContext, useEffect, useRef, useState } from "react";
 import { Prompt, RouteComponentProps, useHistory } from "react-router";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
@@ -13,6 +13,7 @@ import {
     faEye,
     faMagic,
     faPen,
+    faPlus,
     faSave,
     faTimes,
     faTrash,
@@ -83,7 +84,7 @@ function EffectListItem(props: { effect: Effect; onClick?: () => Promise<void> }
             <span className={`font-semibold py-2 pl-3.5 ${props.effect.lastError ? "text-red-600" : props.effect.active ? "text-blue-600" : ""}`}>
                 {props.effect.name}
             </span>
-            {props.effect.author && (
+            {props.effect.author && props.effect.author.id !== client.user?.id && (
                 <span className="ml-1.5 text-sm text-gray-400 py-2" title={props.effect.author.email}>
                     (door {props.effect.author.name})
                 </span>
@@ -126,14 +127,26 @@ b = 0
 
 `;
 
+function EffectsTab(props: HTMLProps<HTMLDivElement> & { active?: boolean }) {
+    return (
+        <div
+            className={`py-2 px-4 bg-gray-100 font-bold text-sm mr-2 last:mr-0 flex-grow rounded-lg text-center transitio cursor-pointer ${
+                props.active ? "bg-blue-600 text-white" : "hover:bg-blue-100"
+            }`}
+            {...props}
+        />
+    );
+}
+
 export function Effects() {
     const client = useContext(AuthContext);
     const [effects, setEffects] = useState<Effect[] | undefined>();
+    const [onlyUser, setOnlyUser] = useState(false);
     const history = useHistory();
 
     useEffect(() => {
-        client.getEffects().then(setEffects);
-    }, []);
+        client.getEffects(false, onlyUser).then(setEffects);
+    }, [onlyUser]);
 
     if (!effects) {
         return null;
@@ -142,7 +155,16 @@ export function Effects() {
     return (
         <div className="flex justify-center px-1 md:px-4 pt-4">
             <div style={{ width: "800px" }}>
+                <div className="flex mb-5 mt-2 justify-center">
+                    <EffectsTab active={!onlyUser} onClick={() => setOnlyUser(false)}>
+                        Alle effecten
+                    </EffectsTab>
+                    <EffectsTab active={onlyUser} onClick={() => setOnlyUser(true)}>
+                        Mijn effecten
+                    </EffectsTab>
+                </div>
                 <Button
+                    icon={faPlus}
                     onClick={async () => {
                         let name = prompt("Geef je nieuwe effect een naam");
                         if (!name) return;
@@ -172,6 +194,9 @@ export function Effects() {
                             }}
                         />
                     ))}
+                    {effects.length === 0 && (
+                        <p className="text-gray-500 px-4 py-3">{onlyUser ? "Je hebt nog geen effecten" : "Er zijn nog geen effecten"}</p>
+                    )}
                 </List>
             </div>
         </div>

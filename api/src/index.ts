@@ -2,6 +2,7 @@ import { throws } from "assert/strict";
 import io from "socket.io-client";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { LedControllerServerMessage } from "./message";
+import qs from "querystring";
 
 export const isDevelopment = process.env.NODE_ENV === "development";
 export const serverPath = isDevelopment ? "http://localhost:3001" : "https://rgb.ikdoeict.be";
@@ -99,8 +100,8 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/leds", "POST", req);
     }
 
-    public async getEffects(code: boolean = false) {
-        return await this.doFetch("/api/effect" + (code ? "?code=true" : ""), "GET");
+    public async getEffects(code: boolean = false, onlyUser: boolean = false) {
+        return await this.doFetch("/api/effect?" + qs.stringify({ code, onlyUser }), "GET");
     }
 
     public async getEffect(id: number) {
