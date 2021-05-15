@@ -7,6 +7,8 @@ import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, V
 import { isDevelopment } from "./helpers";
 import fs from "fs";
 
+const MAX_EFFECT_PER_USER = 10;
+
 const logger = debug("rgb:effects");
 const router = Router();
 const prisma = new PrismaClient();
@@ -174,7 +176,15 @@ router.post("/effect", withUser(false), async (req, res, next) => {
     });
 
     if (existing) {
-        return res.status(400).end("effect with name already exists");
+        return res.status(400).json({ status: "error", error: "Effect with set name already exists." });
+    }
+
+    let userEffectCount = await prisma.effect.count({ where: { authorId: req.user.id } });
+    if (!req.user.admin && userEffectCount > MAX_EFFECT_PER_USER) {
+        return res.status(400).json({
+            status: "error",
+            error: `Reached effect count limit, a max of ${MAX_EFFECT_PER_USER} effects per user is allowed. Please delete some effects to create new ones.`,
+        });
     }
 
     let effect = await prisma.effect.create({
@@ -201,7 +211,10 @@ router.post("/effect", withUser(false), async (req, res, next) => {
         },
     });
 
-    res.json(effect);
+    res.json({
+        status: "ok",
+        effect,
+    });
 });
 
 router.patch("/effect", withUser(false), async (req, res, next) => {
@@ -281,13 +294,5 @@ router.get("/effect/:id", withUser(false), async (req, res, next) => {
 
     res.json(effect);
 });
-
-// router.post("/effect/build/:id", async (req, res, next) => {
-//     const id = parseInt(req.params.id);
-//     if (isNaN(id)) {
-//         return res.status(400).end();
-//     }
-//     res.end();
-// });
 
 export default router;

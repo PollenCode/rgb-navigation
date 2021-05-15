@@ -15,6 +15,19 @@ export interface User {
     admin: boolean;
 }
 
+export interface Effect {
+    name: string;
+    code: string;
+    id: number;
+    active?: boolean;
+    lastError: string | null;
+    author?: {
+        id: string;
+        name: string;
+        email: string;
+    };
+}
+
 interface Events {
     auth: (auth: User | undefined, accessToken: string | undefined) => void;
 }
@@ -112,7 +125,10 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect/" + id, "DELETE");
     }
 
-    public async createEffect(effect: { name: string; code: string }) {
+    public async createEffect(effect: {
+        name: string;
+        code: string;
+    }): Promise<{ status: "ok"; effect: Effect } | { status: "error"; error: string }> {
         return await this.doFetch("/api/effect", "POST", effect);
     }
 

@@ -20,22 +20,9 @@ import {
     faUpload,
     IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
-import { LedControllerMessage } from "rgb-navigation-api";
+import { Effect, LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
-
-export interface Effect {
-    name: string;
-    code: string;
-    id: number;
-    active?: boolean;
-    lastError: string | null;
-    author?: {
-        id: string;
-        name: string;
-        email: string;
-    };
-}
 
 function EffectListItemButton(props: {
     icon?: IconDefinition;
@@ -169,8 +156,12 @@ export function Effects() {
                         let name = prompt("Geef je nieuwe effect een naam");
                         if (!name) return;
                         let newEffect = await client.createEffect({ code: DEFAULT_CODE, name: name });
-                        setEffects([...effects, newEffect]);
-                        history.push(`/admin/effects/${newEffect.id}`);
+                        if (newEffect.status === "ok") {
+                            setEffects([...effects, newEffect.effect]);
+                            history.push(`/admin/effects/${newEffect.effect.id}`);
+                        } else {
+                            alert(`Kon geen nieuw effect aanmaken:\n${newEffect.error}`);
+                        }
                     }}>
                     Nieuw effect maken
                 </Button>

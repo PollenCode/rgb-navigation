@@ -19,10 +19,9 @@ import {
     faUpload,
     IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
-import { LedControllerMessage } from "rgb-navigation-api";
+import { Effect, LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
-import { Effect } from "./Effects";
 
 export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     const client = useContext(AuthContext);
