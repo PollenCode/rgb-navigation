@@ -31,11 +31,11 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<{ percent: number; status: string }>({ percent: 0, status: "" });
     const [showOutput, setShowOutput] = useState(false);
+    const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor>();
     const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
     const history = useHistory();
     const outputRef = useRef<HTMLPreElement>(null);
     const monaco = useMonaco();
-    const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>();
 
     function clearOutput() {
         if (outputRef.current) {
@@ -81,64 +81,10 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     }, [effect]);
 
     useEffect(() => {
-        if (editorRef.current && monaco && code) {
-            let errors = [] as monaco.editor.IMarkerData[];
-            try {
-                let program = parseProgram(code);
-                let scope = new Scope();
-                scope.defineVar("timer", { type: new IntType(), volatile: true });
-                scope.defineVar("index", { type: new IntType(), volatile: true });
-                scope.defineVar("r", { type: new ByteType(), volatile: true });
-                scope.defineVar("g", { type: new ByteType(), volatile: true });
-                scope.defineVar("b", { type: new ByteType(), volatile: true });
-                scope.defineFunc("random", { returnType: new ByteType(), parameterCount: 0 });
-                scope.defineFunc("out", { returnType: new VoidType(), parameterCount: 1 });
-                scope.defineFunc("min", { returnType: new IntType(), parameterCount: 2 });
-                scope.defineFunc("max", { returnType: new IntType(), parameterCount: 2 });
-                scope.defineFunc("map", { returnType: new IntType(), parameterCount: 5 });
-                scope.defineFunc("lerp", { returnType: new IntType(), parameterCount: 3 });
-                scope.defineFunc("clamp", { returnType: new IntType(), parameterCount: 3 });
-                scope.defineFunc("hsv", { returnType: new VoidType(), parameterCount: 3 });
-                program.setTypes(scope);
-                errors = [];
-            } catch (exx) {
-                console.log(String(exx));
-                if (exx.name === "SyntaxError") {
-                    let ex = exx as SyntaxError;
-                    let [startLine, startColumn] = ex.lexer.lineColumn(ex.startPosition);
-                    let [endLine, endColumn] = ex.endPosition ? ex.lexer.lineColumn(ex.endPosition) : [startLine, 1000];
-                    errors = [
-                        {
-                            severity: monaco.MarkerSeverity.Error,
-                            message: ex.message,
-                            startLineNumber: startLine,
-                            startColumn: startColumn,
-                            endColumn: endColumn,
-                            endLineNumber: endLine,
-                        },
-                    ];
-                } else if (exx.name === "TypeError") {
-                    let ex = exx as TypeError;
-                    let [startLine, startColumn] = ex.token.context.lineColumn(ex.token.startPosition);
-                    let [endLine, endColumn] = ex.token.context.lineColumn(ex.token.endPosition);
-                    errors = [
-                        {
-                            severity: monaco.MarkerSeverity.Error,
-                            message: ex.message,
-                            startLineNumber: startLine,
-                            startColumn: startColumn,
-                            endColumn: endColumn,
-                            endLineNumber: endLine,
-                        },
-                    ];
-                } else {
-                    console.error(exx);
-                    errors = [];
-                }
-            }
-            monaco.editor.setModelMarkers(editorRef.current.getModel()!, "rgb-lang", errors);
+        if (editor && monaco && code) {
+            setModelMarkers(monaco, code, editor.getModel()!);
         }
-    }, [code]);
+    }, [code, monaco, editor]);
 
     if (!effect) {
         return null;
@@ -237,7 +183,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
             <div className="h-full relative fade-in">
                 <Editor
                     onMount={(editor) => {
-                        editorRef.current = editor;
+                        setEditor(editor);
                     }}
                     options={{
                         minimap: {
@@ -270,6 +216,67 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     );
 }
 
+function setModelMarkers(monaco: Monaco, code: string, model: monaco.editor.ITextModel) {
+    let errors = [] as monaco.editor.IMarkerData[];
+    try {
+        let program = parseProgram(code);
+        let scope = new Scope();
+        scope.defineVar("timer", { type: new IntType(), volatile: true });
+        scope.defineVar("index", { type: new IntType(), volatile: true });
+        scope.defineVar("r", { type: new ByteType(), volatile: true });
+        scope.defineVar("g", { type: new ByteType(), volatile: true });
+        scope.defineVar("b", { type: new ByteType(), volatile: true });
+        scope.defineFunc("sin", { returnType: new IntType(), parameterCount: 1 });
+        scope.defineFunc("cos", { returnType: new IntType(), parameterCount: 1 });
+        scope.defineFunc("abs", { returnType: new IntType(), parameterCount: 1 });
+        scope.defineFunc("random", { returnType: new ByteType(), parameterCount: 0 });
+        scope.defineFunc("out", { returnType: new VoidType(), parameterCount: 1 });
+        scope.defineFunc("min", { returnType: new IntType(), parameterCount: 2 });
+        scope.defineFunc("max", { returnType: new IntType(), parameterCount: 2 });
+        scope.defineFunc("map", { returnType: new IntType(), parameterCount: 5 });
+        scope.defineFunc("lerp", { returnType: new IntType(), parameterCount: 3 });
+        scope.defineFunc("clamp", { returnType: new IntType(), parameterCount: 3 });
+        scope.defineFunc("hsv", { returnType: new VoidType(), parameterCount: 3 });
+        program.setTypes(scope);
+        errors = [];
+    } catch (exx) {
+        console.log(String(exx));
+        if (exx.name === "SyntaxError") {
+            let ex = exx as SyntaxError;
+            let [startLine, startColumn] = ex.lexer.lineColumn(ex.startPosition);
+            let [endLine, endColumn] = ex.endPosition ? ex.lexer.lineColumn(ex.endPosition) : [startLine, 1000];
+            errors = [
+                {
+                    severity: monaco.MarkerSeverity.Error,
+                    message: ex.message,
+                    startLineNumber: startLine,
+                    startColumn: startColumn,
+                    endColumn: endColumn,
+                    endLineNumber: endLine,
+                },
+            ];
+        } else if (exx.name === "TypeError") {
+            let ex = exx as TypeError;
+            let [startLine, startColumn] = ex.token.context.lineColumn(ex.token.startPosition);
+            let [endLine, endColumn] = ex.token.context.lineColumn(ex.token.endPosition);
+            errors = [
+                {
+                    severity: monaco.MarkerSeverity.Error,
+                    message: ex.message,
+                    startLineNumber: startLine,
+                    startColumn: startColumn,
+                    endColumn: endColumn,
+                    endLineNumber: endLine,
+                },
+            ];
+        } else {
+            console.error(exx);
+            errors = [];
+        }
+    }
+    monaco.editor.setModelMarkers(model, "rgb-lang", errors);
+}
+
 function getInfoForFunction(functionName: string): monaco.languages.SignatureInformation[] {
     switch (functionName) {
         case "sin":
@@ -277,7 +284,7 @@ function getInfoForFunction(functionName: string): monaco.languages.SignatureInf
                 {
                     label: "int sin(int value)",
                     documentation: "Calculates sine of a value",
-                    parameters: [{ label: "int value, 0 is mapped to 0pi and 256 is mapped to 2pi" }],
+                    parameters: [{ label: "int value", documentation: "0 is mapped to 0pi and 256 is mapped to 2pi" }],
                 },
             ];
         case "cos":
@@ -285,7 +292,15 @@ function getInfoForFunction(functionName: string): monaco.languages.SignatureInf
                 {
                     label: "int cos(int value)",
                     documentation: "Calculates cosine of a value",
-                    parameters: [{ label: "int value, 0 is mapped to 0pi and 256 is mapped to 2pi" }],
+                    parameters: [{ label: "int value", documentation: "0 is mapped to 0pi and 256 is mapped to 2pi" }],
+                },
+            ];
+        case "abs":
+            return [
+                {
+                    label: "int abs(int value)",
+                    documentation: "Calculates the absolute value of value",
+                    parameters: [{ label: "int value" }],
                 },
             ];
         case "hsv":
@@ -366,8 +381,9 @@ function getInfoForFunction(functionName: string): monaco.languages.SignatureInf
 function getFunctions(): { name: string; documentation?: string }[] {
     return [
         // Macros
-        { name: "sin", documentation: "Calculates sine of a value" },
-        { name: "cos", documentation: "Calculates cosine of a value" },
+        { name: "sin", documentation: "Calculates sine" },
+        { name: "cos", documentation: "Calculates cosine" },
+        { name: "abs", documentation: "Calculates absolute value" },
 
         // Functions
         { name: "out", documentation: "Prints a value to the console and returns it" },
