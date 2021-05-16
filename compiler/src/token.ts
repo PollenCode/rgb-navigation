@@ -2,6 +2,7 @@ import { Func, Scope, Var } from "./compiler";
 import { Lexer } from "./lexer";
 import { CodeWriter } from "./target/bytecode";
 import { Type, VoidType, IntType, FloatType, ByteType } from "./types";
+import { SyntaxError, TypeError } from "./error";
 import debug from "debug";
 
 const info = debug("rgb:compiler");
@@ -27,13 +28,15 @@ export enum TokenId {
 export abstract class Token {
     readonly id: TokenId;
     readonly context: Lexer;
-    readonly position: number;
+    readonly startPosition: number;
+    readonly endPosition: number;
     type!: Type;
     constantValue?: number;
 
-    constructor(id: TokenId, context: Lexer, position: number) {
-        this.context = context;
-        this.position = position;
+    constructor(id: TokenId, lexer: Lexer, startPosition: number, endPosition: number = lexer.position) {
+        this.context = lexer;
+        this.startPosition = startPosition;
+        this.endPosition = endPosition;
         this.id = id;
     }
 
@@ -50,13 +53,13 @@ function expectBrackets(c: Lexer): Token | undefined {
 
     let op = expectTernary(c) || expectBrackets(c);
     if (!op) {
-        throw new Error(`Expected something after ( at ${c.lineColumn(c.position)}`);
+        throw new SyntaxError(`Expected something after (`, c, c.position, c.position + 1);
     }
 
     c.readWhitespace();
 
     if (!c.string(")")) {
-        throw new Error(`Expected closing ) at ${c.lineColumn(c.position)}`);
+        throw new SyntaxError(`Expected closing )`, c, c.position, c.position + 1);
     }
 
     c.readWhitespace();
@@ -83,7 +86,7 @@ export class TernaryToken extends Token {
         } else if (this.falseOp.type.isAssignableTo(this.trueOp.type)) {
             this.type = this.trueOp.type;
         } else {
-            throw new Error("Cannot use ternary with 2 unrelated types");
+            throw new TypeError("Cannot use ternary with 2 unrelated types", this);
         }
 
         if (this.condition.constantValue !== undefined) {
@@ -112,18 +115,18 @@ function expectTernary(c: Lexer): Token | undefined {
 
     let trueOp = expectTernary(c) || expectBrackets(c);
     if (!trueOp) {
-        throw new Error(`Expected something after ?, at ${c.lineColumn(position)}`);
+        throw new SyntaxError(`Expected something after ?`, c);
     }
 
     if (!c.string(":")) {
-        throw new Error(`Expected : after ?, at ${c.lineColumn(position)}`);
+        throw new SyntaxError(`Expected : after ?`, c);
     }
 
     c.readWhitespace();
 
     let falseOp = expectTernary(c) || expectBrackets(c);
     if (!falseOp) {
-        throw new Error(`Expected something after :, at ${c.lineColumn(position)}`);
+        throw new SyntaxError(`Expected something after :`, c);
     }
 
     c.readWhitespace();
@@ -171,9 +174,7 @@ export class MulToken extends Token {
         }
 
         if (!this.type) {
-            throw new Error(
-                `Cannot modulus/multiply/divide ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lineColumn(this.position)}`
-            );
+            throw new TypeError(`Cannot modulus/multiply/divide ${this.op1.type.name} and ${this.op2.type.name}`, this);
         }
     }
 
@@ -206,7 +207,7 @@ export function expectMul(c: Lexer): Token | undefined {
 
         let operand2 = expectCall(c, true) || expectBrackets(c);
         if (!operand2) {
-            throw new Error(`Expected second operand for multiplication at ${c.lineColumn()}`);
+            throw new SyntaxError(`Expected second operand for multiplication`, c);
         }
 
         operand1 = new MulToken(c, position, operand1, operand2, type);
@@ -249,15 +250,13 @@ export class SumToken extends Token {
         }
 
         if (!this.type) {
-            throw new Error(`Cannot add/substract ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lineColumn(this.position)}`);
+            throw new TypeError(`Cannot add/substract ${this.op1.type.name} and ${this.op2.type.name}`, this);
         }
     }
 
     toString() {
         return `(${this.op1} ${this.operator} ${this.op2})`;
     }
-
-    emit(code: CodeWriter) {}
 }
 
 export function expectSum(c: Lexer): Token | undefined {
@@ -282,7 +281,7 @@ export function expectSum(c: Lexer): Token | undefined {
 
         let operand2 = expectMul(c) || expectBrackets(c);
         if (!operand2) {
-            throw new Error(`Expected second operand for sum at ${c.lineColumn()}`);
+            throw new SyntaxError(`Expected second operand for sum`, c);
         }
 
         operand1 = new SumToken(c, position, operand1, operand2, type);
@@ -300,7 +299,7 @@ export class ReferenceToken extends Token {
 
     setTypes(scope: Scope): void {
         this.variable = scope.getVar(this.varName)!;
-        if (!this.variable) throw new Error(`Unknown var '${this.varName}' at ${this.context.lineColumn(this.position)}`);
+        if (!this.variable) throw new TypeError(`Unknown variable '${this.varName}'`, this);
         this.type = this.variable.type;
         if (!this.variable.volatile) this.constantValue = scope.getVarKnownValue(this.varName);
     }
@@ -331,7 +330,7 @@ export class ValueToken extends Token {
     setTypes(): void {
         let val = parseInt(this.value);
         if (val > 2147483647 || val < -2147483648) {
-            throw new Error(`Integer too large at ${this.context.lineColumn(this.position)}`);
+            throw new TypeError(`Integer too large`, this);
         } else if (val > 255 || val < 0) {
             this.type = new IntType();
             this.constantValue = this.noInlining ? undefined : val;
@@ -386,28 +385,20 @@ export class AssignmentToken extends Token {
                 //     type = new FloatType();
                 //     break;
                 default:
-                    throw new Error(`Unknown variable type ${this.typeName} at ${this.context.lineColumn(this.position)}`);
+                    throw new TypeError(`Unknown variable type ${this.typeName}`, this);
             }
 
             if (scope.hasVar(this.varName)) {
-                throw new Error(
-                    `Variable ${this.varName} has already been declared, second declaration is at ${this.context.lineColumn(this.position)}`
-                );
+                throw new TypeError(`Variable ${this.varName} has already been declared before`, this);
             }
             this.variable = scope.defineVar(this.varName, { type: this.type, volatile: false })!;
 
             if (this.value) {
                 if (this.value.type.size > this.type.size) {
-                    warning(
-                        `Possible data loss when assigning type ${this.value.type.name} to ${this.type.name} at ${this.context.lineColumn(
-                            this.position
-                        )}`
-                    );
+                    warning(`Possible data loss when assigning type ${this.value.type.name} to ${this.type.name}`);
                 }
                 if (!this.value.type.isAssignableTo(this.type)) {
-                    throw new Error(
-                        `Type ${this.value.type.name} is not assignable to ${this.type.name} at ${this.context.lineColumn(this.position)}`
-                    );
+                    throw new TypeError(`Type ${this.value.type.name} is not assignable to ${this.type.name}`, this);
                 }
                 this.constantValue = this.value.constantValue;
                 scope.setVarKnownValue(this.varName, this.value.constantValue);
@@ -416,13 +407,11 @@ export class AssignmentToken extends Token {
             // Set variable
             this.variable = scope.getVar(this.varName)!;
             if (!this.variable) {
-                throw new Error(`Variable ${this.varName} was not found, at ${this.context.lineColumn(this.position)}`);
+                throw new TypeError(`Variable ${this.varName} was not found`, this);
             }
 
             if (!this.value!.type.isAssignableTo(this.variable.type)) {
-                throw new Error(
-                    `Type ${this.value!.type.name} is not assignable to ${this.variable.type.name} at ${this.context.lineColumn(this.position)}`
-                );
+                throw new TypeError(`Type ${this.value!.type.name} is not assignable to ${this.variable.type.name}`, this);
             }
             this.constantValue = this.value!.constantValue;
             scope.setVarKnownValue(this.varName, this.value!.constantValue);
@@ -464,7 +453,7 @@ export function expectAssignment(c: Lexer) {
 
         value = expectTernary(c) || expectBrackets(c);
         if (!value) {
-            throw new Error(`Value was expected after declaration at ${c.lineColumn()}`);
+            throw new SyntaxError(`Value was expected after assignment/declaration`, c);
         }
     }
 
@@ -503,7 +492,7 @@ export function expectRoot(c: Lexer) {
     while (c.position < c.buffer.length) {
         let s = expectHalt(c);
         if (!s) {
-            throw new Error(`Expected statement at ${c.lineColumn()}`);
+            throw new SyntaxError(`Expected statement`, c);
         }
         statements.push(s);
         c.string(";");
@@ -529,14 +518,14 @@ export function expectBlock(c: Lexer) {
         } while (s);
 
         if (!c.string("}")) {
-            throw new Error(`Expected closing } at ${c.lineColumn()}`);
+            throw new SyntaxError(`Expected closing }`, c);
         }
 
         c.readWhitespace();
     } else {
         let s = expectHalt(c);
         if (!s) {
-            throw new Error(`Expected statement after : at ${c.lineColumn()}`);
+            throw new SyntaxError(`Expected statement after :`, c);
         }
 
         c.string(";");
@@ -609,7 +598,7 @@ export class CompareToken extends Token {
         }
 
         if (!this.type) {
-            throw new Error(`Cannot compare ${this.op1.type.name} and ${this.op2.type.name} at ${this.context.lineColumn(this.position)}`);
+            throw new TypeError(`Cannot compare ${this.op1.type.name} and ${this.op2.type.name}`, this);
         }
     }
 }
@@ -623,13 +612,13 @@ function expectCompare(c: Lexer) {
 
     let operator: "==" | "!=" | ">" | ">=" | "<" | "<=";
     if (c.string("===")) {
-        throw new Error(`Use == instead of === at ${c.lineColumn()}`);
+        throw new SyntaxError(`Use == instead of ===`, c, c.position, c.position + 3);
     } else if (c.string("!==")) {
-        throw new Error(`Use != instead of !== at ${c.lineColumn()}`);
+        throw new SyntaxError(`Use != instead of !==`, c, c.position, c.position + 3);
     } else if (c.string("==")) {
         operator = "==";
     } else if (c.string("=")) {
-        throw new Error(`Use double equals signs (==) instead of a single one (=) to compare values at ${c.lineColumn()}`);
+        throw new SyntaxError(`Use double equals signs (==) instead of a single one (=) to compare values`, c, c.position, c.position + 1);
     } else if (c.string("!=")) {
         operator = "!=";
     } else if (c.string(">=")) {
@@ -648,7 +637,7 @@ function expectCompare(c: Lexer) {
 
     let op2 = expectSum(c) || expectBrackets(c);
     if (!op2) {
-        throw new Error(`Expected value to compare against at ${c.lineColumn()}`);
+        throw new SyntaxError(`Expected value to compare against`, c, c.position - 1, c.position + 1);
     }
 
     return new CompareToken(c, position, op1, op2, operator);
@@ -683,12 +672,12 @@ export function expectIf(c: Lexer) {
 
     let condition = expectTernary(c) || expectBrackets(c);
     if (!condition) {
-        throw new Error(`Expected if condition at ${c.lineColumn()}`);
+        throw new SyntaxError(`Expected if condition`, c);
     }
 
     let ifBlock = expectBlock(c);
     if (!ifBlock) {
-        throw new Error(`Expected code block after if at ${c.lineColumn()}`);
+        throw new SyntaxError(`Expected code block after if`, c);
     }
 
     let elseBlock: Token | undefined = undefined;
@@ -696,7 +685,7 @@ export function expectIf(c: Lexer) {
         c.readWhitespace();
         elseBlock = expectBlock(c);
         if (!elseBlock) {
-            throw new Error(`Expected code block after else at ${c.lineColumn()}`);
+            throw new SyntaxError(`Expected code block after else`, c);
         }
     }
 
@@ -741,15 +730,11 @@ export class CallToken extends Token {
 
     setTypes(scope: Scope): void {
         this.function = scope.getFunc(this.functionName)!;
-        if (!this.function) throw new Error(`Function '${this.functionName}' not found at ${this.context.lineColumn(this.position)}`);
+        if (!this.function) throw new TypeError(`Function '${this.functionName}' not found`, this);
 
         this.type = this.function.returnType;
         if (this.parameters.length !== this.function.parameterCount) {
-            throw new Error(
-                `Expected ${this.function.parameterCount} parameters (got ${this.parameters.length}) for function call at ${this.context.lineColumn(
-                    this.position
-                )}`
-            );
+            throw new TypeError(`Expected ${this.function.parameterCount} parameters (got ${this.parameters.length}) for function call`, this);
         }
         this.parameters.forEach((e) => e.setTypes(scope));
     }
@@ -781,12 +766,12 @@ export function expectCall(c: Lexer, inline: boolean) {
     while (c.string(",")) {
         c.readWhitespace();
         let param = expectTernary(c) || expectBrackets(c);
-        if (!param) throw new Error(`Expected parameter at ${c.lineColumn()}`);
+        if (!param) throw new SyntaxError(`Expected parameter after comma`, c, c.position - 1, c.position + 1);
         parameters.push(param);
     }
 
     if (!c.string(")")) {
-        throw new Error(`Expected closing ) after parameter list at ${c.lineColumn(c.position)}`);
+        throw new SyntaxError(`Expected closing ) after parameter list`, c, position);
     }
 
     c.readWhitespace();

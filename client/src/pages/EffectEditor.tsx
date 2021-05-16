@@ -22,7 +22,7 @@ import {
 import { Effect, LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
-import { parseProgram } from "rgb-compiler";
+import { ByteType, IntType, parseProgram, Scope, SyntaxError, TypeError, VoidType } from "rgb-compiler";
 
 export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     const client = useContext(AuthContext);
@@ -82,21 +82,61 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
 
     useEffect(() => {
         if (editorRef.current && monaco && code) {
+            let errors = [] as monaco.editor.IMarkerData[];
             try {
-                parseProgram(code);
-                monaco.editor.setModelMarkers(editorRef.current.getModel()!, "rgb-lang", []);
-            } catch (ex) {
-                monaco.editor.setModelMarkers(editorRef.current.getModel()!, "rgb-lang", [
-                    {
-                        severity: monaco.MarkerSeverity.Error,
-                        message: ex.message,
-                        endColumn: 1000,
-                        endLineNumber: 1,
-                        startLineNumber: 1,
-                        startColumn: 1,
-                    },
-                ]);
+                let program = parseProgram(code);
+                let scope = new Scope();
+                scope.defineVar("timer", { type: new IntType(), volatile: true });
+                scope.defineVar("index", { type: new IntType(), volatile: true });
+                scope.defineVar("r", { type: new ByteType(), volatile: true });
+                scope.defineVar("g", { type: new ByteType(), volatile: true });
+                scope.defineVar("b", { type: new ByteType(), volatile: true });
+                scope.defineFunc("random", { returnType: new ByteType(), parameterCount: 0 });
+                scope.defineFunc("out", { returnType: new VoidType(), parameterCount: 1 });
+                scope.defineFunc("min", { returnType: new IntType(), parameterCount: 2 });
+                scope.defineFunc("max", { returnType: new IntType(), parameterCount: 2 });
+                scope.defineFunc("map", { returnType: new IntType(), parameterCount: 5 });
+                scope.defineFunc("lerp", { returnType: new IntType(), parameterCount: 3 });
+                scope.defineFunc("clamp", { returnType: new IntType(), parameterCount: 3 });
+                scope.defineFunc("hsv", { returnType: new VoidType(), parameterCount: 3 });
+                program.setTypes(scope);
+                errors = [];
+            } catch (exx) {
+                console.log(String(exx));
+                if (exx.name === "SyntaxError") {
+                    let ex = exx as SyntaxError;
+                    let [startLine, startColumn] = ex.lexer.lineColumn(ex.startPosition);
+                    let [endLine, endColumn] = ex.endPosition ? ex.lexer.lineColumn(ex.endPosition) : [startLine, 1000];
+                    errors = [
+                        {
+                            severity: monaco.MarkerSeverity.Error,
+                            message: ex.message,
+                            startLineNumber: startLine,
+                            startColumn: startColumn,
+                            endColumn: endColumn,
+                            endLineNumber: endLine,
+                        },
+                    ];
+                } else if (exx.name === "TypeError") {
+                    let ex = exx as TypeError;
+                    let [startLine, startColumn] = ex.token.context.lineColumn(ex.token.startPosition);
+                    let [endLine, endColumn] = ex.token.context.lineColumn(ex.token.endPosition);
+                    errors = [
+                        {
+                            severity: monaco.MarkerSeverity.Error,
+                            message: ex.message,
+                            startLineNumber: startLine,
+                            startColumn: startColumn,
+                            endColumn: endColumn,
+                            endLineNumber: endLine,
+                        },
+                    ];
+                } else {
+                    console.error(exx);
+                    errors = [];
+                }
             }
+            monaco.editor.setModelMarkers(editorRef.current.getModel()!, "rgb-lang", errors);
         }
     }, [code]);
 
