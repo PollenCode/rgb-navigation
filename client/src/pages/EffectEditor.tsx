@@ -22,6 +22,7 @@ import {
 import { Effect, LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
+import { parseProgram } from "rgb-compiler";
 
 export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     const client = useContext(AuthContext);
@@ -30,10 +31,11 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<{ percent: number; status: string }>({ percent: 0, status: "" });
     const [showOutput, setShowOutput] = useState(false);
+    const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
     const history = useHistory();
     const outputRef = useRef<HTMLPreElement>(null);
-    const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
     const monaco = useMonaco();
+    const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>();
 
     function clearOutput() {
         if (outputRef.current) {
@@ -77,6 +79,26 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     useEffect(() => {
         if (effect) setCode(effect.code);
     }, [effect]);
+
+    useEffect(() => {
+        if (editorRef.current && monaco && code) {
+            try {
+                parseProgram(code);
+                monaco.editor.setModelMarkers(editorRef.current.getModel()!, "rgb-lang", []);
+            } catch (ex) {
+                monaco.editor.setModelMarkers(editorRef.current.getModel()!, "rgb-lang", [
+                    {
+                        severity: monaco.MarkerSeverity.Error,
+                        message: ex.message,
+                        endColumn: 1000,
+                        endLineNumber: 1,
+                        startLineNumber: 1,
+                        startColumn: 1,
+                    },
+                ]);
+            }
+        }
+    }, [code]);
 
     if (!effect) {
         return null;
@@ -152,16 +174,16 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     </Button>
                 )}
                 {effect && !readOnly && (
-                    <Button danger loading={loading} icon={faTrash} disabled={loading} onClick={deleteEffect}>
+                    <Button danger icon={faTrash} disabled={loading} onClick={deleteEffect}>
                         Verwijder
                     </Button>
                 )}
             </div>
-            <div className="text-white flex items-center p-1" style={{ backgroundColor: "#1e1e1e" }}>
-                <a href="https://pollencode.github.io/rgb-navigation/index" target="_blank" className="ml-auto hover:underline px-2">
+            <div className="flex items-center text-sm py-0.5">
+                <a href="https://pollencode.github.io/rgb-navigation/index" target="_blank" className="ml-auto hover:underline px-2 text-blue-600">
                     Documentatie
                 </a>
-                <button className="hover:underline px-2" onClick={() => setShowOutput(!showOutput)}>
+                <button className="hover:underline px-2 text-blue-600" onClick={() => setShowOutput(!showOutput)}>
                     {showOutput ? "Sluit" : "Toon"} output
                 </button>
             </div>
@@ -172,13 +194,17 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     {status.status}
                 </div>
             </div>
-            <div className="h-full relative overflow-hidden fade-in">
+            <div className="h-full relative fade-in">
                 <Editor
+                    onMount={(editor) => {
+                        editorRef.current = editor;
+                    }}
                     options={{
                         minimap: {
                             enabled: false,
                         },
                         autoClosingBrackets: "always",
+                        matchBrackets: "always",
                     }}
                     defaultLanguage="rgb-lang"
                     theme="rgb-lang-theme"
