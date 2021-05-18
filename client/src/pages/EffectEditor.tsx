@@ -230,8 +230,10 @@ function setModelMarkers(monaco: Monaco, code: string, model: monaco.editor.ITex
     try {
         let program = parseProgram(code);
         let scope = new Scope();
-        scope.defineVar("timer", { type: new IntType(), volatile: true });
-        scope.defineVar("index", { type: new IntType(), volatile: true });
+        scope.defineVar("timer", { type: new IntType(), volatile: true, readonly: true });
+        scope.defineVar("index", { type: new IntType(), volatile: true, readonly: true });
+        scope.defineVar("LED_COUNT", { type: new IntType(), readonly: true });
+        scope.setVarKnownValue("LED_COUNT", 784);
         scope.defineVar("r", { type: new ByteType(), volatile: true });
         scope.defineVar("g", { type: new ByteType(), volatile: true });
         scope.defineVar("b", { type: new ByteType(), volatile: true });

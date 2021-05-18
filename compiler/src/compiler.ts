@@ -10,6 +10,7 @@ export interface Target {
 export interface Var<L = unknown> {
     name: string;
     type: Type;
+    readonly?: boolean;
     /**
      * The assigned location of this variable, this should be filled in by the target during its linking phase
      */
@@ -17,7 +18,7 @@ export interface Var<L = unknown> {
     /**
      * Whether this variable should not be affected by compiler optimizations
      */
-    volatile: boolean;
+    volatile?: boolean;
 }
 
 export interface Func<L = unknown> {

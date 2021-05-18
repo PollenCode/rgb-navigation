@@ -409,6 +409,9 @@ export class AssignmentToken extends Token {
             if (!this.variable) {
                 throw new TypeError(`Variable ${this.varName} was not found`, this);
             }
+            if (this.variable.readonly) {
+                throw new TypeError(`Variable ${this.varName} is read-only`, this);
+            }
 
             if (!this.value!.type.isAssignableTo(this.variable.type)) {
                 throw new TypeError(`Type ${this.value!.type.name} is not assignable to ${this.variable.type.name}`, this);

@@ -8,6 +8,7 @@ import { isDevelopment } from "./helpers";
 import fs from "fs";
 
 const MAX_EFFECT_PER_USER = 10;
+const LED_COUNT = 784;
 
 const logger = debug("rgb:effects");
 const router = Router();
@@ -22,8 +23,10 @@ function compile(input: string): [Buffer, number] {
     scope.defineVar("r", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(0, new ByteType()) });
     scope.defineVar("g", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(1, new ByteType()) });
     scope.defineVar("b", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(2, new ByteType()) });
-    scope.defineVar("index", { type: new IntType(), volatile: true, location: target.allocateVariableAt(4, new IntType()) });
-    scope.defineVar("timer", { type: new IntType(), volatile: true, location: target.allocateVariableAt(8, new IntType()) });
+    scope.defineVar("index", { type: new IntType(), volatile: true, location: target.allocateVariableAt(4, new IntType()), readonly: true });
+    scope.defineVar("timer", { type: new IntType(), volatile: true, location: target.allocateVariableAt(8, new IntType()), readonly: true });
+    scope.defineVar("LED_COUNT", { type: new IntType(), readonly: true });
+    scope.setVarKnownValue("LED_COUNT", LED_COUNT);
 
     target.defineDefaultMacros(scope);
     scope.defineFunc("random", { returnType: new ByteType(), parameterCount: 0, location: target.allocateFunction(1) });
