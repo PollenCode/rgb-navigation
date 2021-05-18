@@ -33,8 +33,7 @@ CRGB leds[LED_COUNT];
 uint16_t fpsCounter = 0;
 uint64_t lastShown = 0;
 CRGB currentColors[MAX_LINES];
-int receivePosition = 0;
-int bytesToReceive = 0;
+
 uint32_t shift = 0;
 
 int interlacing = 0;
@@ -294,80 +293,66 @@ void handleSetRoom()
 
 void handlePackets()
 {
-    // int a = Serial.available();
-    // if (Serial.available() > 0)
-    // {
-    //     Serial.println("incoming");
-    //     while (Serial.available() > 0)
-    //     {
-    //         Serial.print(" ");
-    //         Serial.print(Serial.read());
-    //     }
-    // }
-
-    if (receivePosition < bytesToReceive)
+    int packetType = Serial.peek();
+    switch (packetType)
     {
-        Serial.println("starting receive...");
-        while (Serial.available() && receivePosition < bytesToReceive)
+    case -1:
+        break;
+    case 1:
+        if (Serial.available() >= 2)
+            Serial.println(packetType);
+        handleSetIdle();
+        break;
+    case 2:
+        if (Serial.available() >= 11)
+            handleEnableLine();
+        break;
+    case 3:
+        if (Serial.available() >= 2)
+            handleDisableLine();
+        break;
+    case 4:
+        if (Serial.available() >= 3)
+            handleSetRoom();
+        break;
+    case 5:
+        if (Serial.available() >= 5)
         {
-            Serial.print("receiving ... ");
-            Serial.print(receivePosition);
-            Serial.print("/");
+            // handle program receive
+            Serial.read();
+
+            int bytesToReceive = Serial.read() << 8 | Serial.read();
+            int receivePosition = 0;
+            entryPoint = Serial.read() << 8 | Serial.read();
+
+            Serial.print("Receiving program, size = ");
             Serial.println(bytesToReceive);
-            mem[receivePosition] = Serial.read();
-            receivePosition++;
-        }
+            Serial.print("entryPoint = ");
+            Serial.println(entryPoint);
 
-        if (receivePosition >= bytesToReceive)
-        {
-            Serial.println("receiving complete");
-        }
-    }
-    else
-    {
-        int packetType = Serial.peek();
-        switch (packetType)
-        {
-        case -1:
-            break;
-        case 1:
-            if (Serial.available() >= 2)
-                Serial.println(packetType);
-            handleSetIdle();
-            break;
-        case 2:
-            if (Serial.available() >= 11)
-                handleEnableLine();
-            break;
-        case 3:
-            if (Serial.available() >= 2)
-                handleDisableLine();
-            break;
-        case 4:
-            if (Serial.available() >= 3)
-                handleSetRoom();
-            break;
-        case 5:
-            if (Serial.available() >= 5)
+            memset(mem, 0, MAX_PROGRAM_SIZE);
+            while (receivePosition < bytesToReceive)
             {
-                // handle program receive
-                Serial.read();
-                memset(mem, 0, MAX_PROGRAM_SIZE);
-                bytesToReceive = Serial.read() << 8 | Serial.read();
-                receivePosition = 0;
-                entryPoint = Serial.read() << 8 | Serial.read();
-                Serial.print("Receiving program, size = ");
+                Serial.print("receiving ... ");
+                Serial.print(receivePosition);
+                Serial.print("/");
                 Serial.println(bytesToReceive);
-                Serial.print("entryPoint = ");
-                Serial.println(entryPoint);
+
+                int rec = Serial.read();
+                if (rec < 0)
+                {
+                    continue;
+                }
+                mem[receivePosition] = rec;
+                receivePosition++;
             }
-            break;
-        default:
-            // Consume invalid byte
-            Serial.print("consume ");
-            Serial.println(Serial.read());
-            break;
         }
+        break;
+    default:
+        // Consume invalid byte
+        Serial.print("invalid serial byte ");
+        Serial.println(Serial.read());
+        break;
     }
 }
 
