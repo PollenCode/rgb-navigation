@@ -53,80 +53,80 @@ bool functionHandler(uint8_t id)
     {
         // byte random()
         stackPointer -= 4;
-        *(uint32_t *)(mem + stackPointer) = (uint32_t)random(256);
+        *(int32_t *)(mem + stackPointer) = (int32_t)random(256);
         break;
     }
     case 2:
     {
         // int out(int)
         // Return value is passed value
-        Serial.println(*(uint32_t *)(mem + stackPointer));
+        Serial.println(*(int32_t *)(mem + stackPointer));
         break;
     }
     case 3:
     {
         // int min(int, int)
-        uint32_t op1 = *(uint32_t *)(mem + stackPointer);
+        int32_t op1 = *(int32_t *)(mem + stackPointer);
         stackPointer += 4;
-        uint32_t op2 = *(uint32_t *)(mem + stackPointer);
-        *(uint32_t *)(mem + stackPointer) = op1 > op2 ? op2 : op1;
+        int32_t op2 = *(int32_t *)(mem + stackPointer);
+        *(int32_t *)(mem + stackPointer) = op1 > op2 ? op2 : op1;
         break;
     }
     case 4:
     {
         // int max(int, int)
-        uint32_t op1 = *(uint32_t *)(mem + stackPointer);
+        int32_t op1 = *(int32_t *)(mem + stackPointer);
         stackPointer += 4;
-        uint32_t op2 = *(uint32_t *)(mem + stackPointer);
-        *(uint32_t *)(mem + stackPointer) = op1 < op2 ? op2 : op1;
+        int32_t op2 = *(int32_t *)(mem + stackPointer);
+        *(int32_t *)(mem + stackPointer) = op1 < op2 ? op2 : op1;
         break;
     }
     case 5:
     {
         // int map(int value, int fromLow, int fromHigh, int toLow, int toHigh)
         // Does the same as https://www.arduino.cc/reference/en/language/functions/math/map/
-        uint32_t toLow = *(uint32_t *)(mem + stackPointer);
+        int32_t toLow = *(int32_t *)(mem + stackPointer);
         stackPointer += 4;
-        uint32_t toHigh = *(uint32_t *)(mem + stackPointer);
+        int32_t toHigh = *(int32_t *)(mem + stackPointer);
         stackPointer += 4;
-        uint32_t fromHigh = *(uint32_t *)(mem + stackPointer);
+        int32_t fromHigh = *(int32_t *)(mem + stackPointer);
         stackPointer += 4;
-        uint32_t fromLow = *(uint32_t *)(mem + stackPointer);
+        int32_t fromLow = *(int32_t *)(mem + stackPointer);
         stackPointer += 4;
-        uint32_t value = *(uint32_t *)(mem + stackPointer);
-        *(uint32_t *)(mem + stackPointer) = map(value, fromLow, fromHigh, toLow, toHigh);
+        int32_t value = *(int32_t *)(mem + stackPointer);
+        *(int32_t *)(mem + stackPointer) = map(value, fromLow, fromHigh, toLow, toHigh);
         break;
     }
     case 6:
     {
         // int lerp(int from, int to, int percentage)
-        uint32_t percentage = *(uint32_t *)(mem + stackPointer);
+        int32_t percentage = *(int32_t *)(mem + stackPointer);
         stackPointer += 4;
-        uint32_t to = *(uint32_t *)(mem + stackPointer);
+        int32_t to = *(int32_t *)(mem + stackPointer);
         stackPointer += 4;
-        uint32_t from = *(uint32_t *)(mem + stackPointer);
-        *(uint32_t *)(mem + stackPointer) = from + (percentage / 256.0f) * (to - from);
+        int32_t from = *(int32_t *)(mem + stackPointer);
+        *(int32_t *)(mem + stackPointer) = from + (percentage / 256.0f) * (to - from);
         break;
     }
     case 7:
     {
         // int clamp(int value, int min, int max)
-        uint32_t max = *(uint32_t *)(mem + stackPointer);
+        int32_t max = *(int32_t *)(mem + stackPointer);
         stackPointer += 4;
-        uint32_t min = *(uint32_t *)(mem + stackPointer);
+        int32_t min = *(int32_t *)(mem + stackPointer);
         stackPointer += 4;
-        uint32_t value = *(uint32_t *)(mem + stackPointer);
+        int32_t value = *(int32_t *)(mem + stackPointer);
         if (value > max)
         {
-            *(uint32_t *)(mem + stackPointer) = max;
+            *(int32_t *)(mem + stackPointer) = max;
         }
         else if (value < min)
         {
-            *(uint32_t *)(mem + stackPointer) = min;
+            *(int32_t *)(mem + stackPointer) = min;
         }
         else
         {
-            *(uint32_t *)(mem + stackPointer) = value;
+            *(int32_t *)(mem + stackPointer) = value;
         }
         break;
     }
@@ -134,11 +134,11 @@ bool functionHandler(uint8_t id)
     {
         // void hsv(int h, int s, int v)
         // Sets the r, g and b variables using hsv
-        uint32_t v = mem[stackPointer];
+        uint8_t v = mem[stackPointer];
         stackPointer += 4;
-        uint32_t s = mem[stackPointer];
+        uint8_t s = mem[stackPointer];
         stackPointer += 4;
-        uint32_t h = mem[stackPointer];
+        uint8_t h = mem[stackPointer];
         stackPointer += 4;
         const CHSV hsv(h, s, v);
         // Places rgb in 0,1,2 of mem
@@ -405,7 +405,7 @@ void drawRoutes()
 
 void drawEffect(uint32_t time)
 {
-    *(uint32_t *)(mem + 8) = (int)time;
+    *(uint32_t *)(mem + 8) = (uint32_t)time;
     int res;
     for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
     {

@@ -49,7 +49,9 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
             if (error) el.style.color = "red";
             el.innerText = data;
             outputRef.current.appendChild(el);
-            outputRef.current.scrollTop = outputRef.current.scrollHeight;
+            if (outputRef.current.scrollHeight - outputRef.current.scrollTop > 200) {
+                outputRef.current.scrollTop = outputRef.current.scrollHeight;
+            }
         }
     }
 
