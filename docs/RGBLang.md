@@ -23,7 +23,7 @@ g = 0
 b = 0
 ```
 The `r`, `g` and `b` variables contain the red green and blue values for the current led on the led strip. You can read and write these.
-These variables are bytes, this means they have a minumim value of 0 and a maximum value of 255.
+These variables are bytes, this means they have a minumim value of 0 and a maximum value of 255. **Do not assign negative values to these! This will cause an integer overflow (-1 will be 255, -2 will be 254 ...), this is probably not what you want.**
 
 ### Gradient
 
