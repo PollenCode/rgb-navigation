@@ -24,6 +24,8 @@ import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
 import { ByteType, IntType, parseProgram, Scope, SyntaxError, TypeError, VoidType } from "rgb-compiler";
 
+const MAX_OUTPUT_LINES = 400;
+
 export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     const client = useContext(AuthContext);
     const [effect, setEffect] = useState<Effect>();
@@ -49,8 +51,13 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
             if (error) el.style.color = "red";
             el.innerText = data;
             outputRef.current.appendChild(el);
-            if (outputRef.current.scrollHeight - outputRef.current.scrollTop > 200) {
+
+            if (outputRef.current.scrollHeight - outputRef.current.clientHeight - outputRef.current.scrollTop < 125) {
                 outputRef.current.scrollTop = outputRef.current.scrollHeight;
+            }
+
+            if (outputRef.current.childElementCount > MAX_OUTPUT_LINES) {
+                outputRef.current.firstChild!.remove();
             }
         }
     }
