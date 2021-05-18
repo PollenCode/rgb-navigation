@@ -82,7 +82,7 @@ if (index == (timer / 50) % 30) {
 else  {
     // Trail effect
     // r - 10 can be negative, which will cause problems
-    // use the max function to ensure it it at least 0
+    // use the max function to ensure it is at least 0
     r = max(r - 10, 0)
 }
 ```
