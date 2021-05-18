@@ -325,10 +325,20 @@ void handlePackets()
             int receivePosition = 0;
             entryPoint = Serial.read() << 8 | Serial.read();
 
-            Serial.print("Receiving program, size = ");
-            Serial.println(bytesToReceive);
-            Serial.print("entryPoint = ");
+            Serial.print("receiving program, size=");
+            Serial.print(bytesToReceive);
+            Serial.print("/");
+            Serial.print(MAX_PROGRAM_SIZE);
+            Serial.print(", entryPoint=");
             Serial.println(entryPoint);
+
+            if (bytesToReceive >= MAX_PROGRAM_SIZE)
+            {
+                Serial.println("program is too big, not receiving");
+                while (Serial.available())
+                    Serial.read();
+                return;
+            }
 
             memset(mem, 0, MAX_PROGRAM_SIZE);
             while (receivePosition < bytesToReceive)
@@ -343,9 +353,11 @@ void handlePackets()
                 {
                     continue;
                 }
-                mem[receivePosition] = rec;
-                receivePosition++;
+
+                mem[receivePosition++] = rec;
             }
+
+            Serial.println("done receiving");
         }
         break;
     default:
