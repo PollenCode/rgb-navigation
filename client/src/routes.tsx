@@ -11,6 +11,7 @@ import { LedController } from "./pages/LedController";
 import { Token } from "./pages/Token";
 import { GiveAdmin } from "./pages/GiveAdmin";
 import { EffectEditor } from "./pages/EffectEditor";
+import { Lessenrooster } from "./pages/Lessenrooster";
 
 const client = new RGBClient();
 
@@ -85,6 +86,7 @@ function AdminRouter() {
                 <Route path="/admin/ledcontrol" exact component={LedController} />
                 <Route path="/admin/token" exact component={Token} />
                 <Route path="/admin/users" exact component={GiveAdmin} />
+                <Route path="/admin/lessenrooster" exact component={Lessenrooster} />
                 <Redirect to="/admin/effects" />
             </Switch>
         </PageWrapper>

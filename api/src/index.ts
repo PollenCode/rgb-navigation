@@ -186,6 +186,10 @@ export class RGBClient extends TypedEmitter<Events> {
         };
         return await this.doFetch("/api/takeAdmin", "PUT", req);
     }
+
+    public async lessenrooster() {
+        return await this.doFetch("/api/lessenrooster", "GET");
+    }
 }
 
 export * from "./message";
