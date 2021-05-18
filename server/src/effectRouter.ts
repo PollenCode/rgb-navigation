@@ -27,7 +27,7 @@ function compile(input: string): [Buffer, number] {
 
     target.defineDefaultMacros(scope);
     scope.defineFunc("random", { returnType: new ByteType(), parameterCount: 0, location: target.allocateFunction(1) });
-    scope.defineFunc("out", { returnType: new VoidType(), parameterCount: 1, location: target.allocateFunction(2) });
+    scope.defineFunc("out", { returnType: new IntType(), parameterCount: 1, location: target.allocateFunction(2) });
     scope.defineFunc("min", { returnType: new IntType(), parameterCount: 2, location: target.allocateFunction(3) });
     scope.defineFunc("max", { returnType: new IntType(), parameterCount: 2, location: target.allocateFunction(4) });
     scope.defineFunc("map", { returnType: new IntType(), parameterCount: 5, location: target.allocateFunction(5) });

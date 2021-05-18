@@ -51,7 +51,7 @@ int run()
         }
         case PushConst16:
         {
-            uint16_t val = mem[exePointer++] | (mem[exePointer++] << 8);
+            uint16_t val = (uint16_t)mem[exePointer++] | (uint16_t)(mem[exePointer++] << 8);
             stackPointer -= 4;
             *(int32_t *)(mem + stackPointer) = val;
 #ifdef DEBUG
@@ -61,8 +61,7 @@ int run()
         }
         case PushConst32:
         {
-            int32_t val = mem[exePointer++] | (mem[exePointer++] << 8) | (mem[exePointer++] << 16) | (mem[exePointer++] << 24);
-            exePointer += 4;
+            int32_t val = (int32_t)mem[exePointer++] | (int32_t)(mem[exePointer++] << 8) | (int32_t)(mem[exePointer++] << 16) | (int32_t)(mem[exePointer++] << 24);
             stackPointer -= 4;
             *(int32_t *)(mem + stackPointer) = val;
 #ifdef DEBUG

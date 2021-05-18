@@ -314,7 +314,7 @@ export class ByteCodeTarget implements Target {
             func.location(this.writer);
         }
 
-        if (isRoot && !(token.type instanceof VoidType)) {
+        if (isRoot && !(func.returnType instanceof VoidType)) {
             this.writer.consume();
         }
     }
