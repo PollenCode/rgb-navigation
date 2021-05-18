@@ -36,9 +36,9 @@ g = index / 3 // Divide by 3 to match 255 as max green value
 b = 0
 ```
 
-This code shows a gradient from black to red.
+This code shows a gradient from black to green.
 
-### Timer
+### Moving animation
 
 To create moving animations, you should use the builtin `timer` variable. This variable contains the amount of milliseconds since the program has started running.
 
@@ -49,12 +49,42 @@ g = 0
 b = timer % 255
 ```
 
-This will show a flashing blue color. This is a rather sudden transition, it is better to use the builtin `sin()` function to create a smooth transition from blue to black.
+This will show a flashing blue color. This is a rather sudden transition, it is better to use the builtin `sin()` function to create a smooth transition from blue to black:
 
 ```
 r = 0
 g = 0
 b = sin(timer)
+```
+You can also use the `cos()` function, look [here]() for a list of builtin utility functions.
+
+
+### Combine timer and index
+
+You can combine the `index` and `timer` variables to create epic 😎 animations. 
+
+This animation shows a moving red wave:
+```c
+// index contains n-th led, timer increases each frame
+r = sin(index * 10 + timer / 10)
+g = 0
+b = 0
+```
+This animation moves a single red dot from the start of the ledstrip to the end:
+
+```c
+b = 0
+g = 0
+if (index == (timer / 50) % 30) {
+    // Create dot
+    r = 255
+}
+else  {
+    // Trail effect
+    // r - 10 can be negative, which will cause problems
+    // use the max function to ensure it it at least 0
+    r = max(r - 10, 0)
+}
 ```
 
 
