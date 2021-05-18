@@ -7,13 +7,14 @@ extern "C"
 #include "interpreter.h"
 }
 
-#define LED_COUNT 784 / 2
+// 784 / 2
+#define LED_COUNT 50
 #define DATA_PIN 4
 // Max amount of routes that can be drawn at once
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
 #define INTERLACE_LEVEL 2
-#define MAX_PROGRAM_SIZE 400
+#define MAX_PROGRAM_SIZE 250
 #define SHIFT_INTERVAL 100
 #define SPLIT_SIZE 2
 
@@ -33,6 +34,8 @@ CRGB leds[LED_COUNT];
 uint16_t fpsCounter = 0;
 uint64_t lastShown = 0;
 CRGB currentColors[MAX_LINES];
+int bytesToReceive = 0;
+int receivePosition = 0;
 
 uint32_t shift = 0;
 
@@ -158,7 +161,7 @@ void setup()
     callHandler = functionHandler;
 
     // Increasing the baud rate will cause corruption and inconsistency
-    Serial.begin(19200);
+    Serial.begin(4800);
     Serial.println("Starting...");
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -293,78 +296,78 @@ void handleSetRoom()
 
 void handlePackets()
 {
-    int packetType = Serial.peek();
-    switch (packetType)
+    if (receivePosition < bytesToReceive)
     {
-    case -1:
-        break;
-    case 1:
-        if (Serial.available() >= 2)
-            Serial.println(packetType);
-        handleSetIdle();
-        break;
-    case 2:
-        if (Serial.available() >= 11)
-            handleEnableLine();
-        break;
-    case 3:
-        if (Serial.available() >= 2)
-            handleDisableLine();
-        break;
-    case 4:
-        if (Serial.available() >= 3)
-            handleSetRoom();
-        break;
-    case 5:
-        if (Serial.available() >= 5)
+        // Receive program
+        while (Serial.available() && receivePosition < bytesToReceive)
         {
-            // handle program receive
-            Serial.read();
-
-            int bytesToReceive = Serial.read() << 8 | Serial.read();
-            int receivePosition = 0;
-            entryPoint = Serial.read() << 8 | Serial.read();
-
-            Serial.print("receiving program, size=");
-            Serial.print(bytesToReceive);
+            Serial.print("receiving ... ");
+            Serial.print(receivePosition);
             Serial.print("/");
-            Serial.print(MAX_PROGRAM_SIZE);
-            Serial.print(", entryPoint=");
-            Serial.println(entryPoint);
+            Serial.println(bytesToReceive);
 
-            if (bytesToReceive >= MAX_PROGRAM_SIZE)
-            {
-                Serial.println("program is too big, not receiving");
-                while (Serial.available())
-                    Serial.read();
-                return;
-            }
-
-            memset(mem, 0, MAX_PROGRAM_SIZE);
-            while (receivePosition < bytesToReceive)
-            {
-                Serial.print("receiving ... ");
-                Serial.print(receivePosition);
-                Serial.print("/");
-                Serial.println(bytesToReceive);
-
-                int rec = Serial.read();
-                if (rec < 0)
-                {
-                    continue;
-                }
-
-                mem[receivePosition++] = rec;
-            }
-
-            Serial.println("done receiving");
+            mem[receivePosition++] = Serial.read();
         }
-        break;
-    default:
-        // Consume invalid byte
-        Serial.print("invalid serial byte ");
-        Serial.println(Serial.read());
-        break;
+    }
+    else
+    {
+        // Read data packet
+        int packetType = Serial.peek();
+        switch (packetType)
+        {
+        case -1:
+            break;
+        case 1:
+            if (Serial.available() >= 2)
+                Serial.println(packetType);
+            handleSetIdle();
+            break;
+        case 2:
+            if (Serial.available() >= 11)
+                handleEnableLine();
+            break;
+        case 3:
+            if (Serial.available() >= 2)
+                handleDisableLine();
+            break;
+        case 4:
+            if (Serial.available() >= 3)
+                handleSetRoom();
+            break;
+        case 5:
+            if (Serial.available() >= 5)
+            {
+                // handle program receive
+                Serial.read();
+
+                bytesToReceive = Serial.read() << 8 | Serial.read();
+                receivePosition = 0;
+                entryPoint = Serial.read() << 8 | Serial.read();
+
+                Serial.print("receiving program, size=");
+                Serial.print(bytesToReceive);
+                Serial.print("/");
+                Serial.print(MAX_PROGRAM_SIZE);
+                Serial.print(", entryPoint=");
+                Serial.println(entryPoint);
+
+                // if (bytesToReceive >= MAX_PROGRAM_SIZE)
+                // {
+                //     Serial.println("program is too big, not receiving");
+                //     while (Serial.available())
+                //         Serial.read();
+                //     return;
+                // }
+
+                memset(mem, 0, MAX_PROGRAM_SIZE);
+            }
+            break;
+        default:
+            // Consume invalid byte
+            Serial.print("invalid serial byte ");
+            Serial.println(Serial.read());
+            break;
+        }
     }
 }
 
@@ -462,10 +465,13 @@ void loop()
         anyRoute = true;
     }
 
-    if (anyRoute)
-        drawRoutes();
-    else
-        drawEffect(time);
+    if (receivePosition >= bytesToReceive)
+    {
+        if (anyRoute)
+            drawRoutes();
+        else
+            drawEffect(time);
+    }
 
     fpsCounter++;
     if (time - lastShown >= 1000)
