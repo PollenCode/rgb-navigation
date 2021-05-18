@@ -195,7 +195,9 @@ router.get("/lessenrooster", async (req, res, next) => {
             method: "GET",
         }).then(async (e) => {
             let data = await e.json();
-            console.log(data.d.results[0].roomNumber);
+            let room = data.d.results[0].roomNumber;
+            console.log(room);
+            res.json({ status: "ok", room });
         });
     });
 });
