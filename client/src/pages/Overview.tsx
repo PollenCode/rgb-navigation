@@ -7,18 +7,19 @@ import { SocketContext } from "../SocketContext";
 
 export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     let { socket } = useContext(AuthContext);
-    let [messages, setMessages] = useState<string[]>([]);
+    let [messages, setMessages] = useState<{ name: string; color: string }[]>([]);
 
     async function onNfcAlreadyBound() {
-        setMessages((messages) => [...messages, "Already bound"]);
+        // setMessages((messages) => [...messages, "Already bound"]);
     }
 
     async function onNfcUnknownScanned() {
-        setMessages((messages) => [...messages, "Unknown scanned"]);
+        //setMessages((messages) => [...messages, "Unknown scanned"]);
     }
 
     async function onUserShouldFollow(data: any) {
-        setMessages((messages) => [...messages, data.name + " should follow ?"]);
+        console.log(data);
+        setMessages((messages) => [...messages, data]);
     }
 
     useEffect(() => {
@@ -26,9 +27,9 @@ export function Overview(props: RouteComponentProps<{ roomId: string }>) {
         socket.on("nfcUnknownScanned", onNfcUnknownScanned);
         socket.on("userShouldFollow", onUserShouldFollow);
         socket.on("connect", () => {
-            socket.emit("subscribe", { roomId: props.match.params.roomId });
+            socket.emit("subscribe", { roomId: "dgang" });
         });
-        socket.emit("subscribe", { roomId: props.match.params.roomId });
+        socket.emit("subscribe", { roomId: "dgang" });
         return () => {
             socket.off("nfcAlreadyBound", onNfcAlreadyBound);
             socket.off("nfcUnknownScanned", onNfcUnknownScanned);
@@ -39,18 +40,9 @@ export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     return (
         <div className="flex-col flex h-full">
             <ul className="ml-10 mt-10 flex flex-col flex-grow overflow-hidden flex-wrap">
-                <Usercolor name="Wydooghe Michiel" color="red" />
-                <Usercolor name="Dierickx Robbe" color="yellow" />
-                <Usercolor name="Rogiest Stijn" color="blue" />
-                <Usercolor name="Dedapper Dylan" color="green" />
-                <Usercolor name="Wydooghe Michiel" color="red" />
-                <Usercolor name="Dierickx Robbe" color="yellow" />
-                <Usercolor name="Rogiest Stijn" color="blue" />
-                <Usercolor name="Dedapper Dylan" color="green" />
-                <Usercolor name="Wydooghe Michiel" color="red" />
-                <Usercolor name="Dierickx Robbe" color="yellow" />
-                <Usercolor name="Rogiest Stijn" color="blue" />
-                <Usercolor name="Dedapper Dylan" color="green" />
+                {messages.map((e) => (
+                    <Usercolor name={e.name} color={e.color} />
+                ))}
             </ul>
             <div className="bg-red-700 text-white mt-auto p-8 font-bold text-5xl overflow-hidden flex-shrink-0">
                 <div className="error-shake">
