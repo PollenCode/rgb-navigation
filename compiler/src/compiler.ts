@@ -1,171 +1,115 @@
 import fs from "fs/promises";
-import debug from "debug";
 import { Lexer } from "./lexer";
-import { expectProgram, Token } from "./token";
-import { IntType, NumberType, Type } from "./types";
-import { BinaryWriter, CodeWriter } from "./target";
+import { BlockToken, expectRoot, Token } from "./token";
+import { Type } from "./types";
 
-const logger = debug("rgb:compiler");
-interface Variable {
+export interface Target {
+    compile(root: BlockToken): void;
+}
+
+export interface Var<L = unknown> {
     name: string;
     type: Type;
     /**
-     * The assigned location of this variable in memory
+     * The assigned location of this variable, this should be filled in by the target during its linking phase
      */
-    location: number;
+    location?: L;
     /**
-     * Whether this variable may be removed by the compiler if it is not needed.
+     * Whether this variable should not be affected by compiler optimizations
      */
     volatile: boolean;
 }
 
-type Function =
-    | {
-          type: "function";
-          name: string;
-          returnType: Type;
-          id: number;
-          parameterCount: number;
-      }
-    | {
-          type: "macro";
-          name: string;
-          returnType: Type;
-          parameterCount: number;
-          emitter: (output: CodeWriter) => void;
-      };
-
-function align4(n: number) {
-    return (n & ~0x3) + 4;
+export interface Func<L = unknown> {
+    name: string;
+    returnType: Type;
+    parameterCount: number;
+    /**
+     * The assigned location of this function, this should be filled in by the target during its linking phase
+     */
+    location?: L;
 }
 
-export class CompilerContext {
-    lex!: Lexer;
-    vars: Map<string, Variable>;
-    functions: Map<string, Function>;
-    root?: Token;
+export class Scope {
+    parent?: Scope;
 
-    private currentVarAllocation: number = 0;
-    private currentFunctionAllocation: number = 0;
+    private vars = new Map<string, Var>();
+    private knownValues = new Map<string, any>();
+    private funcs = new Map<string, Func>();
 
-    constructor() {
-        this.vars = new Map();
-        this.functions = new Map();
+    get variables() {
+        return this.vars as ReadonlyMap<string, Var>;
     }
 
-    /**
-     * Defines builtin macros like sin, cos, tan ...
-     */
-    defineDefaultMacros() {
-        this.defineMacro("sin", new IntType(), 1, (output) => {
-            output.sin();
-        });
-        this.defineMacro("cos", new IntType(), 1, (output) => {
-            output.cos();
-        });
-        this.defineMacro("tan", new IntType(), 1, (output) => {
-            output.tan();
-        });
-        this.defineMacro("abs", new IntType(), 1, (output) => {
-            output.abs();
-        });
+    get functions() {
+        return this.funcs as ReadonlyMap<string, Func>;
     }
 
-    /**
-     * Defines a function, with a fixed function id
-     */
-    defineFunction(name: string, callId: number, returnType: Type, parameterCount: number) {
-        if (this.functions.has(name)) throw new Error("Function already declared");
-        this.functions.set(name, { type: "function", id: callId, name, returnType, parameterCount });
+    constructor(parent?: Scope) {
+        this.parent = parent;
     }
 
-    /**
-     * Defines a macro function
-     */
-    defineMacro(name: string, returnType: Type, parameterCount: number, emitter: (output: CodeWriter) => void) {
-        if (this.functions.has(name)) throw new Error("Function already declared");
-        this.functions.set(name, { type: "macro", emitter, name, returnType, parameterCount });
+    hasVar(name: string) {
+        return !!this.getVar(name);
     }
 
-    /**
-     * Defines a variable in memory at a fixed location
-     * @param type The type of the variable, this will determine its size in memory
-     * @param address The fixed location the variable will be stored. Subsequent defineVariable calls will allocate after this address.
-     * @param volatile Whether this variable may not be removed/moved during the optimization phase.
-     */
-    defineVariableAt(name: string, type: Type, address: number, volatile = false) {
-        if (this.vars.has(name)) throw new Error("Variable already declared");
-        this.vars.set(name, { name, location: address, type, volatile });
-        if (address + type.size > this.currentVarAllocation) {
-            this.currentVarAllocation = address + type.size;
+    getVar(name: string): Var | undefined {
+        if (this.vars.has(name)) {
+            return this.vars.get(name);
+        } else if (this.parent) {
+            return this.parent.getVar(name);
+        } else {
+            return undefined;
         }
     }
 
-    /**
-     * Defines a variable in memory
-     * @param type The type of the variable, this will determine its size in memory
-     * @param volatile Whether this variable may not be removed/moved during the optimization phase.
-     */
-    defineVariable(name: string, type: Type, volatile = false) {
-        if (this.vars.has(name)) throw new Error("Variable already declared");
-        this.vars.set(name, { name, location: this.currentVarAllocation, type, volatile });
-        this.currentVarAllocation += type.size;
+    defineVar(name: string, v: Omit<Var, "name">): Var | undefined {
+        if (this.vars.has(name)) return undefined;
+        let vv = { ...v, name };
+        this.vars.set(name, vv);
+        return vv;
     }
 
-    /**
-     * Returns the prealloced variables and their initial value in buffer format
-     */
-    getMemory() {
-        let writer = new BinaryWriter();
-        this.vars.forEach((e) => {
-            writer.position = e.location;
-            logger(`${e.name} -> 0x${e.location.toString(16)}`);
-            let value = e.type instanceof NumberType && e.type.constantValue !== undefined ? e.type.constantValue : 0;
-            switch (e.type.size) {
-                case 1:
-                    writer.write8(value);
-                    break;
-                case 2:
-                    writer.write16(value);
-                    break;
-                case 4:
-                    writer.write32(value);
-                    break;
-            }
-        });
-        return writer.buffer;
+    hasFunc(name: string) {
+        return !!this.getFunc(name);
     }
 
-    /**
-     * Combines memory and bytecode into one buffer, returning the entryPoint and buffer
-     */
-    getLinked(): [number, Buffer] {
-        let memory = this.getMemory();
-        let program = this.getCode();
-        let entryPoint = align4(memory.length);
-        let buffer = Buffer.alloc(entryPoint + program.length);
-        memory.copy(buffer, 0, 0, entryPoint);
-        program.copy(buffer, entryPoint, 0, program.length);
-        return [entryPoint, buffer];
+    getFunc(name: string): Func | undefined {
+        if (this.funcs.has(name)) {
+            return this.funcs.get(name);
+        } else if (this.parent) {
+            return this.parent.getFunc(name);
+        } else {
+            return undefined;
+        }
     }
 
-    compile(input: string) {
-        this.lex = new Lexer(input);
-        this.lex.readWhitespace();
-        this.root = expectProgram(this);
+    defineFunc(name: string, f: Omit<Func, "name">): Func | undefined {
+        if (this.funcs.has(name)) return undefined;
+        let ff = { ...f, name };
+        this.funcs.set(name, ff);
+        return ff;
     }
 
-    typeCheck() {
-        this.root!.setTypes();
+    setVarKnownValue(name: string, value: any | undefined) {
+        // Do not set on parent!
+        if (value === undefined) this.knownValues.delete(name);
+        else this.knownValues.set(name, value);
     }
 
-    /**
-     * Generates bytecode, to be interpreted by the interpreter
-     */
-    getCode() {
-        let writer = new CodeWriter();
-        this.root!.emit(writer, true);
-        writer.halt();
-        return writer.buffer;
+    getVarKnownValue(name: string): any | undefined {
+        if (this.knownValues.has(name)) {
+            return this.knownValues.get(name)!;
+        } else if (this.parent) {
+            return this.parent.getVarKnownValue(name);
+        } else {
+            return undefined;
+        }
     }
+}
+
+export function parseProgram(input: string) {
+    let lexer = new Lexer(input);
+    lexer.readWhitespace();
+    return expectRoot(lexer);
 }

@@ -1,20 +1,17 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 #include "sintable.h"
-
-#ifdef ARDUINO
-#define INT int
-#else
-#include <stdio.h>
-#define PUTCHAR putchar
-#define INT uint32_t
-#endif
 
 #define EINVOP -2
 #define EOVERFLOW -1
+#define EINVCALL -3
 
+extern uint16_t exePointer;
+extern uint16_t stackPointer;
+extern uint8_t mem[];
 extern uint32_t executed;
-void (*callHandler)(unsigned char);
+bool (*callHandler)(uint8_t);
 
 enum OpCode
 {
@@ -29,7 +26,6 @@ enum OpCode
     Pop8 = 0x08,
     Push8 = 0x09,
     Consume = 0x0A,
-    Out = 0x0E,
     Halt = 0x0F,
 
     Add = 0x10,
@@ -58,4 +54,4 @@ enum OpCode
     Tan = 0x42,
 };
 
-int run(unsigned char *mem, unsigned short exePointer, unsigned short stackPointer);
+int run();

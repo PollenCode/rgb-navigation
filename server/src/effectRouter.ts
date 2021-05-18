@@ -3,9 +3,11 @@ import { Router } from "express";
 import debug from "debug";
 import { withUser } from "./middleware";
 import { sendArduino } from "./socketServer";
-import { ByteType, CompareToken, CompilerContext, IntType } from "rgb-compiler";
+import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, VoidType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
+
+const MAX_EFFECT_PER_USER = 10;
 
 const logger = debug("rgb:effects");
 const router = Router();
@@ -14,17 +16,30 @@ const prisma = new PrismaClient();
 let activeEffectId = -1;
 
 function compile(input: string): [Buffer, number] {
-    let context = new CompilerContext();
-    context.defineDefaultMacros();
-    context.defineVariableAt("r", new ByteType(), 0, true);
-    context.defineVariableAt("g", new ByteType(), 1, true);
-    context.defineVariableAt("b", new ByteType(), 2, true);
-    context.defineVariableAt("index", new IntType(), 4, true);
-    context.defineVariableAt("timer", new IntType(), 8, true);
-    context.compile(input);
-    context.typeCheck();
+    let scope = new Scope();
+    let target = new ByteCodeTarget();
 
-    let [entryPoint, buffer] = context.getLinked();
+    scope.defineVar("r", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(0, new ByteType()) });
+    scope.defineVar("g", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(1, new ByteType()) });
+    scope.defineVar("b", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(2, new ByteType()) });
+    scope.defineVar("index", { type: new IntType(), volatile: true, location: target.allocateVariableAt(4, new IntType()) });
+    scope.defineVar("timer", { type: new IntType(), volatile: true, location: target.allocateVariableAt(8, new IntType()) });
+
+    target.defineDefaultMacros(scope);
+    scope.defineFunc("random", { returnType: new ByteType(), parameterCount: 0, location: target.allocateFunction(1) });
+    scope.defineFunc("out", { returnType: new VoidType(), parameterCount: 1, location: target.allocateFunction(2) });
+    scope.defineFunc("min", { returnType: new IntType(), parameterCount: 2, location: target.allocateFunction(3) });
+    scope.defineFunc("max", { returnType: new IntType(), parameterCount: 2, location: target.allocateFunction(4) });
+    scope.defineFunc("map", { returnType: new IntType(), parameterCount: 5, location: target.allocateFunction(5) });
+    scope.defineFunc("lerp", { returnType: new IntType(), parameterCount: 3, location: target.allocateFunction(6) });
+    scope.defineFunc("clamp", { returnType: new IntType(), parameterCount: 3, location: target.allocateFunction(7) });
+    scope.defineFunc("hsv", { returnType: new VoidType(), parameterCount: 3, location: target.allocateFunction(8) });
+
+    let program = parseProgram(input);
+    program.setTypes(scope);
+    target.compile(program);
+
+    let [entryPoint, buffer] = target.getLinkedProgram();
 
     if (isDevelopment) {
         fs.writeFileSync("../arduino/testing/input.hex", buffer);
@@ -60,21 +75,23 @@ router.post("/effect/build/:id", async (req, res, next) => {
                 compiled: compiled,
                 entryPoint: entryPoint,
                 lastError: null,
+                modifiedAt: new Date(),
             },
         });
     } catch (ex) {
-        logger("compile error", ex.message);
+        logger("compile error", String(ex));
         effect = await prisma.effect.update({
             where: {
                 id: id,
             },
             data: {
-                lastError: ex.message,
+                lastError: String(ex),
+                modifiedAt: new Date(),
             },
         });
         return res.json({
             status: "error",
-            error: ex.message,
+            error: String(ex),
         });
     }
 
@@ -85,12 +102,18 @@ router.post("/effect/build/:id", async (req, res, next) => {
     res.json({ status: "ok" });
 });
 
-router.get("/effect", async (req, res, next) => {
+router.get("/effect", withUser(false, false), async (req, res, next) => {
     let effects = await prisma.effect.findMany({
+        where: {
+            authorId: req.user && req.query.onlyUser === "true" ? req.user.id : undefined,
+        },
         select: {
             name: true,
             id: true,
             code: req.query.code === "true" ? true : false,
+            lastError: true,
+            modifiedAt: true,
+            createdAt: true,
             author: {
                 select: {
                     id: true,
@@ -99,7 +122,17 @@ router.get("/effect", async (req, res, next) => {
                 },
             },
         },
+        orderBy: {
+            modifiedAt: "desc",
+        },
     });
+    // Move active effect to beginning of array
+    if (activeEffectId >= 0) {
+        let activeIndex = effects.findIndex((e) => e.id === activeEffectId);
+        if (activeIndex >= 0) {
+            effects.unshift(effects.splice(activeIndex, 1)[0]);
+        }
+    }
     res.json(effects.map((e) => ({ ...e, active: activeEffectId === e.id })));
 });
 
@@ -143,7 +176,15 @@ router.post("/effect", withUser(false), async (req, res, next) => {
     });
 
     if (existing) {
-        return res.status(400).end("effect with name already exists");
+        return res.status(400).json({ status: "error", error: "Effect with set name already exists." });
+    }
+
+    let userEffectCount = await prisma.effect.count({ where: { authorId: req.user.id } });
+    if (!req.user.admin && userEffectCount > MAX_EFFECT_PER_USER) {
+        return res.status(400).json({
+            status: "error",
+            error: `Reached effect count limit, a max of ${MAX_EFFECT_PER_USER} effects per user is allowed. Please delete some effects to create new ones.`,
+        });
     }
 
     let effect = await prisma.effect.create({
@@ -170,7 +211,10 @@ router.post("/effect", withUser(false), async (req, res, next) => {
         },
     });
 
-    res.json(effect);
+    res.json({
+        status: "ok",
+        effect,
+    });
 });
 
 router.patch("/effect", withUser(false), async (req, res, next) => {
@@ -198,6 +242,7 @@ router.patch("/effect", withUser(false), async (req, res, next) => {
         data: {
             code: code,
             name: name,
+            modifiedAt: new Date(),
         },
         select: {
             code: true,
@@ -230,6 +275,9 @@ router.get("/effect/:id", withUser(false), async (req, res, next) => {
             code: true,
             name: true,
             id: true,
+            modifiedAt: true,
+            createdAt: true,
+            lastError: true,
             author: {
                 select: {
                     id: true,
@@ -246,13 +294,5 @@ router.get("/effect/:id", withUser(false), async (req, res, next) => {
 
     res.json(effect);
 });
-
-// router.post("/effect/build/:id", async (req, res, next) => {
-//     const id = parseInt(req.params.id);
-//     if (isNaN(id)) {
-//         return res.status(400).end();
-//     }
-//     res.end();
-// });
 
 export default router;

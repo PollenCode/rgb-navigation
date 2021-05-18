@@ -23,7 +23,7 @@ export function Button({
             } transition`}>
             {loading && <FontAwesomeIcon className="animate-spin mr-1" icon={faCircleNotch} />}
             {children}
-            {icon && <FontAwesomeIcon icon={icon} className="ml-1" />}
+            {icon && <FontAwesomeIcon icon={icon} className="ml-2" />}
         </button>
     );
 }

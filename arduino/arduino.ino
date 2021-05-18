@@ -1,4 +1,4 @@
-#define PRINTLN Serial.println
+
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define FASTLED_INTERRUPT_RETRY_COUNT 1
 #include <FastLED.h>
@@ -13,7 +13,7 @@ extern "C"
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
 #define INTERLACE_LEVEL 2
-#define MAX_PROGRAM_SIZE 1000
+#define MAX_PROGRAM_SIZE 400
 #define SHIFT_INTERVAL 100
 #define SPLIT_SIZE 2
 
@@ -28,37 +28,135 @@ struct LineEffect
   LineEffect(uint16_t startLed, uint16_t endLed, uint64_t endTime, CRGB color) : startLed(startLed), endLed(endLed), endTime(endTime), color(color) {}
 };
 
-unsigned char idleEffect = 0;
-LineEffect *routes[MAX_LINES];
+LineEffect *routes[MAX_LINES] = {0};
 CRGB leds[LED_COUNT];
-uint32_t counter = 0;
 uint16_t fpsCounter = 0;
 uint64_t lastShown = 0;
 CRGB currentColors[MAX_LINES];
 int receivePosition = 0;
 int bytesToReceive = 0;
-bool isThereAnyEffect = false;
 uint32_t shift = 0;
-
-
 
 int interlacing = 0;
 unsigned short entryPoint = 12;
-unsigned char mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x04, 0x03, 0x00, 0x22, 0x03, 0x04, 0xff, 0x00, 0x08, 0x00, 0x00, 0x03, 0x00, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x05, 0x04, 0xff, 0x00, 0x22, 0x02, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
+uint8_t mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x04, 0x03, 0x00, 0x22, 0x03, 0x04, 0xff, 0x00, 0x08, 0x00, 0x00, 0x03, 0x00, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x05, 0x04, 0xff, 0x00, 0x22, 0x02, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
 
 void setColorLine(int start, int end, CRGB color);
 
-void handler(unsigned char id)
+bool functionHandler(uint8_t id)
 {
+  // Handles the CALL instruction
+  // NOTE: function parameters are pushed on the stack from last to first
   switch (id)
   {
+    case 1:
+      {
+        // byte random()
+        stackPointer -= 4;
+        *(uint32_t *)(mem + stackPointer) = (uint32_t)random(256);
+        break;
+      }
+    case 2:
+      {
+        // int out(int)
+        // Return value is passed value
+        Serial.println(*(uint32_t *)(mem + stackPointer));
+        break;
+      }
+    case 3:
+      {
+        // int min(int, int)
+        uint32_t op1 = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t op2 = *(uint32_t *)(mem + stackPointer);
+        *(uint32_t *)(mem + stackPointer) = op1 > op2 ? op2 : op1;
+        break;
+      }
+    case 4:
+      {
+        // int max(int, int)
+        uint32_t op1 = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t op2 = *(uint32_t *)(mem + stackPointer);
+        *(uint32_t *)(mem + stackPointer) = op1 < op2 ? op2 : op1;
+        break;
+      }
+    case 5:
+      {
+        // int map(int value, int fromLow, int fromHigh, int toLow, int toHigh)
+        // Does the same as https://www.arduino.cc/reference/en/language/functions/math/map/
+        uint32_t toLow = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t toHigh = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t fromHigh = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t fromLow = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t value = *(uint32_t *)(mem + stackPointer);
+        *(uint32_t *)(mem + stackPointer) = map(value, fromLow, fromHigh, toLow, toHigh);
+        break;
+      }
+    case 6:
+      {
+        // int lerp(int from, int to, int percentage)
+        uint32_t percentage = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t to = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t from = *(uint32_t *)(mem + stackPointer);
+        *(uint32_t *)(mem + stackPointer) = from + (percentage / 256.0f) * (to - from);
+        break;
+      }
+    case 7:
+      {
+        // int clamp(int value, int min, int max)
+        uint32_t max = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t min = *(uint32_t *)(mem + stackPointer);
+        stackPointer += 4;
+        uint32_t value = *(uint32_t *)(mem + stackPointer);
+        if (value > max)
+        {
+          *(uint32_t *)(mem + stackPointer) = max;
+        }
+        else if (value < min)
+        {
+          *(uint32_t *)(mem + stackPointer) = min;
+        }
+        else
+        {
+          *(uint32_t *)(mem + stackPointer) = value;
+        }
+        break;
+      }
+    case 8:
+      {
+        // void hsv(int h, int s, int v)
+        // Sets the r, g and b variables using hsv
+        uint32_t v = mem[stackPointer];
+        stackPointer += 4;
+        uint32_t s = mem[stackPointer];
+        stackPointer += 4;
+        uint32_t h = mem[stackPointer];
+        stackPointer += 4;
+        const CHSV hsv(h, s, v);
+        // Places rgb in 0,1,2 of mem
+        hsv2rgb_rainbow(hsv, *(CRGB *)mem);
+        break;
+      }
+    default:
+      Serial.print("invalid call ");
+      Serial.println(id);
+      return false;
   }
+  return true;
 }
 
 void setup()
 {
   executed = 0;
-  callHandler = handler;
+  callHandler = functionHandler;
 
   // Increasing the baud rate will cause corruption and inconsistency
   Serial.begin(19200);
@@ -101,9 +199,9 @@ void setColorLine(int start, int end, CRGB color)
 void handleSetIdle()
 {
   Serial.read();
-  idleEffect = Serial.read();
+ // idleEffect = Serial.read();
   Serial.print("Set idle effect ");
-  Serial.println(idleEffect);
+ // Serial.println(idleEffect);
 }
 
 void handleEnableLine()
@@ -292,37 +390,14 @@ void loop()
     }
 
     anyRoute = true;
-
-    /*// Draw line effect
-      int dir = le->endLed > le->startLed ? 1 : -1;
-      for (int i = le->startLed, j = 0; i != le->endLed && i < LED_COUNT && i >= 0; i += dir, j++)
-      {
-      if ((counter / 10 + j) % 20 == 0)
-      {
-        leds[i] = CRGB(0, 0, 0);
-      }
-      else
-      {
-        leds[i] = CRGB(le->color.r, le->color.g, le->color.b);
-      }
-      }*/
   }
 
-  //line splitter
-  isThereAnyEffect = false;
-  for (byte i = 0; i < 32; i++) {
-    if (routes[i]) {
-      isThereAnyEffect = true;
-      break;
-    }
-  }
-
-  if (isThereAnyEffect) {
+  if (anyRoute) {
     for (int i = 0; i < LED_COUNT; i++) {
       byte currentColorCount = 0;
       bool high = false;
       bool low = false;
-      memset (currentColors, 0, MAX_LINES*sizeof(CRGB));
+      memset (currentColors, 0, MAX_LINES * sizeof(CRGB));
       for (byte j = 0; j < MAX_LINES; j++) {
         if (((routes[j]->startLed <= i && routes[j]->endLed >= i) ||
              (routes[j]->startLed >= i && routes[j]->endLed <= i)) && routes[j] != nullptr) {
@@ -347,45 +422,54 @@ void loop()
 
 
     }
-
   }
   else shift = 0;
   shift++;
 
 
-
-
-  /* if (!anyRoute)
+  if (true)
+  {
+    *(uint32_t *)(mem + 8) = (int)time;
+    int res;
+    for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
     {
-        (INT *)(mem + 8) = (int)time;
-       for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
-       {
-            (INT *)(mem + 4) = i;
-            (INT *)(mem + 0) = 0;
-           run(mem, entryPoint, MAX_PROGRAM_SIZE);
-           leds[i] = CRGB(mem[0], mem[1], mem[2]);
-       }
-       interlacing++;
-       if (interlacing >= INTERLACE_LEVEL)
-           interlacing = 0;
+      *(uint32_t *)(mem + 4) = i;
+      mem[0] = leds[i].r;
+      mem[1] = leds[i].g;
+      mem[2] = leds[i].b;
+      // *(uint32_t *)(mem + 0) = 0; //leds[i]
+      stackPointer = MAX_PROGRAM_SIZE;
+      exePointer = entryPoint;
+      res = run();
+      if (res)
+        break;
+      leds[i] = CRGB(mem[0], mem[1], mem[2]);
     }
-
-    fpsCounter++;
-    if (time - lastShown >= 1000)
+    if (res)
     {
-       Serial.print("FPS: ");
-       Serial.println(fpsCounter);
-       Serial.print("executed: ");
-       Serial.println(executed);
-       // Serial.print("a: ");
-       // Serial.println(*(INT *)(mem + 0xc));
-       // Serial.print((int32_t)(executed & 0xFFFFFFFF));
-       // Serial.println((int32_t)(executed >> 32) & 0xFFFFFFFF);
-       lastShown = time;
-       fpsCounter = 0;
-       executed = 0;
-    }*/
+      Serial.print("non 0 exit code ");
+      Serial.println(res);
+    }
+    interlacing++;
+    if (interlacing >= INTERLACE_LEVEL)
+      interlacing = 0;
+  }
+
+  fpsCounter++;
+  if (time - lastShown >= 1000)
+  {
+    Serial.print("FPS: ");
+    Serial.println(fpsCounter);
+    Serial.print("executed: ");
+    Serial.println(executed);
+    // Serial.print("a: ");
+    // Serial.println(*(uint32_t *)(mem + 0xc));
+    // Serial.print((int32_t)(executed & 0xFFFFFFFF));
+    // Serial.println((int32_t)(executed >> 32) & 0xFFFFFFFF);
+    lastShown = time;
+    fpsCounter = 0;
+    executed = 0;
+  }
 
   FastLED.show();
-  counter++;
 }

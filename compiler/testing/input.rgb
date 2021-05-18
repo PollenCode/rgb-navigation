@@ -1,4 +1,6 @@
 // CHRISTMAS EFFECT
 
 
-out 50? - 20?
+int a = 100 - 10 - 10
+
+out(a);

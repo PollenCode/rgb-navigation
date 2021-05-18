@@ -2,6 +2,7 @@ import { throws } from "assert/strict";
 import io from "socket.io-client";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { LedControllerServerMessage } from "./message";
+import qs from "querystring";
 
 export const isDevelopment = process.env.NODE_ENV === "development";
 export const serverPath = isDevelopment ? "http://localhost:3001" : "https://rgb.ikdoeict.be";
@@ -12,6 +13,19 @@ export interface User {
     email: string;
     identifier: string | null;
     admin: boolean;
+}
+
+export interface Effect {
+    name: string;
+    code: string;
+    id: number;
+    active?: boolean;
+    lastError: string | null;
+    author?: {
+        id: string;
+        name: string;
+        email: string;
+    };
 }
 
 interface Events {
@@ -99,8 +113,8 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/leds", "POST", req);
     }
 
-    public async getEffects(code: boolean = false) {
-        return await this.doFetch("/api/effect" + (code ? "?code=true" : ""), "GET");
+    public async getEffects(code: boolean = false, onlyUser: boolean = false) {
+        return await this.doFetch("/api/effect?" + qs.stringify({ code, onlyUser }), "GET");
     }
 
     public async getEffect(id: number) {
@@ -111,7 +125,10 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect/" + id, "DELETE");
     }
 
-    public async createEffect(effect: { name: string; code: string }) {
+    public async createEffect(effect: {
+        name: string;
+        code: string;
+    }): Promise<{ status: "ok"; effect: Effect } | { status: "error"; error: string }> {
         return await this.doFetch("/api/effect", "POST", effect);
     }
 
@@ -168,6 +185,10 @@ export class RGBClient extends TypedEmitter<Events> {
             id: user.id,
         };
         return await this.doFetch("/api/takeAdmin", "PUT", req);
+    }
+
+    public async lessenrooster() {
+        return await this.doFetch("/api/lessenrooster", "GET");
     }
 }
 

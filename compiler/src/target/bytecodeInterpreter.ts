@@ -1,14 +1,15 @@
-import { OpCode } from "./target";
+import { OpCode } from "./bytecode";
 import debug from "debug";
 
 const info = debug("rgb:interpreter");
 
-export class Interpreter {
+export class ByteCodeInterpreter {
     readonly memory: Uint8Array;
     stackPointer: number;
     exePointer: number;
     debug = false;
-    callHandlers = new Map<number, (i: Interpreter) => void>();
+    decompileOnly = false;
+    callHandlers = new Map<number, (i: ByteCodeInterpreter) => void>();
 
     constructor(memory: Uint8Array, entryPoint: number, memorySize = 2 ** 16) {
         this.memory = new Uint8Array(memorySize);
@@ -160,22 +161,28 @@ export class Interpreter {
                 if (this.debug) info("jrnz");
                 let rel = this.memory[this.exePointer++];
                 if (this.pop()) {
-                    this.exePointer += rel;
+                    if (!this.decompileOnly) {
+                        this.exePointer += rel;
+                    }
                 }
                 break;
             }
             case OpCode.Jrz: {
-                if (this.debug) info("jrz");
                 let rel = this.memory[this.exePointer++];
+                if (this.debug) info("jrz", rel);
                 if (!this.pop()) {
-                    this.exePointer += rel;
+                    if (!this.decompileOnly) {
+                        this.exePointer += rel;
+                    }
                 }
                 break;
             }
             case OpCode.Jr: {
-                if (this.debug) info("jr");
                 let rel = this.memory[this.exePointer++];
-                this.exePointer += rel;
+                if (this.debug) info("jr", rel);
+                if (!this.decompileOnly) {
+                    this.exePointer += rel;
+                }
                 break;
             }
             case OpCode.Eq: {
@@ -208,16 +215,14 @@ export class Interpreter {
                 this.push(this.pop() >= this.pop() ? 1 : 0);
                 break;
             }
-            case OpCode.Out: {
-                info("out", this.pop());
-                break;
-            }
             case OpCode.Call: {
                 let id = this.memory[this.exePointer++];
                 if (this.debug) info("call", id);
-                let handler = this.callHandlers.get(id);
-                if (!handler) throw new Error(`Call function with id ${id} not found at ${this.exePointer - 1}`);
-                handler(this);
+                if (!this.decompileOnly) {
+                    let handler = this.callHandlers.get(id);
+                    if (!handler) throw new Error(`Call function with id ${id} not found at ${this.exePointer - 1}`);
+                    handler(this);
+                }
                 break;
             }
             case OpCode.Sin: {
