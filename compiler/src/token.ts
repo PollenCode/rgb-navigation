@@ -525,7 +525,7 @@ export function expectBlock(c: Lexer) {
     } else {
         let s = expectHalt(c);
         if (!s) {
-            throw new SyntaxError(`Expected statement after :`, c);
+            throw new SyntaxError(`Expected statement`, c);
         }
 
         c.string(";");
