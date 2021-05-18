@@ -37,3 +37,24 @@ b = 0
 ```
 
 This code shows a gradient from black to red.
+
+### Timer
+
+To create moving animations, you should use the builtin `timer` variable. This variable contains the amount of milliseconds since the program has started running.
+
+```c
+r = 0
+g = 0
+// Limit timer to 0 - 255 using modulus
+b = timer % 255
+```
+
+This will show a flashing blue color. This is a rather sudden transition, it is better to use the builtin `sin()` function to create a smooth transition from blue to black.
+
+```
+r = 0
+g = 0
+b = sin(timer)
+```
+
+
