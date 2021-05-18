@@ -1,34 +1,6 @@
 // CHRISTMAS EFFECT
 
-// if 0 {
-//     value = (index + timer / 100) % 32;
-//     value = value > 16 ? 32 - value : value;
-//     r = value * 8;
-//     g = 255 - value * 8;
-//     b = (index + timer) % 255 == 0 ? 255 : 0;
-// }
 
-int c = (timer + index) % 512;
-r = c < 256 ? c : 511 - c;
-g = 0; // c < 128 ? 128 + c : 128 - c;
-b = 0;
+int a = 100 - 10 - 10
 
-// t = timer % 512
-
-// if (t > 256) {
-//     a = 512 - t
-// }
-// else {
-//     a = t
-// }
-
-// if ((index % 2) == 0) {
-//     r = 0
-//     g = a
-//     b = 0
-// }
-// else {
-//     r = 0
-//     g = 0
-//     b = a
-// }
+out(a);

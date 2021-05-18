@@ -83,7 +83,7 @@ router.get("/user", withUser(false, true), (req, res, next) => {
         identifier: req.user.identifier,
         id: req.user.id,
         email: req.user.email,
-        admin: req.user.admin
+        admin: req.user.admin,
     });
 });
 
@@ -99,69 +99,60 @@ router.post("/unbind", withUser(false, true), async (req, res, next) => {
     res.json({ status: "ok", user: user });
 });
 
-router.post("/leds", withUser(false, false), async (req, res, next) => {
+router.post("/leds", withUser(true, false), async (req, res, next) => {
     let message = req.body;
     console.log(message);
     sendArduino(message);
     res.end();
 });
 
-router.get("/users", withUser(false, false), async (req, res, next) => {
+router.get("/users", withUser(true, false), async (req, res, next) => {
     let users = await prisma.user.findMany({});
     res.json({ status: "ok", users });
 });
 
 router.get("/createToken", withUser(true, false), async (req, res, next) => {
-    let token = await prisma.token.create({data:{}});
+    let token = await prisma.token.create({ data: {} });
     let jwt = createToken(String(token.id));
     res.json({ status: "ok", jwt });
 });
 
 router.get("/getTokens", withUser(true, false), async (req, res, next) => {
     let tokens = await prisma.token.findMany({});
-    res.json({status:"ok", tokens})
+    res.json({ status: "ok", tokens });
 });
 
 router.delete("/deleteToken", withUser(true, false), async (req, res, next) => {
     let token = await prisma.token.delete({
         where: {
-            id: req.body.id
-        }
+            id: req.body.id,
+        },
     });
-    res.json({status:"ok", token})
-});
-
-router.post("/giveAdminToAll", withUser(false, false), async (req, res, next) => {
-    let users = await prisma.user.updateMany({
-        data: {
-            admin: true
-        }
-    });
-    res.json({status:"ok", users})
+    res.json({ status: "ok", token });
 });
 
 router.put("/giveAdmin", withUser(true, false), async (req, res, next) => {
     let user = await prisma.user.update({
-        where:{
-            id: req.body.id
+        where: {
+            id: req.body.id,
         },
         data: {
-            admin: true
-        }
+            admin: true,
+        },
     });
-    res.json({status:"ok", user})
-}); 
+    res.json({ status: "ok", user });
+});
 
 router.put("/takeAdmin", withUser(true, false), async (req, res, next) => {
     let user = await prisma.user.update({
-        where:{
-            id: req.body.id
+        where: {
+            id: req.body.id,
         },
         data: {
-            admin: false
-        }
+            admin: false,
+        },
     });
-    res.json({status:"ok", user})
-}); 
+    res.json({ status: "ok", user });
+});
 
 export default router;

@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "interpreter.c": "cpp",
+        "cmath": "c",
+        "exception": "cpp",
+        "new": "cpp"
+    }
+}

@@ -2,6 +2,7 @@ import { throws } from "assert/strict";
 import io from "socket.io-client";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { LedControllerServerMessage } from "./message";
+import qs from "querystring";
 
 export const isDevelopment = process.env.NODE_ENV === "development";
 export const serverPath = isDevelopment ? "http://localhost:3001" : "https://rgb.ikdoeict.be";
@@ -12,6 +13,19 @@ export interface User {
     email: string;
     identifier: string | null;
     admin: boolean;
+}
+
+export interface Effect {
+    name: string;
+    code: string;
+    id: number;
+    active?: boolean;
+    lastError: string | null;
+    author?: {
+        id: string;
+        name: string;
+        email: string;
+    };
 }
 
 interface Events {
@@ -26,7 +40,7 @@ function hexToRgb(hex: any) {
               g: parseInt(result[2], 16),
               b: parseInt(result[3], 16),
           }
-        : 0;
+        : undefined;
 }
 
 export class RGBClient extends TypedEmitter<Events> {
@@ -41,7 +55,6 @@ export class RGBClient extends TypedEmitter<Events> {
     }
 
     public async setAccessToken(token: string | undefined) {
-        console.log("set");
         this.accessToken = token;
         if (token) {
             // Try to get the user
@@ -100,8 +113,8 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/leds", "POST", req);
     }
 
-    public async getEffects(code: boolean = false) {
-        return await this.doFetch("/api/effect" + (code ? "?code=true" : ""), "GET");
+    public async getEffects(code: boolean = false, onlyUser: boolean = false) {
+        return await this.doFetch("/api/effect?" + qs.stringify({ code, onlyUser }), "GET");
     }
 
     public async getEffect(id: number) {
@@ -112,7 +125,10 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect/" + id, "DELETE");
     }
 
-    public async createEffect(effect: { name: string; code: string }) {
+    public async createEffect(effect: {
+        name: string;
+        code: string;
+    }): Promise<{ status: "ok"; effect: Effect } | { status: "error"; error: string }> {
         return await this.doFetch("/api/effect", "POST", effect);
     }
 
@@ -124,16 +140,16 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect/build/" + id + (upload ? "?upload=true" : ""), "POST");
     }
 
-    public async ledController(startLed: number, endLed: number, duration: number, color: any) {
-        let r: any = hexToRgb(color);
+    public async ledController(startLed: number, endLed: number, duration: number, color: string) {
+        let c = hexToRgb(color)!;
         let req: LedControllerServerMessage = {
             type: "enableLine",
             duration: duration,
             startLed: startLed,
             endLed: endLed,
-            r: Number(hexToRgb(color)),
-            g: Number(hexToRgb(color)),
-            b: Number(hexToRgb(color)),
+            r: c.r,
+            g: c.g,
+            b: c.b,
         };
         return await this.doFetch("/api/leds", "POST", req);
     }
@@ -153,22 +169,18 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/deleteToken", "DELETE", req);
     }
 
-    public async giveAdminToAll(){
-        return await this.doFetch("/api/giveAdminToAll", "POST");
-    }
-
-    public async getUsers(){
+    public async getUsers() {
         return await this.doFetch("/api/users", "GET");
     }
 
-    public async giveAdmin(user:any){
+    public async giveAdmin(user: any) {
         let req = {
             id: user.id,
         };
         return await this.doFetch("/api/giveAdmin", "PUT", req);
     }
 
-    public async takeAdmin(user:any){
+    public async takeAdmin(user: any) {
         let req = {
             id: user.id,
         };
