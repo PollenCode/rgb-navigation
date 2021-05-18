@@ -8,13 +8,14 @@ import { SocketContext } from "../SocketContext";
 export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     let { socket } = useContext(AuthContext);
     let [messages, setMessages] = useState<{ name: string; color: string }[]>([]);
+    let [errors, setError] = useState<string>();
 
     async function onNfcAlreadyBound() {
-        // setMessages((messages) => [...messages, "Already bound"]);
+        setError("kaart al gelinkt");
     }
 
     async function onNfcUnknownScanned() {
-        //setMessages((messages) => [...messages, "Unknown scanned"]);
+        setError("onbekende kaart gescanned");
     }
 
     async function onUserShouldFollow(data: any) {
@@ -44,12 +45,14 @@ export function Overview(props: RouteComponentProps<{ roomId: string }>) {
                     <Usercolor name={e.name} color={e.color} />
                 ))}
             </ul>
-            <div className="bg-red-700 text-white mt-auto p-8 font-bold text-5xl overflow-hidden flex-shrink-0">
-                <div className="error-shake">
-                    <FontAwesomeIcon icon={faExclamationTriangle} className="transform scale-125 mr-7 opacity-75" />
-                    stijns code is kapot
+            {errors && (
+                <div className="bg-red-700 text-white mt-auto p-8 font-bold text-5xl overflow-hidden flex-shrink-0">
+                    <div className="error-shake">
+                        <FontAwesomeIcon icon={faExclamationTriangle} className="transform scale-125 mr-7 opacity-75" />
+                        {errors}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
