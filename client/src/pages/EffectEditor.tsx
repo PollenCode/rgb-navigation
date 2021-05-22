@@ -265,7 +265,6 @@ function tryCompile(monaco: Monaco, code: string, model: monaco.editor.ITextMode
     scope.defineFunc("cos", { returnType: new IntType(), parameterCount: 1 });
     scope.defineFunc("abs", { returnType: new IntType(), parameterCount: 1 });
     scope.defineFunc("random", { returnType: new ByteType(), parameterCount: 0 });
-    scope.defineFunc("out", { returnType: new VoidType(), parameterCount: 1 });
     scope.defineFunc("min", { returnType: new IntType(), parameterCount: 2 });
     scope.defineFunc("max", { returnType: new IntType(), parameterCount: 2 });
     scope.defineFunc("map", { returnType: new IntType(), parameterCount: 5 });
@@ -412,8 +411,8 @@ function getInfoForFunction(functionName: string): monaco.languages.SignatureInf
                     ],
                 },
             ];
-        case "out":
-            return [{ label: "int out(int value)", documentation: "Prints a value to the console and returns it", parameters: [{ label: "value" }] }];
+        // case "out":
+        //     return [{ label: "int out(int value)", documentation: "Prints a value to the console and returns it", parameters: [{ label: "value" }] }];
         case "random":
             return [{ label: "byte random()", documentation: "Returns a random value between 0 -> 255", parameters: [] }];
         default:
@@ -454,9 +453,10 @@ function findVariables(monaco: Monaco, model: monaco.editor.ITextModel): monaco.
     const DEFAULT_VARS: { name: string; documentation?: string }[] = [
         { name: "index", documentation: "The number of the current led" },
         { name: "timer", documentation: "Time in milliseconds since the program has started" },
-        { name: "r", documentation: "The red value of the current led" },
-        { name: "g", documentation: "The green value of the current led" },
-        { name: "b", documentation: "The blue value of the current led" },
+        { name: "r", documentation: "The red value of the current led (the index-th led)" },
+        { name: "g", documentation: "The green value of the current led (the index-th led)" },
+        { name: "b", documentation: "The blue value of the current led (the index-th led)" },
+        { name: "LED_COUNT", documentation: "The amount of leds in the ledstrip" },
     ];
     DEFAULT_VARS.forEach((e) =>
         vars.push({
@@ -479,15 +479,15 @@ function registerLanguage(monaco: Monaco) {
         tokenizer: {
             root: [
                 [/\/\/.*/, "comment"],
-                [/\b(if|else|int|short|float|byte|halt)\b/, "keyword"],
-                [/(=|==|>|<|>=|<=|\+|-|\*|%|\^|:|\?)/, "operator"],
+                [/\b(if|else|int|byte|halt)\b/, "keyword"],
+                [/(=|==|>|<|>=|\|\||<=|\+|\/|-|\*|%|\^|:|\?)/, "operator"],
                 [/\b(\d+)\b/, "number"],
             ],
         },
     });
     monaco.editor.defineTheme("rgb-lang-theme", {
-        base: "vs-dark", // can also be vs-dark or hc-black
-        inherit: true, // can also be false to completely replace the builtin rules
+        base: "vs-dark", // Can also be vs-dark or hc-black
+        inherit: true,
         colors: {},
         rules: [
             { token: "operator", foreground: "bb7777" },
@@ -555,7 +555,7 @@ function registerLanguage(monaco: Monaco) {
         provideCompletionItems: (model) => ({
             suggestions: [
                 { kind: monaco.languages.CompletionItemKind.Class, insertText: "int", range: undefined as any, label: "int" },
-                { kind: monaco.languages.CompletionItemKind.Class, insertText: "float", range: undefined as any, label: "float" },
+                // { kind: monaco.languages.CompletionItemKind.Class, insertText: "float", range: undefined as any, label: "float" },
                 { kind: monaco.languages.CompletionItemKind.Class, insertText: "byte", range: undefined as any, label: "byte" },
                 { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "if", range: undefined as any, label: "if" },
                 { kind: monaco.languages.CompletionItemKind.Keyword, insertText: "else", range: undefined as any, label: "else" },

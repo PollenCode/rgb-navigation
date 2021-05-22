@@ -6,6 +6,8 @@ interface Memory {
     index: number;
 }
 
+let timeOffset = new Date().getTime();
+
 export class SimulateDataEvent extends Event {
     constructor(public memory: Memory) {
         super("simulate-data");
@@ -26,11 +28,9 @@ export function beginRenderLeds(canvas: HTMLCanvasElement) {
     let funcs = {
         sin: (e: number) => Math.sin((e / 128.0) * 3.14) * 128 + 128,
         cos: (e: number) => Math.cos((e / 128.0) * 3.14) * 128 + 128,
+        abs: (e: number) => Math.abs(e),
+
         random: () => Math.floor(Math.random() * 256),
-        out: (e: any) => {
-            // window.dispatchEvent(new SimulateOutEvent(String(e) + "\n"));
-            return e;
-        },
         min: (n1: number, n2: number) => (n1 > n2 ? n2 : n1),
         max: (n1: number, n2: number) => (n1 < n2 ? n2 : n1),
         map: (x: number, fromMin: number, fromMax: number, toMin: number, toMax: number) =>
@@ -44,7 +44,7 @@ export function beginRenderLeds(canvas: HTMLCanvasElement) {
 
     function renderLeds() {
         if ((window as any).runLeds) {
-            memory.timer = new Date().getTime();
+            memory.timer = new Date().getTime() - timeOffset;
             for (let i = 0; i < leds.length; i++) {
                 memory.index = i;
 

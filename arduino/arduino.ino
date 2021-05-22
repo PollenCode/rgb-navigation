@@ -56,13 +56,13 @@ bool functionHandler(uint8_t id)
         *(int32_t *)(mem + stackPointer) = (int32_t)random(256);
         break;
     }
-    case 2:
-    {
-        // int out(int)
-        // Return value is passed value
-        Serial.println(*(int32_t *)(mem + stackPointer));
-        break;
-    }
+    // case 2:
+    // {
+    //     // int out(int)
+    //     // Return value is passed value
+    //     Serial.println(*(int32_t *)(mem + stackPointer));
+    //     break;
+    // }
     case 3:
     {
         // int min(int, int)
