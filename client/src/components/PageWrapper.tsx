@@ -24,7 +24,6 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
     const client = useContext(AuthContext);
     return (
         <div className="flex flex-col h-full overflow-hidden">
-            <canvas height="10px" width="784px" id="leds-canvas" className="w-full" />
             <nav className="flex items-center h-12 flex-shrink-0  border-b">
                 <img src="/icon.png" className="w-5 h-5 ml-3 " alt="" style={{ imageRendering: "pixelated" }} />
                 <span className="ml-2 font-bold text-lg text-gray-700">Navigation</span>
