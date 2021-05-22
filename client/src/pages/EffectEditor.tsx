@@ -22,7 +22,7 @@ import {
 import { Effect, LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
-import { ByteType, IntType, parseProgram, Scope, SyntaxError, TypeError, VoidType } from "rgb-compiler";
+import { BlockToken, ByteType, IntType, JavascriptTarget, parseProgram, Scope, SyntaxError, TypeError, VoidType } from "rgb-compiler";
 
 const MAX_OUTPUT_LINES = 400;
 
@@ -72,6 +72,21 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     useEffect(() => {
         client.getEffect(parseInt(props.match.params.id)).then(setEffect);
 
+        let frameRequester = window.requestAnimationFrame(renderLeds);
+        let memory = {};
+        let funcs = {
+            sin: (e: number) => Math.sin(e),
+        };
+        function renderLeds() {
+            // The run function is placed on the global window
+            // The run function is the javascript compiled version of rgblang
+            if ("run" in window) {
+                (window as any).run(memory, funcs);
+            }
+
+            frameRequester = window.requestAnimationFrame(renderLeds);
+        }
+
         function onArduinoData(data: LedControllerMessage) {
             appendOutput(data.data, data.type === "error");
         }
@@ -82,6 +97,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
         return () => {
             client.socket.off("arduinoOutput", onArduinoData);
             client.socket.emit("arduinoSubscribe", false);
+            window.cancelAnimationFrame(frameRequester);
         };
     }, []);
 
@@ -91,7 +107,12 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
 
     useEffect(() => {
         if (editor && monaco && code) {
-            setModelMarkers(monaco, code, editor.getModel()!);
+            let compiled = tryCompile(monaco, code, editor.getModel()!);
+            if (compiled) {
+                // console.log("compiled", compiled);
+                eval(compiled); // Yikes, transition to iframe sandboxing?
+                console.log((window as any).run);
+            }
         }
     }, [code, monaco, editor]);
 
@@ -225,31 +246,35 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     );
 }
 
-function setModelMarkers(monaco: Monaco, code: string, model: monaco.editor.ITextModel) {
+function tryCompile(monaco: Monaco, code: string, model: monaco.editor.ITextModel) {
+    let scope = new Scope();
+    scope.defineVar("timer", { type: new IntType(), volatile: true, readonly: true });
+    scope.defineVar("index", { type: new IntType(), volatile: true, readonly: true });
+    scope.defineVar("LED_COUNT", { type: new IntType(), readonly: true });
+    scope.setVarKnownValue("LED_COUNT", 784);
+    scope.defineVar("r", { type: new ByteType(), volatile: true });
+    scope.defineVar("g", { type: new ByteType(), volatile: true });
+    scope.defineVar("b", { type: new ByteType(), volatile: true });
+    scope.defineFunc("sin", { returnType: new IntType(), parameterCount: 1 });
+    scope.defineFunc("cos", { returnType: new IntType(), parameterCount: 1 });
+    scope.defineFunc("abs", { returnType: new IntType(), parameterCount: 1 });
+    scope.defineFunc("random", { returnType: new ByteType(), parameterCount: 0 });
+    scope.defineFunc("out", { returnType: new VoidType(), parameterCount: 1 });
+    scope.defineFunc("min", { returnType: new IntType(), parameterCount: 2 });
+    scope.defineFunc("max", { returnType: new IntType(), parameterCount: 2 });
+    scope.defineFunc("map", { returnType: new IntType(), parameterCount: 5 });
+    scope.defineFunc("lerp", { returnType: new IntType(), parameterCount: 3 });
+    scope.defineFunc("clamp", { returnType: new IntType(), parameterCount: 3 });
+    scope.defineFunc("hsv", { returnType: new VoidType(), parameterCount: 3 });
+
     let errors = [] as monaco.editor.IMarkerData[];
+    let program: BlockToken;
     try {
-        let program = parseProgram(code);
-        let scope = new Scope();
-        scope.defineVar("timer", { type: new IntType(), volatile: true, readonly: true });
-        scope.defineVar("index", { type: new IntType(), volatile: true, readonly: true });
-        scope.defineVar("LED_COUNT", { type: new IntType(), readonly: true });
-        scope.setVarKnownValue("LED_COUNT", 784);
-        scope.defineVar("r", { type: new ByteType(), volatile: true });
-        scope.defineVar("g", { type: new ByteType(), volatile: true });
-        scope.defineVar("b", { type: new ByteType(), volatile: true });
-        scope.defineFunc("sin", { returnType: new IntType(), parameterCount: 1 });
-        scope.defineFunc("cos", { returnType: new IntType(), parameterCount: 1 });
-        scope.defineFunc("abs", { returnType: new IntType(), parameterCount: 1 });
-        scope.defineFunc("random", { returnType: new ByteType(), parameterCount: 0 });
-        scope.defineFunc("out", { returnType: new VoidType(), parameterCount: 1 });
-        scope.defineFunc("min", { returnType: new IntType(), parameterCount: 2 });
-        scope.defineFunc("max", { returnType: new IntType(), parameterCount: 2 });
-        scope.defineFunc("map", { returnType: new IntType(), parameterCount: 5 });
-        scope.defineFunc("lerp", { returnType: new IntType(), parameterCount: 3 });
-        scope.defineFunc("clamp", { returnType: new IntType(), parameterCount: 3 });
-        scope.defineFunc("hsv", { returnType: new VoidType(), parameterCount: 3 });
+        program = parseProgram(code);
         program.setTypes(scope);
-        errors = [];
+        let target = new JavascriptTarget();
+        target.compile(program);
+        return target.code;
     } catch (exx) {
         console.log(String(exx));
         if (exx.name === "SyntaxError") {
@@ -284,8 +309,9 @@ function setModelMarkers(monaco: Monaco, code: string, model: monaco.editor.ITex
             console.error(exx);
             errors = [];
         }
+    } finally {
+        monaco.editor.setModelMarkers(model, "rgb-lang", errors);
     }
-    monaco.editor.setModelMarkers(model, "rgb-lang", errors);
 }
 
 function getInfoForFunction(functionName: string): monaco.languages.SignatureInformation[] {

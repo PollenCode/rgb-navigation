@@ -17,10 +17,9 @@ import {
 
 export class JavascriptTarget implements Target {
     private buffer: string[] = [];
-    private header: string[] = ['"use strict";\n'];
 
     get code() {
-        return this.header.join("") + "function run()" + this.buffer.join("");
+        return "function run(mem, funcs)" + this.buffer.join("");
     }
 
     private compileToken(token: Token) {
@@ -51,16 +50,18 @@ export class JavascriptTarget implements Target {
     }
 
     private compileReference(token: ReferenceToken) {
+        this.buffer.push("mem.");
         this.buffer.push(token.varName);
     }
 
     private compileAssignment(token: AssignmentToken) {
         if (token.typeName) {
-            this.header.push("let ");
-            this.header.push(token.varName);
-            this.header.push(";\n");
+            // this.header.push("let ");
+            // this.header.push(token.varName);
+            // this.header.push(";\n");
         }
         if (token.value && (token.constantValue === undefined || token.variable.volatile)) {
+            this.buffer.push("mem.");
             this.buffer.push(token.varName);
             this.buffer.push("=");
             this.compileToken(token.value);
@@ -68,6 +69,7 @@ export class JavascriptTarget implements Target {
     }
 
     private compileCall(token: CallToken) {
+        this.buffer.push("funcs.");
         this.buffer.push(token.functionName);
         this.buffer.push("(");
         for (let i = 0; i < token.function.parameterCount; i++) {
@@ -96,6 +98,10 @@ export class JavascriptTarget implements Target {
     }
 
     private compile2Operands(token: MulToken | SumToken | CompareToken) {
+        if (token.constantValue !== undefined) {
+            this.buffer.push(token.constantValue.toString());
+            return;
+        }
         this.compileToken(token.op1);
         this.buffer.push(token.operator);
         this.compileToken(token.op2);
@@ -118,7 +124,7 @@ export class JavascriptTarget implements Target {
         this.buffer.push(")");
         this.compileToken(token.ifBlock);
         if (token.elseBlock) {
-            this.buffer.push("else");
+            this.buffer.push("else ");
             this.compileToken(token.elseBlock);
         }
     }
