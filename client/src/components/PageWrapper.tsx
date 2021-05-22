@@ -24,10 +24,10 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
     const client = useContext(AuthContext);
     return (
         <div className="flex flex-col h-full overflow-hidden">
-            <nav className="border-b  flex items-center h-12 flex-shrink-0">
+            <canvas height="10px" width="784px" id="leds-canvas" className="w-full" />
+            <nav className="flex items-center h-12 flex-shrink-0  border-b">
                 <img src="/icon.png" className="w-5 h-5 ml-3 " alt="" style={{ imageRendering: "pixelated" }} />
                 <span className="ml-2 font-bold text-lg text-gray-700">Navigation</span>
-                <span>nice</span>
                 <div className="ml-auto text-right text-sm leading-4 px-3">
                     <p className="font-semibold">Ingelogd als {client.user?.name}</p>
                     <button className="text-blue-600" onClick={() => client.setAccessToken(undefined)}>

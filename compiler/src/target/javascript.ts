@@ -19,7 +19,7 @@ export class JavascriptTarget implements Target {
     private buffer: string[] = [];
 
     get code() {
-        return "function run(mem, funcs)" + this.buffer.join("");
+        return "(mem, funcs) => " + this.buffer.join("");
     }
 
     private compileToken(token: Token) {
@@ -124,23 +124,23 @@ export class JavascriptTarget implements Target {
         this.buffer.push(")");
         this.compileToken(token.ifBlock);
         if (token.elseBlock) {
-            this.buffer.push("else ");
+            this.buffer.push("else");
             this.compileToken(token.elseBlock);
         }
     }
 
     private compileBlock(token: BlockToken) {
-        if (token.statements.length === 1) {
-            this.compileToken(token.statements[0]);
+        // if (token.statements.length === 1) {
+        //     this.compileToken(token.statements[0]);
+        //     this.buffer.push(";");
+        // } else {
+        this.buffer.push("{");
+        token.statements.forEach((e) => {
+            this.compileToken(e);
             this.buffer.push(";");
-        } else {
-            this.buffer.push("{");
-            token.statements.forEach((e) => {
-                this.compileToken(e);
-                this.buffer.push(";");
-            });
-            this.buffer.push("}");
-        }
+        });
+        this.buffer.push("}");
+        // }
     }
 
     private compileHalt(token: HaltToken) {
