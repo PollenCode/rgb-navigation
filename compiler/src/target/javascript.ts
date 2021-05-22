@@ -50,6 +50,10 @@ export class JavascriptTarget implements Target {
     }
 
     private compileReference(token: ReferenceToken) {
+        if (token.constantValue !== undefined) {
+            this.buffer.push(token.constantValue.toString());
+            return;
+        }
         this.buffer.push("mem.");
         this.buffer.push(token.varName);
     }
@@ -64,7 +68,18 @@ export class JavascriptTarget implements Target {
             this.buffer.push("mem.");
             this.buffer.push(token.varName);
             this.buffer.push("=");
+
+            if (token.type.size === 4 || token.type.size === 1) {
+                this.buffer.push("(");
+            }
+
             this.compileToken(token.value);
+
+            if (token.type.size === 4) {
+                this.buffer.push(") & 0xffffff");
+            } else if (token.type.size === 1) {
+                this.buffer.push(") & 0xff");
+            }
         }
     }
 

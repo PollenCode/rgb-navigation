@@ -400,12 +400,13 @@ export class AssignmentToken extends Token {
                 if (!this.value.type.isAssignableTo(this.type)) {
                     throw new TypeError(`Type ${this.value.type.name} is not assignable to ${this.type.name}`, this);
                 }
-                this.constantValue = this.value.constantValue;
+                // this.constantValue = this.value.constantValue;
                 scope.setVarKnownValue(this.varName, this.value.constantValue);
             }
         } else {
             // Set variable
             this.variable = scope.getVar(this.varName)!;
+            this.type = this.variable.type;
             if (!this.variable) {
                 throw new TypeError(`Variable ${this.varName} was not found`, this);
             }
@@ -416,7 +417,7 @@ export class AssignmentToken extends Token {
             if (!this.value!.type.isAssignableTo(this.variable.type)) {
                 throw new TypeError(`Type ${this.value!.type.name} is not assignable to ${this.variable.type.name}`, this);
             }
-            this.constantValue = this.value!.constantValue;
+            // this.constantValue = this.value!.constantValue;
             scope.setVarKnownValue(this.varName, this.value!.constantValue);
         }
     }
