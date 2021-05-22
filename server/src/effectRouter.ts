@@ -82,7 +82,7 @@ router.post("/effect/build/:id", async (req, res, next) => {
             },
         });
     } catch (ex) {
-        logger("compile error", String(ex));
+        logger("compile error", ex);
         effect = await prisma.effect.update({
             where: {
                 id: id,

@@ -6,6 +6,7 @@ import {
     CompareToken,
     HaltToken,
     IfToken,
+    LogicToken,
     MulToken,
     ReferenceToken,
     SumToken,
@@ -29,7 +30,8 @@ export class JavascriptTarget implements Target {
             case TokenId.Mul:
             case TokenId.Sum:
             case TokenId.Compare:
-                return this.compile2Operands(token as MulToken | SumToken | CompareToken);
+            case TokenId.Logic:
+                return this.compile2Operands(token as MulToken | SumToken | CompareToken | LogicToken);
             case TokenId.Call:
                 return this.compileCall(token as CallToken);
             case TokenId.Assignment:
@@ -112,7 +114,7 @@ export class JavascriptTarget implements Target {
         this.buffer.push(")");
     }
 
-    private compile2Operands(token: MulToken | SumToken | CompareToken) {
+    private compile2Operands(token: MulToken | SumToken | CompareToken | LogicToken) {
         if (token.constantValue !== undefined) {
             this.buffer.push(token.constantValue.toString());
             return;

@@ -7,6 +7,7 @@ import {
     CompareToken,
     HaltToken,
     IfToken,
+    LogicToken,
     MulToken,
     ReferenceToken,
     SumToken,
@@ -101,6 +102,8 @@ export class ByteCodeTarget implements Target {
                 return this.compileValue(token as ValueToken, isRoot);
             case TokenId.Block:
                 return this.compileBlock(token as BlockToken, isRoot);
+            case TokenId.Logic:
+                return this.compileLogic(token as LogicToken, isRoot);
             default:
                 throw new Error(`Token ${token.id} not implemented`);
         }
@@ -298,11 +301,11 @@ export class ByteCodeTarget implements Target {
         // <- TODO: deallocate variables allocated in if statement
     }
 
-    compileHalt(token: HaltToken) {
+    private compileHalt(token: HaltToken) {
         this.writer.halt();
     }
 
-    compileCall(token: CallToken, isRoot: boolean) {
+    private compileCall(token: CallToken, isRoot: boolean) {
         let func = token.function as Func<FunctionLocation>;
         if (func.location === undefined) throw new Error(`Location of function ${token.functionName} must be known at compile time.`);
 
@@ -317,6 +320,32 @@ export class ByteCodeTarget implements Target {
         if (isRoot && !(func.returnType instanceof VoidType)) {
             this.writer.consume();
         }
+    }
+
+    private compileLogic(token: LogicToken, isRoot: boolean) {
+        this.compileToken(token.op1);
+        if (!isRoot) {
+            this.writer.dup();
+        }
+        let jumpLocation = this.writer.position;
+        this.writer.position += 2;
+
+        if (!isRoot) {
+            this.writer.consume();
+        }
+        this.compileToken(token.op2);
+        if (isRoot) {
+            this.writer.consume();
+        }
+
+        let save = this.writer.position;
+        this.writer.position = jumpLocation;
+        if (token.operator === "&&") {
+            this.writer.jrz(save - jumpLocation - 2);
+        } else {
+            this.writer.jrnz(save - jumpLocation - 2);
+        }
+        this.writer.position = save;
     }
 
     compile(token: BlockToken) {

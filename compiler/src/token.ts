@@ -12,17 +12,18 @@ const error = debug("rgb:compiler:error");
 const RESERVED_WORDS = ["if", "else", "halt"];
 
 export enum TokenId {
-    Block,
-    Sum,
-    Mul,
-    Ternary,
-    Reference,
-    Call,
-    Halt,
-    If,
-    Assignment,
-    Value,
-    Compare,
+    Block, // { code; }
+    Sum, // a + b
+    Mul, // a * b
+    Ternary, // a ? b : c
+    Reference, // val
+    Call, // func()
+    Halt, // halt;
+    If, // if () {}
+    Assignment, // int val = 0
+    Value, // 0
+    Compare, // >= <= == != < >
+    Logic, // || &&
 }
 
 export abstract class Token {
@@ -100,7 +101,7 @@ export class TernaryToken extends Token {
 }
 
 function expectTernary(c: Lexer): Token | undefined {
-    let op = expectCompare(c) || expectBrackets(c);
+    let op = expectLogic(c) || expectBrackets(c);
     if (!op) {
         return;
     }
@@ -406,7 +407,6 @@ export class AssignmentToken extends Token {
         } else {
             // Set variable
             this.variable = scope.getVar(this.varName)!;
-            this.type = this.variable.type;
             if (!this.variable) {
                 throw new TypeError(`Variable ${this.varName} was not found`, this);
             }
@@ -414,6 +414,7 @@ export class AssignmentToken extends Token {
                 throw new TypeError(`Variable ${this.varName} is read-only`, this);
             }
 
+            this.type = this.variable.type;
             if (!this.value!.type.isAssignableTo(this.variable.type)) {
                 throw new TypeError(`Type ${this.value!.type.name} is not assignable to ${this.variable.type.name}`, this);
             }
@@ -781,4 +782,61 @@ export function expectCall(c: Lexer, inline: boolean) {
     c.readWhitespace();
 
     return new CallToken(c, position, funcName, parameters);
+}
+
+export function expectLogic(c: Lexer) {
+    let position = c.position;
+
+    let op1 = expectCompare(c) || expectBrackets(c);
+    if (!op1) {
+        return;
+    }
+
+    let operator: "&&" | "||";
+    if (c.string("&&")) {
+        operator = "&&";
+    } else if (c.string("||")) {
+        operator = "||";
+    } else {
+        return op1;
+    }
+    c.readWhitespace();
+
+    let op2 = expectCompare(c) || expectBrackets(c);
+    if (!op2) {
+        throw new SyntaxError(`Expected second operand for ${operator}`, c, c.position);
+    }
+
+    return new LogicToken(c, position, op1, op2, operator);
+}
+
+export class LogicToken extends Token {
+    constructor(lexer: Lexer, position: number, public op1: Token, public op2: Token, public operator: "||" | "&&") {
+        super(TokenId.Logic, lexer, position);
+    }
+
+    toString(): string {
+        return `${this.op1} ${this.operator} ${this.op2}`;
+    }
+
+    setTypes(scope: Scope): void {
+        this.op1.setTypes(scope);
+        this.op2.setTypes(scope);
+        this.type = new IntType();
+
+        if (this.op1.constantValue !== undefined) {
+            switch (this.operator) {
+                case "||":
+                    if (!this.op1.constantValue) this.constantValue = this.op2.constantValue;
+                    else this.constantValue = this.op1.constantValue;
+                    break;
+                case "&&":
+                    if (this.op1.constantValue) this.constantValue = this.op2.constantValue;
+                    else this.constantValue = this.op1.constantValue;
+                    break;
+                default:
+                    throw new Error();
+            }
+        }
+    }
 }
