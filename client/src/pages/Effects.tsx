@@ -117,7 +117,7 @@ b = 0
 function EffectsTab(props: HTMLProps<HTMLDivElement> & { active?: boolean }) {
     return (
         <div
-            className={`py-2 px-4 bg-gray-100 font-bold text-sm mr-2 last:mr-0 flex-grow rounded-lg text-center transitio cursor-pointer ${
+            className={`py-2 px-4 bg-gray-100 font-bold mr-2 last:mr-0 flex-grow rounded-lg text-center transitio cursor-pointer ${
                 props.active ? "bg-blue-600 text-white" : "hover:bg-blue-100"
             }`}
             {...props}
@@ -128,7 +128,7 @@ function EffectsTab(props: HTMLProps<HTMLDivElement> & { active?: boolean }) {
 export function Effects() {
     const client = useContext(AuthContext);
     const [effects, setEffects] = useState<Effect[] | undefined>();
-    const [onlyUser, setOnlyUser] = useState(false);
+    const [onlyUser, setOnlyUser] = useState(true);
     const history = useHistory();
 
     useEffect(() => {
@@ -143,11 +143,11 @@ export function Effects() {
         <div className="flex justify-center px-1 md:px-4 pt-4">
             <div style={{ width: "800px" }}>
                 <div className="flex mb-5 mt-2 justify-center">
-                    <EffectsTab active={!onlyUser} onClick={() => setOnlyUser(false)}>
-                        Alle effecten
-                    </EffectsTab>
                     <EffectsTab active={onlyUser} onClick={() => setOnlyUser(true)}>
                         Mijn effecten
+                    </EffectsTab>
+                    <EffectsTab active={!onlyUser} onClick={() => setOnlyUser(false)}>
+                        Alle effecten
                     </EffectsTab>
                 </div>
                 <Button

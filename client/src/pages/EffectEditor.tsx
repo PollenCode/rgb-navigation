@@ -178,6 +178,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                 )}
                 {effect && !readOnly && (
                     <Button
+                        allowSmall
                         style={{ marginRight: "0.3em" }}
                         loading={loading}
                         icon={faSave}
@@ -187,7 +188,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     </Button>
                 )}
                 {effect && !readOnly && (
-                    <Button danger icon={faTrash} disabled={loading} onClick={deleteEffect}>
+                    <Button allowSmall danger icon={faTrash} disabled={loading} onClick={deleteEffect}>
                         Verwijder
                     </Button>
                 )}
