@@ -23,6 +23,7 @@ import { Effect, LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
 import { BlockToken, ByteType, IntType, JavascriptTarget, parseProgram, Scope, SyntaxError, TypeError, VoidType } from "rgb-compiler";
+import { SimulateDataEvent } from "../simulate";
 
 const MAX_OUTPUT_LINES = 400;
 
@@ -37,6 +38,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
     const history = useHistory();
     const outputRef = useRef<HTMLPreElement>(null);
+    const simulateDataRef = useRef<HTMLPreElement>(null);
     const monaco = useMonaco();
 
     function clearOutput() {
@@ -76,12 +78,23 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
             appendOutput(data.data, data.type === "error");
         }
 
+        function onSimulateData(ev: SimulateDataEvent) {
+            if (!simulateDataRef.current) return;
+            simulateDataRef.current.innerText = JSON.stringify(ev.memory, null, 2);
+        }
+
+        window.addEventListener("simulate-data" as any, onSimulateData);
         client.socket.on("arduinoOutput", onArduinoData);
         client.socket.emit("arduinoSubscribe", true);
+
+        for (let i = 0; i < 100; i++) {
+            appendOutput("starting...\n");
+        }
 
         return () => {
             client.socket.off("arduinoOutput", onArduinoData);
             client.socket.emit("arduinoSubscribe", false);
+            window.removeEventListener("simulate-data" as any, onSimulateData);
         };
     }, []);
 
@@ -214,16 +227,25 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
             </div>
             {showOutput && (
                 <div className="absolute bottom-0 right-0 w-full border-t bg-black bg-opacity-10 text-white" style={{ backdropFilter: "blur(8px)" }}>
-                    <h2 className="font-bold px-4 py-2 flex">
-                        Output
-                        <span title="Clear output" className="ml-auto cursor-pointer mr-5" onClick={() => clearOutput()}>
+                    <div className="relative">
+                        <span title="Clear output" className="cursor-pointer absolute top-2 right-10" onClick={() => clearOutput()}>
                             <FontAwesomeIcon icon={faTrash} />
                         </span>
-                        <span title="Hide output" className="cursor-pointer" onClick={() => setShowOutput(false)}>
+                        <span title="Hide output" className="cursor-pointer absolute top-2 right-3" onClick={() => setShowOutput(false)}>
                             <FontAwesomeIcon icon={faTimes} />
                         </span>
-                    </h2>
-                    <pre className="px-4 py-2 max-h-80 h-80 overflow-auto" ref={outputRef}></pre>
+                        <div className="flex overflow-hidden">
+                            <div className=" flex-grow overflow-hidden">
+                                <h2 className="px-4 py-2 font-bold mb-1">Output</h2>
+                                <pre className="px-4 py-2 overflow-auto max-h-80 h-80" ref={outputRef}></pre>
+                            </div>
+                            <div className=" flex-shrink-0 w-72">
+                                <h2 className="px-4 py-2 font-bold">Memory</h2>
+                                <pre className="px-4 py-2 overflow-hidden" ref={simulateDataRef}></pre>
+                                <small className="px-4 py-2 mb-t block opacity-40">(waardes van de laatste led)</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
