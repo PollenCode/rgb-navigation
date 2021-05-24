@@ -177,7 +177,9 @@ export function Effects(props: { userOnly?: boolean }) {
                         />
                     ))}
                     {effects.length === 0 && (
-                        <p className="text-gray-500 px-4 py-3">{props.userOnly ? "Je hebt nog geen effecten" : "Er zijn nog geen effecten"}</p>
+                        <p className="text-gray-500 px-4 py-3">
+                            {props.userOnly ? "Je hebt nog geen effecten. Wat is een effect? Een effect is een" : "Er zijn nog geen effecten"}
+                        </p>
                     )}
                 </List>
             </div>

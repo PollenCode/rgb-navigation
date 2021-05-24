@@ -169,7 +169,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     }
 
     return (
-        <div className="h-full overflow-hidden relative flex flex-col max-h-full">
+        <div className="flex-grow overflow-hidden relative flex flex-col">
             <Prompt when={effect.code !== code && !readOnly} message="Ben je zeker dat je wilt weg gaan? Je hebt onopgeslagen aanpassingen." />
             <div className="py-2 px-4 border-b font-semibold text-gray-600 flex items-center">
                 <button onClick={() => history.goBack()} className="text-blue-600 pr-4">
@@ -227,7 +227,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     {status.status}
                 </div>
             </div> */}
-            <div className="flex-grow flex-shrink relative w-full max-w-full fade-in ">
+            <div className="flex-grow flex-shrink relative w-full max-w-full fade-in">
                 <Editor
                     onMount={(editor) => {
                         setEditor(editor);

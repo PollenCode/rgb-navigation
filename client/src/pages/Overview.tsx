@@ -8,7 +8,7 @@ import { SocketContext } from "../SocketContext";
 export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     let { socket } = useContext(AuthContext);
     let [messages, setMessages] = useState<{ name: string; color: string }[]>([]);
-    let [errors, setError] = useState<string>();
+    let [errors, setError] = useState<string>("Test fout");
 
     async function onNfcAlreadyBound() {
         setError("kaart al gelinkt");
@@ -39,7 +39,7 @@ export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     }, []);
 
     return (
-        <div className="flex-col flex h-full">
+        <div className="flex-col flex h-screen">
             <ul className="ml-10 mt-10 flex flex-col flex-grow overflow-hidden flex-wrap">
                 {messages.map((e) => (
                     <Usercolor name={e.name} color={e.color} />
