@@ -1,6 +1,6 @@
 import React, { HTMLProps, useContext, useEffect, useRef, useState } from "react";
 import { Prompt, RouteComponentProps, useHistory } from "react-router";
-import { Link } from "react-router-dom";
+import { Link, NavLink, NavLinkProps } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
 import { Button } from "../components/Button";
 import Editor, { useMonaco, Monaco } from "@monaco-editor/react";
@@ -114,42 +114,33 @@ b = 0
 
 `;
 
-function EffectsTab(props: HTMLProps<HTMLDivElement> & { active?: boolean }) {
-    return (
-        <div
-            className={`py-1.5 px-2.5 font-bold mr-2 last:mr-0 flex-grow rounded-lg text-center transitio cursor-pointer border ${
-                props.active ? "bg-blue-600 text-white" : "bg-white hover:bg-blue-100"
-            }`}
-            {...props}
-        />
-    );
-}
+// function EffectsTab(props: NavLinkProps) {
+//     return (
+//         <NavLink
+//             activeClassName="bg-blue-600 text-white"
+//             className={`py-1.5 px-2.5 font-bold mr-2 last:mr-0 flex-grow rounded-lg text-center transitio cursor-pointer border bg-white hover:bg-blue-100}`}
+//             {...props}
+//         />
+//     );
+// }
 
-export function Effects() {
+export function Effects(props: { userOnly?: boolean }) {
     const client = useContext(AuthContext);
     const [effects, setEffects] = useState<Effect[] | undefined>();
-    const [onlyUser, setOnlyUser] = useState(true);
+    // const [onlyUser, setOnlyUser] = useState(true);
     const history = useHistory();
 
     useEffect(() => {
-        client.getEffects(false, onlyUser).then(setEffects);
-    }, [onlyUser]);
+        client.getEffects(false, props.userOnly).then(setEffects);
+    }, [props.userOnly]);
 
     if (!effects) {
         return null;
     }
 
     return (
-        <div className="flex justify-center px-1 md:px-4 pt-4">
+        <div className="flex justify-center px-1 md:px-4 pt-10">
             <div style={{ width: "800px" }}>
-                <div className="flex mb-5 mt-2 justify-center">
-                    <EffectsTab active={onlyUser} onClick={() => setOnlyUser(true)}>
-                        Mijn effecten
-                    </EffectsTab>
-                    <EffectsTab active={!onlyUser} onClick={() => setOnlyUser(false)}>
-                        Alle effecten
-                    </EffectsTab>
-                </div>
                 <Button
                     icon={faPlus}
                     onClick={async () => {
@@ -186,7 +177,7 @@ export function Effects() {
                         />
                     ))}
                     {effects.length === 0 && (
-                        <p className="text-gray-500 px-4 py-3">{onlyUser ? "Je hebt nog geen effecten" : "Er zijn nog geen effecten"}</p>
+                        <p className="text-gray-500 px-4 py-3">{props.userOnly ? "Je hebt nog geen effecten" : "Er zijn nog geen effecten"}</p>
                     )}
                 </List>
             </div>

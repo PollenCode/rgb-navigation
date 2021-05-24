@@ -20,9 +20,3 @@ ReactDOM.render(
     </React.StrictMode>,
     document.getElementById("root")
 );
-
-// window.addEventListener("load", () => {
-//     console.log("loaded");
-//     let canvas = document.getElementById("leds-canvas") as HTMLCanvasElement;
-//     beginRenderLeds(canvas);
-// });

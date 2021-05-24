@@ -11,6 +11,7 @@ import {
     faChevronLeft,
     faCircleNotch,
     faEye,
+    faFileAlt,
     faMagic,
     faPen,
     faSave,
@@ -137,17 +138,25 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     }
 
     async function build() {
+        if (!client.user!.admin) {
+            return alert(
+                "Je hebt geen rechten om te uploaden, spreek een docent aan om je programma te uploaden naar de ledstrip. \n\nAls je een docent bent, dan kan je een administatoraccount aanvragen bij Tim Vermeulen (tim.vermeulen@odisee.be) of Stijn Rogiest (stijn.rogiest@student.odisee.be)"
+            );
+        }
+
         setLoading(true);
         setShowOutput(true);
         clearOutput();
         if (effect!.author!.id === client.user!.id) await save();
+
         let res = await client.buildEffect(effect!.id, true);
         if (res.status === "error") {
             appendOutput(res.error + "\n", true);
         } else {
             appendOutput("compiling ok\n");
         }
-        await new Promise((res) => setTimeout(res, 2000));
+
+        await new Promise((res) => setTimeout(res, 500));
         setLoading(false);
     }
 
@@ -178,7 +187,12 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     </span>
                 )}
                 {effect && (
-                    <Button style={{ marginRight: "0.3em" }} loading={loading} icon={faUpload} disabled={loading} onClick={build}>
+                    <Button
+                        style={{ marginRight: "0.3em" }}
+                        loading={loading}
+                        icon={faUpload}
+                        disabled={loading || client.user?.admin}
+                        onClick={build}>
                         Upload
                     </Button>
                 )}
@@ -190,7 +204,12 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                         icon={faSave}
                         disabled={loading || effect.code === code}
                         onClick={save}>
-                        Save
+                        Opslaan
+                    </Button>
+                )}
+                {effect && (
+                    <Button allowSmall style={{ marginRight: "0.3em" }} loading={loading} icon={faFileAlt} onClick={() => setShowOutput(!showOutput)}>
+                        {showOutput ? "Sluit" : "Toon"} output
                     </Button>
                 )}
                 {effect && !readOnly && (
@@ -228,7 +247,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
             </div>
             {showOutput && (
                 <div
-                    className="absolute bottom-6 w-full text-white"
+                    className="absolute left-0 bottom-0 w-full text-white"
                     style={{ backdropFilter: "blur(8px)", background: "#111", borderTop: "1px solid #222" }}>
                     <div className="relative">
                         <span
@@ -260,14 +279,6 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     </div>
                 </div>
             )}
-            <div className="flex items-center text-sm py-0.5 text-white" style={{ background: "#111", borderTop: "1px solid #222" }}>
-                <a href="https://pollencode.github.io/rgb-navigation/index" target="_blank" className="ml-auto hover:underline px-2">
-                    Help/Documentatie
-                </a>
-                <button className="hover:underline px-2" onClick={() => setShowOutput(!showOutput)}>
-                    {showOutput ? "Sluit" : "Toon"} output
-                </button>
-            </div>
         </div>
     );
 }

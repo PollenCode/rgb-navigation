@@ -11,7 +11,6 @@ import { LedController } from "./pages/LedController";
 import { Token } from "./pages/Token";
 import { GiveAdmin } from "./pages/GiveAdmin";
 import { EffectEditor } from "./pages/EffectEditor";
-import { Lessenrooster } from "./pages/Lessenrooster";
 
 const client = new RGBClient();
 
@@ -62,8 +61,16 @@ export function Routes() {
                 <Switch>
                     <Route path="/" exact component={Complete} />
                     <Route path="/realtime" exact component={Overview} />
+                    <Route path="/effects/mine" exact>
+                        <Effects userOnly />
+                    </Route>
+                    <Route path="/effects/all" exact>
+                        <Effects />
+                    </Route>
                     <Route path="/effects/:id" exact component={EffectEditor} />
-                    <Route path="/effects" exact component={Effects} />
+                    <Route path="/effects">
+                        <Redirect to="/effects/mine" />
+                    </Route>
                     <Route path="/admin" component={AdminRouter} />
                     <Redirect to="/" />
                 </Switch>
