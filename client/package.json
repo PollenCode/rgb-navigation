@@ -1,6 +1,6 @@
 {
-  "name": "client",
-  "version": "0.1.0",
+  "name": "rgb-navigation",
+  "version": "1.0.0",
   "private": true,
   "author": "Stijn Rogiest, Robbe Dierickx, Michiel Wydooge, Dylan Dedapper",
   "dependencies": {

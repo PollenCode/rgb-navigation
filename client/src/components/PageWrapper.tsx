@@ -13,12 +13,12 @@ function NavButton(props: { name: string; to: LocationDescriptor; icon?: IconDef
         <li>
             <NavLink
                 target={props.target}
-                activeClassName="bg-blue-500"
+                activeClassName="bg-blue-500 pl-5"
                 activeStyle={{ color: "white" }}
                 exact
                 to={props.to}
-                className="py-2 pl-3 pr-7 block hover:bg-blue-200 transition text-gray-700 whitespace-nowrap">
-                {props.icon && <FontAwesomeIcon className="mr-2 opacity-60 " icon={props.icon} />}
+                className="py-2 pl-3 block hover:bg-blue-400 hover:text-white transition-all text-gray-700 whitespace-nowrap">
+                {props.icon && <FontAwesomeIcon className="mr-2 opacity-40 text-black scale-110 transform" icon={props.icon} />}
                 {props.name}
             </NavLink>
         </li>
@@ -53,7 +53,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                         </span>
                     </div>
                     <ul
-                        className="w-full transition-all duration-300 overflow-hidden"
+                        className="transition-all duration-300 overflow-hidden w-full md:w-44"
                         style={{ maxHeight: window.innerWidth > 600 || showMenu ? "100vh" : "0" }}>
                         <NavButton icon={faMagic} name="Mijn effecten" to="/effects/mine" />
                         <NavButton icon={faMagic} name="Alle effecten" to="/effects/all" />
