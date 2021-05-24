@@ -76,7 +76,7 @@ export function Complete() {
     if (!client.user) return null;
 
     return (
-        <div className="items-center justify-center min-h-screen flex flex-col">
+        <div className="items-center justify-center h-full flex flex-col">
             <h1 className="text-3xl px-5 py-3 my-3 bg-green-500 text-white border rounded-lg">{getTextForStatus(status)}</h1>
             <h2 className="text-lg font-semibold text-blue-700">{client.user.name}</h2>
             <h3>{client.user.email}</h3>

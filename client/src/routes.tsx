@@ -57,24 +57,28 @@ export function Routes() {
 
     return (
         <AuthContext.Provider value={client}>
-            <PageWrapper>
-                <Switch>
-                    <Route path="/" exact component={Complete} />
-                    <Route path="/realtime" exact component={Overview} />
-                    <Route path="/effects/mine" exact>
-                        <Effects userOnly />
-                    </Route>
-                    <Route path="/effects/all" exact>
-                        <Effects />
-                    </Route>
-                    <Route path="/effects/:id" exact component={EffectEditor} />
-                    <Route path="/effects">
-                        <Redirect to="/effects/mine" />
-                    </Route>
-                    <Route path="/admin" component={AdminRouter} />
-                    <Redirect to="/" />
-                </Switch>
-            </PageWrapper>
+            <Switch>
+                <Route path="/realtime" exact component={Overview} />
+                <Route>
+                    <PageWrapper>
+                        <Switch>
+                            <Route path="/" exact component={Complete} />
+                            <Route path="/effects/mine" exact>
+                                <Effects userOnly />
+                            </Route>
+                            <Route path="/effects/all" exact>
+                                <Effects />
+                            </Route>
+                            <Route path="/effects/:id" exact component={EffectEditor} />
+                            <Route path="/effects">
+                                <Redirect to="/effects/mine" />
+                            </Route>
+                            <Route path="/admin" component={AdminRouter} />
+                            <Redirect to="/" />
+                        </Switch>
+                    </PageWrapper>
+                </Route>
+            </Switch>
         </AuthContext.Provider>
     );
 }

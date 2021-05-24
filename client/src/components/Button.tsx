@@ -22,7 +22,7 @@ export function Button({
             {...rest}
             className={`${
                 styleType === "secondary" ? "text-blue-600" : "text-white"
-            } whitespace-nowrap font-semibold md:px-3 md:py-1 px-2.5 py-0.5 disabled:bg-gray-100 ${normal} rounded-md hover:${hover} focus:scale-95 transform border-2 border-transparent transition`}>
+            } whitespace-nowrap font-semibold md:px-3 py-1 px-2.5 disabled:bg-gray-100 ${normal} rounded-md hover:${hover} focus:scale-95 transform border-2 border-transparent transition`}>
             {loading && <FontAwesomeIcon className="animate-spin mr-1" icon={faCircleNotch} />}
             <span className={`${allowSmall ? "md:inline hidden" : ""}`}>{children}</span>
             {icon && <FontAwesomeIcon icon={icon} className={`${allowSmall ? "md:ml-2" : "ml-2"}`} />}
