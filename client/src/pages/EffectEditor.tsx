@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Prompt, RouteComponentProps, useHistory } from "react-router";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
@@ -23,7 +23,7 @@ import { Effect, LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
 import { BlockToken, ByteType, IntType, JavascriptTarget, parseProgram, Scope, SyntaxError, TypeError, VoidType } from "rgb-compiler";
-import { SimulateDataEvent } from "../simulate";
+import { beginRenderLeds, SimulateDataEvent } from "../simulate";
 
 const MAX_OUTPUT_LINES = 400;
 
@@ -32,13 +32,14 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     const [effect, setEffect] = useState<Effect>();
     const [code, setCode] = useState<string>();
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState<{ percent: number; status: string }>({ percent: 0, status: "" });
+    // const [status, setStatus] = useState<{ percent: number; status: string }>({ percent: 0, status: "" });
     const [showOutput, setShowOutput] = useState(false);
     const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor>();
     const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
     const history = useHistory();
     const outputRef = useRef<HTMLPreElement>(null);
     const simulateDataRef = useRef<HTMLPreElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
     const monaco = useMonaco();
 
     function clearOutput() {
@@ -111,6 +112,11 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                 (window as any).runLeds = eval(compiled); // Yikes, transition to iframe sandboxing?
             }
         }
+
+        let renderTask = canvasRef.current ? beginRenderLeds(canvasRef.current!) : { task: 0 };
+        return () => {
+            cancelAnimationFrame(renderTask.task);
+        };
     }, [code, monaco, editor]);
 
     if (!effect) {
@@ -154,7 +160,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     }
 
     return (
-        <div className="h-full overflow-hidden relative">
+        <div className="h-full overflow-hidden relative flex flex-col max-h-full">
             <Prompt when={effect.code !== code && !readOnly} message="Ben je zeker dat je wilt weg gaan? Je hebt onopgeslagen aanpassingen." />
             <div className="py-2 px-4 border-b font-semibold text-gray-600 flex items-center">
                 <button onClick={() => history.goBack()} className="text-blue-600 pr-4">
@@ -193,22 +199,16 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     </Button>
                 )}
             </div>
-            <div className="flex items-center text-sm py-0.5">
-                <a href="https://pollencode.github.io/rgb-navigation/index" target="_blank" className="ml-auto hover:underline px-2 text-blue-600">
-                    Documentatie
-                </a>
-                <button className="hover:underline px-2 text-blue-600" onClick={() => setShowOutput(!showOutput)}>
-                    {showOutput ? "Sluit" : "Toon"} output
-                </button>
-            </div>
-            <div className="relative" style={{ maxHeight: status.percent >= 1 || status.percent <= 0 ? "0" : "100px", transition: "2000ms" }}>
+            <canvas ref={canvasRef} height="16px" width="784px" id="leds-canvas" className="w-full max-h-4 h-4"></canvas>
+
+            {/* <div className="relative" style={{ maxHeight: status.percent >= 1 || status.percent <= 0 ? "0" : "100px", transition: "2000ms" }}>
                 <div
                     style={{ width: status.percent * 100 + "%", transition: status.percent <= 0 ? "0ms" : "1000ms" }}
                     className="bg-blue-500 h-full text-sm px-2 pt-0.5 text-white font-semibold">
                     {status.status}
                 </div>
-            </div>
-            <div className="h-full relative fade-in">
+            </div> */}
+            <div className="flex-grow flex-shrink relative w-full max-w-full fade-in ">
                 <Editor
                     onMount={(editor) => {
                         setEditor(editor);
@@ -227,18 +227,29 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                 />
             </div>
             {showOutput && (
-                <div className="absolute bottom-0 right-0 w-full border-t bg-black bg-opacity-10 text-white" style={{ backdropFilter: "blur(8px)" }}>
+                <div
+                    className="absolute bottom-6 w-full text-white"
+                    style={{ backdropFilter: "blur(8px)", background: "#111", borderTop: "1px solid #222" }}>
                     <div className="relative">
-                        <span title="Clear output" className="cursor-pointer absolute top-2 right-10" onClick={() => clearOutput()}>
+                        <span
+                            title="Clear output"
+                            className="cursor-pointer absolute px-3 py-2 top-0 right-8 hover:scale-150 transform transition"
+                            onClick={() => clearOutput()}>
                             <FontAwesomeIcon icon={faTrash} />
                         </span>
-                        <span title="Hide output" className="cursor-pointer absolute top-2 right-3" onClick={() => setShowOutput(false)}>
+                        <span
+                            title="Hide output"
+                            className="cursor-pointer absolute px-3 py-2 top-0 right-1 hover:scale-150 transform transition"
+                            onClick={() => setShowOutput(false)}>
                             <FontAwesomeIcon icon={faTimes} />
                         </span>
                         <div className="flex overflow-hidden">
                             <div className=" flex-grow overflow-hidden">
                                 <h2 className="px-4 py-2 font-bold mb-1">Output</h2>
-                                <pre className="px-4 py-2 overflow-auto max-h-80 h-80" ref={outputRef}></pre>
+                                <pre
+                                    className="px-4 py-2 overflow-auto max-h-80 h-80"
+                                    style={{ borderRight: "1px solid #222" }}
+                                    ref={outputRef}></pre>
                             </div>
                             <div className=" flex-shrink-0 w-72">
                                 <h2 className="px-4 py-2 font-bold">Memory</h2>
@@ -249,6 +260,14 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     </div>
                 </div>
             )}
+            <div className="flex items-center text-sm py-0.5 text-white" style={{ background: "#111", borderTop: "1px solid #222" }}>
+                <a href="https://pollencode.github.io/rgb-navigation/index" target="_blank" className="ml-auto hover:underline px-2">
+                    Help/Documentatie
+                </a>
+                <button className="hover:underline px-2" onClick={() => setShowOutput(!showOutput)}>
+                    {showOutput ? "Sluit" : "Toon"} output
+                </button>
+            </div>
         </div>
     );
 }

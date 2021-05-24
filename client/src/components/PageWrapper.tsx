@@ -5,8 +5,6 @@ import React, { useContext, useEffect, useLayoutEffect } from "react";
 import { NavLink, Redirect } from "react-router-dom";
 import { faGitlab } from "@fortawesome/free-brands-svg-icons";
 import { AuthContext } from "../AuthContext";
-import { Button } from "./Button";
-import { beginRenderLeds } from "../simulate";
 
 function SidebarButton(props: { name: string; to: string; icon?: IconDefinition }) {
     return (
@@ -26,10 +24,6 @@ function SidebarButton(props: { name: string; to: string; icon?: IconDefinition 
 // style={{ transform: `translateX(${"-100vw"})` }}
 export function PageWrapper(props: { children?: React.ReactNode }) {
     const client = useContext(AuthContext);
-
-    useLayoutEffect(() => {
-        beginRenderLeds(document.getElementById("leds-canvas")! as HTMLCanvasElement);
-    }, []);
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
@@ -74,10 +68,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                     </div>
                 </div>
 
-                <div className="flex-grow w-full bg-white relative">
-                    <canvas height="16px" width="784px" id="leds-canvas" className="w-full max-h-4 h-4"></canvas>
-                    <div style={{ height: "calc(100% - 16px)" }}>{props.children}</div>
-                </div>
+                <div className="flex-grow">{props.children}</div>
             </div>
         </div>
     );

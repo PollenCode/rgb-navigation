@@ -349,6 +349,7 @@ void handlePackets()
             }
 
             memset(mem, 0, MAX_PROGRAM_SIZE);
+            memset(leds, 0, LED_COUNT * sizeof(CRGB));
 
             while (receivePosition < bytesToReceive)
             {

@@ -14,7 +14,7 @@ export class SimulateDataEvent extends Event {
     }
 }
 
-export function beginRenderLeds(canvas: HTMLCanvasElement) {
+export function beginRenderLeds(canvas: HTMLCanvasElement): { task: number } {
     let graphics = canvas.getContext("2d")!;
     let leds = new Array(canvas.width).fill([0, 0, 0]);
     let memory: Memory = {
@@ -23,6 +23,9 @@ export function beginRenderLeds(canvas: HTMLCanvasElement) {
         b: 0,
         timer: 0,
         index: 0,
+    };
+    let renderTask = {
+        task: 0,
     };
 
     let funcs = {
@@ -60,11 +63,11 @@ export function beginRenderLeds(canvas: HTMLCanvasElement) {
         }
 
         window.dispatchEvent(new SimulateDataEvent(memory));
-        window.requestAnimationFrame(renderLeds);
+        renderTask.task = window.requestAnimationFrame(renderLeds);
     }
 
-    console.log("begin rendering");
-    window.requestAnimationFrame(renderLeds);
+    renderTask.task = window.requestAnimationFrame(renderLeds);
+    return renderTask;
 }
 
 export function hsv2rgb(h: number, s: number, v: number) {
