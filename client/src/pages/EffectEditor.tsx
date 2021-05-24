@@ -163,7 +163,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                 <input
                     defaultValue={effect.name}
                     readOnly={readOnly}
-                    className="font-semibold min-w-0 flex-grow bg-gray-100"
+                    className="font-semibold min-w-0 flex-grow bg-white appearance-none"
                     onBlur={(ev) => updateName(ev.target.value)}
                 />
                 {readOnly && effect.author && (
