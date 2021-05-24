@@ -91,7 +91,7 @@ function EffectListItem(props: { effect: Effect; onClick?: () => Promise<void> }
                 style={{ margin: "0 0.4em" }}
                 onClick={(ev) => {
                     ev.stopPropagation();
-                    history.push(`/admin/effects/${props.effect.id}`);
+                    history.push(`/effects/${props.effect.id}`);
                 }}>
                 {readOnly ? "Bekijken" : "Aanpassen"}
             </EffectListItemButton>
@@ -158,7 +158,7 @@ export function Effects() {
                         let newEffect = await client.createEffect({ code: DEFAULT_CODE, name: name });
                         if (newEffect.status === "ok") {
                             setEffects([...effects, newEffect.effect]);
-                            history.push(`/admin/effects/${newEffect.effect.id}`);
+                            history.push(`/effects/${newEffect.effect.id}`);
                         } else {
                             alert(`Kon geen nieuw effect aanmaken:\n${newEffect.error}`);
                         }

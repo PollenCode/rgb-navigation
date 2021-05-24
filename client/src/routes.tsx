@@ -58,12 +58,16 @@ export function Routes() {
 
     return (
         <AuthContext.Provider value={client}>
-            <Switch>
-                <Route path="/" exact component={Complete} />
-                <Route path="/realtime" exact component={Overview} />
-                <Route path="/admin" component={AdminRouter} />
-                <Redirect to="/" />
-            </Switch>
+            <PageWrapper>
+                <Switch>
+                    <Route path="/" exact component={Complete} />
+                    <Route path="/realtime" exact component={Overview} />
+                    <Route path="/effects/:id" exact component={EffectEditor} />
+                    <Route path="/effects" exact component={Effects} />
+                    <Route path="/admin" component={AdminRouter} />
+                    <Redirect to="/" />
+                </Switch>
+            </PageWrapper>
         </AuthContext.Provider>
     );
 }
@@ -78,17 +82,13 @@ function AdminRouter() {
     }
 
     return (
-        <PageWrapper>
-            <Switch>
-                <Route path="/admin/effects/:id" exact component={EffectEditor} />
-                <Route path="/admin/effects" exact component={Effects} />
-                <Route path="/admin/dgang" exact component={DGang} />
-                <Route path="/admin/ledcontrol" exact component={LedController} />
-                <Route path="/admin/token" exact component={Token} />
-                <Route path="/admin/users" exact component={GiveAdmin} />
-                <Route path="/admin/lessenrooster" exact component={Lessenrooster} />
-                <Redirect to="/admin/effects" />
-            </Switch>
-        </PageWrapper>
+        <Switch>
+            {/* <Route path="/admin/dgang" exact component={DGang} /> */}
+            <Route path="/admin/ledcontrol" exact component={LedController} />
+            <Route path="/admin/token" exact component={Token} />
+            <Route path="/admin/users" exact component={GiveAdmin} />
+            {/* <Route path="/admin/lessenrooster" exact component={Lessenrooster} /> */}
+            <Redirect to="/effects" />
+        </Switch>
     );
 }

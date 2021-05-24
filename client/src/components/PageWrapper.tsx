@@ -5,6 +5,7 @@ import React, { useContext, useEffect, useLayoutEffect } from "react";
 import { NavLink, Redirect } from "react-router-dom";
 import { faGitlab } from "@fortawesome/free-brands-svg-icons";
 import { AuthContext } from "../AuthContext";
+import { version, author } from "../../package.json";
 
 function SidebarButton(props: { name: string; to: string; icon?: IconDefinition }) {
     return (
@@ -40,21 +41,21 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                         <div className="ml-auto text-right text-sm leading-4 px-3"></div>
                     </nav>
                     <ul className="w-full">
-                        <SidebarButton icon={faFire} name="Effects" to="/admin/effects" />
+                        <SidebarButton icon={faFire} name="Effects" to="/effects" />
                         <SidebarButton icon={faDotCircle} name="Realtime" to="/realtime" />
                         <SidebarButton icon={faKey} name="API Keys" to="/admin/token" />
                         <SidebarButton icon={faUsers} name="Gebruikers" to="/admin/users" />
                         <SidebarButton name="D-gang" to="/admin/dgang" />
                         <SidebarButton name="LedController" to="/admin/ledcontrol" />
                     </ul>
-                    <div className="mt-auto p-2.5 bg-gray-200 text-gray-600 shadow-lg z-10">
+                    <div className="mt-auto p-2.5 bg-gray-200 text-gray-600 shadow-lg z-10 text-sm">
                         <p>
-                            <a target="_blank" className=" text-sm hover:underline" href="https://pollencode.github.io/rgb-navigation/">
+                            <a target="_blank" className="hover:underline" href="https://pollencode.github.io/rgb-navigation/">
                                 <FontAwesomeIcon icon={faBook} /> Documentatie
                             </a>
                         </p>
                         <p>
-                            <a target="_blank" className=" text-sm hover:underline" href="https://git.ikdoeict.be/stijn.rogiest/rgb-navigation">
+                            <a target="_blank" className="hover:underline" href="https://git.ikdoeict.be/stijn.rogiest/rgb-navigation">
                                 <FontAwesomeIcon icon={faGitlab} /> GitLab
                             </a>
                         </p>
@@ -62,9 +63,12 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                         {/* <Button danger style={{ display: "block" }} icon={faSignOutAlt}>
                             Uitloggen
                         </Button> */}
-                        <button className=" text-sm hover:underline" onClick={() => client.setAccessToken(undefined)}>
+                        <button className="hover:underline" onClick={() => client.setAccessToken(undefined)}>
                             <FontAwesomeIcon icon={faSignOutAlt} /> Uitloggen
                         </button>
+                        <p className="mt-1 opacity-50" title={"By " + author}>
+                            rgb-navigation v<code>{version}</code>
+                        </p>
                     </div>
                 </div>
 
