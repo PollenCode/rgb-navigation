@@ -163,7 +163,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                 <input
                     defaultValue={effect.name}
                     readOnly={readOnly}
-                    className="font-semibold min-w-0 flex-grow"
+                    className="font-semibold min-w-0 flex-grow bg-gray-100"
                     onBlur={(ev) => updateName(ev.target.value)}
                 />
                 {readOnly && effect.author && (
@@ -188,7 +188,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     </Button>
                 )}
                 {effect && !readOnly && (
-                    <Button allowSmall danger icon={faTrash} disabled={loading} onClick={deleteEffect}>
+                    <Button allowSmall styleType="danger" icon={faTrash} disabled={loading} onClick={deleteEffect}>
                         Verwijder
                     </Button>
                 )}

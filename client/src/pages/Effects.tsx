@@ -117,8 +117,8 @@ b = 0
 function EffectsTab(props: HTMLProps<HTMLDivElement> & { active?: boolean }) {
     return (
         <div
-            className={`py-2 px-4 bg-gray-100 font-bold mr-2 last:mr-0 flex-grow rounded-lg text-center transitio cursor-pointer ${
-                props.active ? "bg-blue-600 text-white" : "hover:bg-blue-100"
+            className={`py-1.5 px-2.5 font-bold mr-2 last:mr-0 flex-grow rounded-lg text-center transitio cursor-pointer border ${
+                props.active ? "bg-blue-600 text-white" : "bg-white hover:bg-blue-100"
             }`}
             {...props}
         />

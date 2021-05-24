@@ -21,8 +21,8 @@ ReactDOM.render(
     document.getElementById("root")
 );
 
-window.addEventListener("load", () => {
-    console.log("loaded");
-    let canvas = document.getElementById("leds-canvas") as HTMLCanvasElement;
-    beginRenderLeds(canvas);
-});
+// window.addEventListener("load", () => {
+//     console.log("loaded");
+//     let canvas = document.getElementById("leds-canvas") as HTMLCanvasElement;
+//     beginRenderLeds(canvas);
+// });

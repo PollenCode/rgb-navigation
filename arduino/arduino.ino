@@ -7,6 +7,8 @@ extern "C"
 #include "interpreter.h"
 }
 
+#define BAUD_RATE 115200
+
 // 784 / 2
 #define LED_COUNT 50
 #define DATA_PIN 4
@@ -14,7 +16,7 @@ extern "C"
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
 #define INTERLACE_LEVEL 2
-#define MAX_PROGRAM_SIZE 250
+#define MAX_PROGRAM_SIZE 1000
 #define SHIFT_INTERVAL 100
 #define SPLIT_SIZE 2
 
@@ -159,11 +161,14 @@ void setup()
     callHandler = functionHandler;
 
     // Increasing the baud rate will cause corruption and inconsistency
-    Serial.begin(4800);
+    Serial.begin(BAUD_RATE);
     Serial.println("Starting...");
 
     pinMode(LED_BUILTIN, OUTPUT);
     memset(routes, 0, sizeof(LineEffect *) * MAX_LINES);
+
+    Serial.println("Adding leds");
+    delay(2000);
 
     FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, LED_COUNT);
     FastLED.setBrightness(40);
@@ -176,7 +181,9 @@ void setup()
         delay(50);
     }
 
-    Serial.println("Ready");
+    Serial.println("Ready...");
+    delay(2000);
+    Serial.println("Going");
 
     // Serial.println("Copying program");
     // memcpy(mem, program, sizeof(program));
