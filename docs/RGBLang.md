@@ -8,11 +8,9 @@ nav_order: 1
 RGBLang is the programming language that is used to create _shaders_ for the ledstrip, a shader is a program that runs for each led of the ledstrip.
 This program gets uploaded to the ledstrip controller which executes it for each led (784 leds!) 60 timer per second.
 
-This language does **not** support any loops (for, while).
-
 **To see some example effects, look [here](https://pollencode.github.io/rgb-navigation/RGBLang.html)**
 
-## The language
+## Features
 
 This section explains all of the available language features.
 
@@ -25,17 +23,18 @@ int a = 1000
 byte b = 200
 ```
 
-RGBLang currently only supports int and byte integer types. An integer can store 32 bit signed values (-2147483647 -> 2147483647) and a byte can store 8 bit unsigned values (0 -> 255)
+RGBLang currently only supports **int** and **byte** integer types. An integer can store 32 bit signed values (-2147483647 -> 2147483647) and a byte can store 8 bit unsigned values (0 -> 255)
 
 #### Builtin variables
 
 RGBLang defines some builtin variables:
 
-| Name    | Usage                                                                                                                                                                                                                                                                                                                                            |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| r, g, b | These magic variables contain the red green and blue color components of the current led the program is executing for (remember, your program gets executed for every led). You can set this to change the leds color or read its previous value. You can also set these using the [hsv utility function]() if you'd like to the hsv colorspace. |
-| index   | This magic variable contains the index of the current led (the nth-led in the ledstrip)                                                                                                                                                                                                                                                          |
-| timer   | This magic variable increases constantly. It contains the amount of milliseconds since the program has started running.                                                                                                                                                                                                                          |
+| Name          | Usage                                                                                                                                                                                                                                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `r`, `g`, `b` | These magic variables contain the red green and blue color components of the current led the program is executing for (remember, your program gets executed for every led). You can set this to change the leds color or read its previous value. You can also set these using the [hsv utility function]() if you'd like to the hsv colorspace. |
+| `index`       | This magic variable contains the index of the current led (the nth-led in the ledstrip). Its maximum value is defined by the `LED_COUNT` variable - 1                                                                                                                                                                                            |
+| `timer`       | This magic variable increases constantly. It contains the amount of milliseconds since the program has started running.                                                                                                                                                                                                                          |
+| `LED_COUNT`   | This constant variable contains the amount of leds in the ledstrip.                                                                                                                                                                                                                                                                              |
 
 ### If/else
 
@@ -135,3 +134,9 @@ if (something) {
     a = 50;
 }
 ```
+
+### Loops?
+
+**No**
+
+This language does not support any loops (for, while). Because your program will be executed in a loop (for every led), it is possible to create amazing effects without creating extra loops using the builtin index and timer variables.
