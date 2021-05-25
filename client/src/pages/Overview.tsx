@@ -8,19 +8,29 @@ import { SocketContext } from "../SocketContext";
 export function Overview(props: RouteComponentProps<{ roomId: string }>) {
     let { socket } = useContext(AuthContext);
     let [messages, setMessages] = useState<{ name: string; color: string }[]>([]);
-    let [errors, setError] = useState<string>("Test fout");
+    let [errors, setError] = useState<string>("");
 
     async function onNfcAlreadyBound() {
         setError("kaart al gelinkt");
+        setTimeout(() => {
+            setError("");
+        }, 15000);
     }
 
     async function onNfcUnknownScanned() {
         setError("onbekende kaart gescanned");
+        setTimeout(() => {
+            setError("");
+        }, 15000);
     }
 
     async function onUserShouldFollow(data: any) {
         console.log(data);
-        setMessages((messages) => [...messages, data]);
+        setMessages((messages) => [data, ...messages]);
+        setTimeout(() => {
+            console.log("slicing");
+            setMessages((messages) => messages.slice(0, messages.length - 1));
+        }, 30000);
     }
 
     useEffect(() => {

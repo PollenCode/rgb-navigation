@@ -7,7 +7,8 @@ if (!process.env.URL || !process.env.TOKEN) {
 }
 
 let socket = io(process.env.URL);
-let uuid = "asdfqtqwtghuyzdfgasdrsqgouyqdsfyugiejdasfklasdf";
+//let uuid = "asdfqtqwtghuyzdfgasdrsqgouyqdsfyugiejdasfklasdf";
+let uuid = "ghljqsdsdhjhbjqsdfglhbsQDFGJHLBQSDFGLJHKB";
 
 socket.on("connect", () => {
     console.log("connected");
