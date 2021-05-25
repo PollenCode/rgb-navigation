@@ -1,7 +1,7 @@
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faBook, faDotCircle, faFire, faHome, faKey, faMagic, faQuestion, faSignOutAlt, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useContext, useEffect, useLayoutEffect, useState } from "react";
+import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, NavLink, Redirect, useHistory } from "react-router-dom";
 import { faGitlab } from "@fortawesome/free-brands-svg-icons";
 import { AuthContext } from "../AuthContext";
@@ -28,10 +28,18 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
     const client = useContext(AuthContext);
     const [showMenu, setShowMenu] = useState<boolean>(false);
     const history = useHistory();
+    const iconRef = useRef<HTMLImageElement>(null);
 
     useEffect(() => {
-        return history.listen(() => {
+        return history.listen((e) => {
             setShowMenu(false);
+            if (iconRef.current) {
+                // Retrigger icon animation
+                iconRef.current.style.animation = "none";
+                setTimeout(() => {
+                    if (iconRef.current) iconRef.current.style.animation = "";
+                }, 10);
+            }
         });
     }, []);
 
@@ -40,14 +48,9 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
             <div className="flex flex-grow overflow-hidden md:flex-row flex-col">
                 <nav className="border-r shadow-lg z-10">
                     <div className="flex items-center h-12 flex-shrink-0 bg-white text-gray-800 border-b ">
-                        <img
-                            src="/icon.png"
-                            className="w-6 h-6 ml-2.5 hover:rotate-180 transition transform"
-                            alt=""
-                            style={{ imageRendering: "pixelated" }}
-                        />
-                        <span className="ml-2.5 mt-0.5 font-bold uppercase text-lg" onClick={() => history.push("/")}>
-                            dgang
+                        <img ref={iconRef} src="/icon64.png" className="w-6 h-6 ml-2.5 icon-animation" alt="" />
+                        <span className="ml-2.5 mt-0.5 font-extrabold text-lg" onClick={() => history.push("/")}>
+                            DGANG
                         </span>
                         <span className="ml-auto text-4xl opacity-60 px-2.5 pt-1 md:hidden" onClick={(ev) => setShowMenu(!showMenu)}>
                             <FontAwesomeIcon icon={faBars} />

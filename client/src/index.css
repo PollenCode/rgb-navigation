@@ -78,3 +78,17 @@ body {
         transform: translateX(0px);
     }
 }
+
+.icon-animation {
+    transform-origin: center center;
+    animation: icon-animation 500ms;
+}
+
+@keyframes icon-animation {
+    0% {
+        transform: rotate(0);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
