@@ -94,7 +94,7 @@ function AdminRouter() {
 
     return (
         <Switch>
-            {/* <Route path="/admin/dgang" exact component={DGang} /> */}
+            {<Route path="/admin/dgang" exact component={DGang} />}
             <Route path="/admin/ledcontrol" exact component={LedController} />
             <Route path="/admin/token" exact component={Token} />
             <Route path="/admin/users" exact component={GiveAdmin} />

@@ -7,7 +7,7 @@ extern "C"
 #include "interpreter.h"
 }
 
-#define BAUD_RATE 115200
+#define BAUD_RATE 19200
 
 // 784 / 2
 #define LED_COUNT 50
@@ -16,7 +16,7 @@ extern "C"
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
 #define INTERLACE_LEVEL 2
-#define MAX_PROGRAM_SIZE 1000
+#define MAX_PROGRAM_SIZE 250
 #define SHIFT_INTERVAL 100
 #define SPLIT_SIZE 2
 

@@ -99,9 +99,80 @@ export function createSocketServer(server: http.Server) {
             }
 
             // TODO: enable leds for user
-            let followData = { name: boundUser.name };
+            let numb = Math.floor(Math.random() * 6);
+            let room;
+            let color;
+            let startLed = 0;
+            let endLed = 0;
+            let r = 0;
+            let g = 0;
+            let b = 0;
+            console.log(numb);
+            switch (numb) {
+                case 0:
+                    room = "D027";
+                    startLed = 0;
+                    endLed = 15;
+                    r = 255;
+                    g = 0;
+                    b = 0;
+                    break;
+                case 1:
+                    room = "D029";
+                    startLed = 0;
+                    endLed = 30;
+                    r = 0;
+                    g = 0;
+                    b = 255;
+                    break;
+                case 2:
+                    room = "D030";
+                    startLed = 0;
+                    endLed = 50;
+                    r = 238;
+                    g = 130;
+                    b = 238;
+                    break;
+                case 3:
+                    room = "D034a";
+                    startLed = 50;
+                    endLed = 35;
+                    r = 238;
+                    g = 130;
+                    b = 238;
+                    break;
+                case 4:
+                    room = "D034b";
+                    startLed = 50;
+                    endLed = 20;
+                    r = 255;
+                    g = 165;
+                    b = 0;
+                    break;
+                case 5:
+                    room = "D035";
+                    startLed = 50;
+                    endLed = 0;
+                    r = 58;
+                    g = 255;
+                    b = 255;
+                    break;
+            }
+            console.log(room);
+            let ledMessage: LedControllerServerMessage = {
+                type: "enableLine",
+                startLed: startLed,
+                endLed: endLed,
+                duration: 30,
+                r: r,
+                b: b,
+                g: g,
+            };
+            color = "rgb(" + r + "," + b + "," + g + ")";
+            let followData = { name: boundUser.name, color: color };
             logger("enable led for user", boundUser.id, boundUser.name);
             socket.in(deviceToken.roomId).emit("userShouldFollow", followData);
+            socket.emit("ledController", ledMessage);
             if (currentlyBinding) {
                 socket.in(currentlyBinding.socketId).emit("userShouldFollow", followData);
                 delete roomsCurrentlyBinding[deviceToken.roomId];
