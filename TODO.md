@@ -1,13 +1,13 @@
-arduino code uploaden
-paneel om keys aan te vragen en in te trekken (robbe?)
-overlappende lijnen (dylan)
-tv scherm (michiel)
-documentatie (iedereen)
-rate limiting
-admin users
-validation
-responsive adminpanel
-dark theme
-limit only one arduino build at a time
-opengraph
-je staat in de rij terwijl dat niet zo is fixen
+-   [x] arduino code uploaden
+-   [x] paneel om keys aan te vragen en in te trekken (robbe?)
+-   [x] overlappende lijnen (dylan)
+-   [x] tv scherm (michiel)
+-   [x] responsive adminpanel
+-   [x] admin users
+-   [ ] documentatie (iedereen)
+-   [ ] opengraph
+-   [ ] fix error on rename
+-   [ ] limit only one arduino build at a time
+-   [ ] je staat in de rij terwijl dat niet zo is fixen
+-   [ ] validation
+-   [ ] rate limiting
