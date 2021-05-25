@@ -103,7 +103,7 @@ These builtin utility functions are available to you:
 Example function usage:
 
 ```c
-// A will contains a random number that will be at least hunderd
+// A will contain a random number that will be at least hunderd
 byte a = max(random(), 100)
 ```
 
