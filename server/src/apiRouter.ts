@@ -5,7 +5,7 @@ import { withUser } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
 import { PrismaClient } from ".prisma/client";
 import fetch from "node-fetch";
-import { sendArduino } from "./socketServer";
+import { sendArduino, numberToLine } from "./socketServer";
 import debug from "debug";
 import effectRouter from "./effectRouter";
 
@@ -101,6 +101,9 @@ router.post("/unbind", withUser(false, true), async (req, res, next) => {
 
 router.post("/leds", withUser(true, false), async (req, res, next) => {
     let message = req.body;
+    if (message.type == "roomEffect") {
+        message = numberToLine(message.room);
+    }
     console.log(message);
     sendArduino(message);
     res.end();
