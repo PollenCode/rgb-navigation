@@ -8,7 +8,7 @@ nav_order: 1
 RGBLang is the programming language that is used to create _shaders_ for the ledstrip, a shader is a program that runs for each led of the ledstrip.
 This program gets uploaded to the ledstrip controller which executes it for each led (784 leds!) 60 timer per second.
 
-**To see some example effects, look [here](https://pollencode.github.io/rgb-navigation/RGBLang.html)**
+**To see some example effects, look [here](https://pollencode.github.io/rgb-navigation/)**
 
 ## Features
 
