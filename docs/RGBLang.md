@@ -1,6 +1,6 @@
 ---
 title: RGBLang
-nav_order: 1
+nav_order: 10
 ---
 
 # RGBLang
