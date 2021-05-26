@@ -1,3 +1,8 @@
+---
+title: RGBLang workings
+nav_order: 20
+---
+
 # How does RGBLang work?
 
 A basic compiler is built for RGBLang, which converts the text you enter into a syntax tree.
