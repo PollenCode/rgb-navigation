@@ -1,3 +1,8 @@
+---
+title: Examples
+nav_order: 1
+---
+
 # Examples
 
 This chapter contains example programs for the ledstrip written in [RGBLang](). You can also use it is a tutorial because the programs get more complicated each time.
