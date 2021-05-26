@@ -38,6 +38,7 @@ uint64_t lastShown = 0;
 CRGB currentColors[MAX_LINES];
 
 uint32_t shift = 0;
+byte newId = 0;
 
 int interlacing = 0;
 unsigned short entryPoint = 12;
@@ -207,7 +208,7 @@ void handleSetIdle()
 {
     Serial.read();
     // idleEffect = Serial.read();
-    Serial.print("Set idle effect ");
+    //Serial.print("Set idle effect ");
     // Serial.println(idleEffect);
 }
 
@@ -216,35 +217,37 @@ void handleEnableLine()
     Serial.read();
     uint8_t id = Serial.read();
 
-    if (id >= MAX_LINES)
-    {
-        Serial.println("Reached max lines");
-        return;
-    }
-
-    if (routes[id] != nullptr)
-    {
-        setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
-        delete routes[id];
-    }
-
     // Enable line effect
     uint8_t r = Serial.read(), g = Serial.read(), b = Serial.read();
     uint16_t startLed = Serial.read() << 8 | Serial.read();
     uint16_t endLed = Serial.read() << 8 | Serial.read();
     uint16_t duration = Serial.read() << 8 | Serial.read();
 
+    bool exist = false;
+    for(byte i = 0; i <= MAX_LINES; i++) {
+      if (routes[i]->startLed == startLed && routes[i]->endLed == endLed){
+        id = i;
+        exist = true;
+        //Serial.print("hit");
+        //break;
+      }
+    }
+
+    if(exist == false) {
+      id = newId == (MAX_LINES - 1) ? newId = 0 : newId++;
+    }
+    
     uint64_t endTime = duration > 0 ? millis() + duration * 1000 : 0;
     routes[id] = new LineEffect(startLed, endLed, endTime, CRGB(r, g, b));
 
-    Serial.print("Enable line ");
+    //Serial.print("Enable line ");
     Serial.print(id);
-    Serial.print(", startLed=");
+    /*Serial.print(", startLed=");
     Serial.print(startLed);
     Serial.print(", endLed=");
     Serial.print(endLed);
     Serial.print(", duration=");
-    Serial.println(duration);
+    Serial.println(duration);*/
 }
 
 void handleDisableLine()
@@ -308,8 +311,8 @@ void handlePackets()
         break;
     case 1:
         if (Serial.available() >= 2)
-            Serial.println(packetType);
-        handleSetIdle();
+            //Serial.println(packetType);
+            handleSetIdle();
         break;
     case 2:
         if (Serial.available() >= 11)
