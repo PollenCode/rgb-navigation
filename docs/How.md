@@ -2,9 +2,7 @@
 
 A basic compiler is built for RGBLang, which converts the text you enter into a syntax tree.
 
-```
-syntax tree here
-```
+![syntax tree](https://github.com/PollenCode/rgb-navigation/raw/master/docs/images/syntaxtree.png)
 
 When the compiler can't create a tree from your input, this is considered a syntax error.
 
