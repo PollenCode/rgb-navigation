@@ -191,7 +191,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                         style={{ marginRight: "0.3em" }}
                         loading={loading}
                         icon={faUpload}
-                        disabled={loading || client.user?.admin}
+                        disabled={loading || !client.user?.admin}
                         onClick={build}>
                         Upload
                     </Button>
@@ -227,7 +227,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     {status.status}
                 </div>
             </div> */}
-            <div className="flex-grow flex-shrink relative w-full max-w-full fade-in">
+            <div className="flex-grow flex-shrink relative w-full max-w-full">
                 <Editor
                     onMount={(editor) => {
                         setEditor(editor);
