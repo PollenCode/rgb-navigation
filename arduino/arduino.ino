@@ -309,11 +309,6 @@ void handlePackets()
     {
     case -1:
         break;
-    case 1:
-        if (Serial.available() >= 2)
-            //Serial.println(packetType);
-            handleSetIdle();
-        break;
     case 2:
         if (Serial.available() >= 11)
             handleEnableLine();
