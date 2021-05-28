@@ -3,6 +3,7 @@
 uint32_t executed = 0;
 uint16_t exePointer = 0;
 uint16_t stackPointer = 0;
+bool (*callHandler)(uint8_t);
 
 // optimizations:
 // - push <addr:2> -> pushb <addr:1>

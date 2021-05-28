@@ -1,4 +1,5 @@
 #pragma once
+
 #include <stdint.h>
 #include <stdbool.h>
 #include "sintable.h"
@@ -7,11 +8,12 @@
 #define EOVERFLOW -1
 #define EINVCALL -3
 
+extern bool (*callHandler)(uint8_t);
 extern uint16_t exePointer;
 extern uint16_t stackPointer;
 extern uint8_t mem[];
 extern uint32_t executed;
-bool (*callHandler)(uint8_t);
+
 
 enum OpCode
 {

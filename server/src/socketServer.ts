@@ -140,7 +140,6 @@ export function sendArduino(message: LedControllerServerMessage) {
 
 export function numberToLine(roomNumber: number) {
     let room;
-    let color;
     let startLed = 0;
     let endLed = 0;
     let r = 0;

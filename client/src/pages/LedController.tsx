@@ -3,6 +3,8 @@ import { AuthContext } from "../AuthContext";
 import { useContext } from "react";
 import { useState } from "react";
 
+const MAX_LEDS = "784";
+
 export function LedController() {
     let client = useContext(AuthContext);
     const [startLed, setStartLed] = useState("0");
@@ -20,7 +22,7 @@ export function LedController() {
                     id="quantity"
                     name="quantity"
                     min="0"
-                    max="50"
+                    max={MAX_LEDS}
                     defaultValue="0"
                     onChange={(event) => setStartLed(event.target.value)}
                     className="border-black h-5 mr-5 "></input>
@@ -30,8 +32,8 @@ export function LedController() {
                     id="quantity"
                     name="quantity"
                     min="0"
-                    max="50"
-                    defaultValue="50"
+                    max={MAX_LEDS}
+                    defaultValue={MAX_LEDS}
                     onChange={(event) => setEndLed(event.target.value)}
                     className="border-black h-5 mr-5 "></input>
                 <p className="mr-5 text-lg">Tijd:</p>

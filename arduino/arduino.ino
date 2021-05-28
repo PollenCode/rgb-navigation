@@ -1,4 +1,4 @@
-
+#pragma once
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define FASTLED_INTERRUPT_RETRY_COUNT 1
 #include <FastLED.h>
@@ -224,19 +224,22 @@ void handleEnableLine()
     uint16_t duration = Serial.read() << 8 | Serial.read();
 
     bool exist = false;
-    for(byte i = 0; i <= MAX_LINES; i++) {
-      if (routes[i]->startLed == startLed && routes[i]->endLed == endLed){
-        id = i;
-        exist = true;
-        //Serial.print("hit");
-        //break;
-      }
+    for (byte i = 0; i <= MAX_LINES; i++)
+    {
+        if (routes[i]->startLed == startLed && routes[i]->endLed == endLed)
+        {
+            id = i;
+            exist = true;
+            //Serial.print("hit");
+            //break;
+        }
     }
 
-    if(exist == false) {
-      id = newId == (MAX_LINES - 1) ? newId = 0 : newId++;
+    if (exist == false)
+    {
+        id = newId == (MAX_LINES - 1) ? newId = 0 : newId++;
     }
-    
+
     uint64_t endTime = duration > 0 ? millis() + duration * 1000 : 0;
     routes[id] = new LineEffect(startLed, endLed, endTime, CRGB(r, g, b));
 
