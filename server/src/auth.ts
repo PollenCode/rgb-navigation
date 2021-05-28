@@ -40,10 +40,9 @@ export function getOAuthUrl() {
         response_type: "code",
         prompt: "consent",
         state: "hello",
-        scope: [
-            "https://www.googleapis.com/auth/userinfo.profile",
-            "https://www.googleapis.com/auth/userinfo.email",
-        ].join(" "),
+        scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"].join(" "),
     };
     return `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(options)}`;
 }
+
+// console.log(createDeviceAccessToken("dgang"));

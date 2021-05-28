@@ -7,16 +7,16 @@ extern "C"
 #include "interpreter.h"
 }
 
-#define BAUD_RATE 19200
+#define BAUD_RATE 115200
 
 // 784 / 2
-#define LED_COUNT 50
+#define LED_COUNT 784
 #define DATA_PIN 4
 // Max amount of routes that can be drawn at once
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
 #define INTERLACE_LEVEL 2
-#define MAX_PROGRAM_SIZE 250
+#define MAX_PROGRAM_SIZE 1000
 #define SHIFT_INTERVAL 100
 #define SPLIT_SIZE 2
 
@@ -223,22 +223,22 @@ void handleEnableLine()
     uint16_t endLed = Serial.read() << 8 | Serial.read();
     uint16_t duration = Serial.read() << 8 | Serial.read();
 
-    bool exist = false;
-    for (byte i = 0; i <= MAX_LINES; i++)
-    {
-        if (routes[i]->startLed == startLed && routes[i]->endLed == endLed)
-        {
-            id = i;
-            exist = true;
-            //Serial.print("hit");
-            //break;
-        }
-    }
-
-    if (exist == false)
-    {
-        id = newId == (MAX_LINES - 1) ? newId = 0 : newId++;
-    }
+//    bool exist = false;
+//    for (byte i = 0; i <= MAX_LINES; i++)
+//    {
+//        if (routes[i]->startLed == startLed && routes[i]->endLed == endLed)
+//        {
+//            id = i;
+//            exist = true;
+//            //Serial.print("hit");
+//            //break;
+//        }
+//    }
+//
+//    if (exist == false)
+//    {
+//        id = newId == (MAX_LINES - 1) ? newId = 0 : newId++;
+//    }
 
     uint64_t endTime = duration > 0 ? millis() + duration * 1000 : 0;
     routes[id] = new LineEffect(startLed, endLed, endTime, CRGB(r, g, b));
