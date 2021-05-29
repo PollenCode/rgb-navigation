@@ -21,8 +21,9 @@ extern "C"
 #define INTERLACE_LEVEL 2
 // The max size of an idle program, must be aligned to 4
 #define MAX_PROGRAM_SIZE 200
-#define SHIFT_INTERVAL 100
-#define SPLIT_SIZE 2
+#define ROUTE_SHIFT_INTERVAL 500
+#define ROUTE_BLEND_FACTOR 35
+#define ROUTE_SPLIT_SIZE 3
 
 #ifdef PRODUCTION
 #define BRIGHTNESS 255
@@ -43,18 +44,19 @@ struct LineEffect
     LineEffect(uint16_t startLed, uint16_t endLed, uint64_t endTime, CRGB color) : startLed(startLed), endLed(endLed), endTime(endTime), color(color) {}
 };
 
-LineEffect *routes[MAX_LINES] = {0};
-CRGB leds[LED_COUNT];
-uint16_t fpsCounter = 0;
-uint64_t lastShown = 0;
-CRGB currentColors[MAX_LINES];
+uint32_t fpsCounter = 0;
+uint64_t lastShownInfoTime = 0;
 
-uint32_t shift = 0;
-uint8_t idCounter = 0;
+CRGB leds[LED_COUNT];
+
+LineEffect *routes[MAX_LINES] = {0};
+CRGB routeColors[MAX_LINES];
+uint8_t routeIdCounter = 0;
 
 int effectInterlacing = 0;
 unsigned short effectEntryPoint = 12;
 uint8_t mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x04, 0x03, 0x00, 0x22, 0x03, 0x04, 0xff, 0x00, 0x08, 0x00, 0x00, 0x03, 0x00, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x05, 0x04, 0xff, 0x00, 0x22, 0x02, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
+int lastExitCode = 0;
 
 #define PROGRAM_INDEX32(address) *(int32_t *)(mem + address)
 
@@ -234,9 +236,9 @@ void handleEnableLine()
     }
     if (!exist)
     {
-        if (idCounter++ >= MAX_LINES)
-            idCounter = 0;
-        id = idCounter;
+        if (routeIdCounter++ >= MAX_LINES)
+            routeIdCounter = 0;
+        id = routeIdCounter;
     }
 
     uint64_t endTime = millis() + duration * 1000;
@@ -327,44 +329,64 @@ void handlePackets()
     }
 }
 
-void drawRoutes()
+void drawRoutes(uint32_t time)
 {
+    // Iterate every led
     for (int i = 0; i < LED_COUNT; i++)
     {
-        byte currentColorCount = 0;
-        bool high = false;
-        bool low = false;
-        memset(currentColors, 0, MAX_LINES * sizeof(CRGB));
-        for (byte j = 0; j < MAX_LINES; j++)
+        uint8_t currentColorCount = 0;
+        memset(routeColors, 0, MAX_LINES * sizeof(CRGB));
+        int8_t direction = 0;
+
+        // Check if there are any lines which overlay this led, if so, save its color in currentColors
+        for (uint8_t j = 0; j < MAX_LINES; j++)
         {
             if (routes[j] && ((routes[j]->startLed <= i && routes[j]->endLed >= i) ||
                               (routes[j]->startLed >= i && routes[j]->endLed <= i)))
             {
-                currentColors[currentColorCount] = routes[j]->color;
+                routeColors[currentColorCount] = routes[j]->color;
                 currentColorCount++;
+
                 if (routes[j]->startLed < routes[j]->endLed)
-                    high = true;
+                {
+                    direction--;
+                }
                 else if (routes[j]->startLed > routes[j]->endLed)
-                    low = true;
+                {
+                    direction++;
+                }
             }
         }
+
         if (currentColorCount == 0)
         {
             leds[i] = CRGB(0, 0, 0);
             continue;
         }
-        int colorId = (i / SPLIT_SIZE) % currentColorCount;
-        if (high == true && low == false && currentColorCount > 1)
+        else if (currentColorCount == 1)
         {
-            colorId = (i - shift / SHIFT_INTERVAL + SPLIT_SIZE * currentColorCount) / SPLIT_SIZE % currentColorCount;
+            // Add black if only one color so the direction is still shown
+            routeColors[currentColorCount] = CRGB(0, 0, 0);
+            currentColorCount++;
         }
-        else if (high == false && low == true && currentColorCount > 1)
+
+        int colorIndex;
+        if (direction == 0)
         {
-            colorId = (i + shift / SHIFT_INTERVAL) / SPLIT_SIZE % currentColorCount;
+            colorIndex = i % currentColorCount;
         }
-        leds[i] = currentColors[colorId];
+        else if (direction > 0)
+        {
+            colorIndex = ((i + time / ROUTE_SHIFT_INTERVAL) / ROUTE_SPLIT_SIZE) % currentColorCount;
+        }
+        else // direction < 0
+        {
+            colorIndex = ((i - time / ROUTE_SHIFT_INTERVAL) / ROUTE_SPLIT_SIZE) % currentColorCount;
+        }
+
+        // Update led color by blending it with the new color
+        leds[i] = blend(leds[i], routeColors[colorIndex], ROUTE_BLEND_FACTOR);
     }
-    shift++;
 }
 
 void drawEffect(uint32_t time)
@@ -373,7 +395,7 @@ void drawEffect(uint32_t time)
     *(uint32_t *)(mem + 8) = (uint32_t)time;
 
     // Execute program for every led on the strip
-    int res;
+    lastExitCode = 0;
     for (int i = effectInterlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
     {
         // Set index int variable which is located at 4
@@ -388,17 +410,12 @@ void drawEffect(uint32_t time)
         // Run the program in effect
         stackPointer = MAX_PROGRAM_SIZE;
         exePointer = effectEntryPoint;
-        res = run();
-        if (res)
+        lastExitCode = run();
+        if (lastExitCode)
             break;
 
+        // Update led color with result of program
         leds[i] = CRGB(mem[0], mem[1], mem[2]);
-    }
-
-    if (res)
-    {
-        Serial.print("non 0 exit code ");
-        Serial.println(res);
     }
 
     effectInterlacing++;
@@ -422,7 +439,6 @@ void loop()
         // Delete line if it has expired
         if (le->endTime != 0 && le->endTime <= time)
         {
-            // setColorLine(le->startLed, le->endLed, CRGB(0, 0, 0));
             delete le;
             routes[i] = nullptr;
             continue;
@@ -433,27 +449,35 @@ void loop()
 
     if (anyRoute)
     {
-        drawRoutes();
+        drawRoutes(time);
     }
     else
     {
         drawEffect(time);
     }
 
+    FastLED.show();
+
     fpsCounter++;
-    if (time - lastShown >= 1000)
+    if (time - lastShownInfoTime >= 1000)
     {
         // Show frames per second
         Serial.print("FPS: ");
         Serial.println(fpsCounter);
+
         // Show instructions per second
         Serial.print("IPS: ");
         Serial.println(executed);
 
-        lastShown = time;
+        // Only show exit code if non-zero (error occured)
+        if (lastExitCode)
+        {
+            Serial.print("Error exit code: ");
+            Serial.println(lastExitCode);
+        }
+
+        lastShownInfoTime = time;
         fpsCounter = 0;
         executed = 0;
     }
-
-    FastLED.show();
 }
