@@ -5,7 +5,7 @@ import { withUser } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
 import { PrismaClient } from ".prisma/client";
 import fetch from "node-fetch";
-import { sendArduino, numberToLine } from "./socketServer";
+import { sendArduino as sendLedController, roomNumberToLine } from "./socketServer";
 import debug from "debug";
 import effectRouter from "./effectRouter";
 
@@ -77,7 +77,7 @@ router.get("/oauth/complete", async (req, res, next) => {
     res.redirect((isDevelopment ? "http://localhost:3000/oauth?s=" : "/oauth?s=") + createUserAccessToken(user.id));
 });
 
-router.get("/user", withUser(false, true), (req, res, next) => {
+router.get("/user/me", withUser(false, true), (req, res, next) => {
     res.json({
         name: req.user.name,
         identifier: req.user.identifier,
@@ -87,7 +87,7 @@ router.get("/user", withUser(false, true), (req, res, next) => {
     });
 });
 
-router.post("/unbind", withUser(false, true), async (req, res, next) => {
+router.post("/user/unbind", withUser(false, true), async (req, res, next) => {
     let user = await prisma.user.update({
         where: {
             id: req.user!.id,
@@ -99,17 +99,27 @@ router.post("/unbind", withUser(false, true), async (req, res, next) => {
     res.json({ status: "ok", user: user });
 });
 
-router.post("/leds", withUser(true, false), async (req, res, next) => {
-    let message = req.body;
-    if (message.type == "roomEffect") {
-        message = numberToLine(message.room);
-    }
-    console.log(message);
-    sendArduino(message);
-    res.end();
+router.post("/leds/route", withUser(true, false), async (req, res, next) => {
+    let data = req.body;
+    sendLedController({
+        type: "enableLine",
+        r: data.r,
+        g: data.g,
+        b: data.b,
+        duration: data.duration,
+        endLed: data.endLed,
+        startLed: data.startLed,
+    });
+    res.status(201).end();
 });
 
-router.get("/users", withUser(true, false), async (req, res, next) => {
+router.post("/leds/roomRoute", withUser(true, false), async (req, res, next) => {
+    let data = req.body;
+    sendLedController(roomNumberToLine(data.roomNumber));
+    res.status(201).end();
+});
+
+router.get("/user", withUser(true, false), async (req, res, next) => {
     let users = await prisma.user.findMany({});
     res.json({ status: "ok", users });
 });

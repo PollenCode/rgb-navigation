@@ -100,7 +100,7 @@ export function createSocketServer(server: http.Server) {
 
             // TODO: enable leds for user
             let numb = Math.floor(Math.random() * 6);
-            let ledMessage: LedControllerServerMessage = numberToLine(numb);
+            let ledMessage: LedControllerServerMessage = roomNumberToLine(numb);
             let color = "rgb(" + ledMessage.r + "," + ledMessage.b + "," + ledMessage.g + ")";
             let followData = { name: boundUser.name, color: color };
             logger("enable led for user", boundUser.id, boundUser.name);
@@ -138,7 +138,7 @@ export function sendArduino(message: LedControllerServerMessage) {
     socket.emit("ledController", message);
 }
 
-export function numberToLine(roomNumber: number) {
+export function roomNumberToLine(roomNumber: number) {
     let room;
     let startLed = 0;
     let endLed = 0;

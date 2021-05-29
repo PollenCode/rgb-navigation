@@ -58,7 +58,7 @@ export class RGBClient extends TypedEmitter<Events> {
         this.accessToken = token;
         if (token) {
             // Try to get the user
-            let res = await fetch(serverPath + "/api/user", {
+            let res = await fetch(serverPath + "/api/user/me", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -102,15 +102,7 @@ export class RGBClient extends TypedEmitter<Events> {
     }
 
     public async unbind() {
-        return await this.doFetch("/api/unbind", "POST");
-    }
-
-    public async sendRoom(room: number) {
-        let req: LedControllerServerMessage = {
-            type: "roomEffect",
-            room: room,
-        };
-        return await this.doFetch("/api/leds", "POST", req);
+        return await this.doFetch("/api/user/unbind", "POST");
     }
 
     public async getEffects(code: boolean = false, onlyUser: boolean = false) {
@@ -140,18 +132,22 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect/build/" + id + (upload ? "?upload=true" : ""), "POST");
     }
 
-    public async ledController(startLed: number, endLed: number, duration: number, color: string) {
+    public async enableLedRoomRoute(roomNumber: number) {
+        return await this.doFetch("/api/leds/roomRoute", "POST", {
+            roomNumber: roomNumber,
+        });
+    }
+
+    public async enableLedRoute(startLed: number, endLed: number, duration: number, color: string) {
         let c = hexToRgb(color)!;
-        let req: LedControllerServerMessage = {
-            type: "enableLine",
+        return await this.doFetch("/api/leds/route", "POST", {
             duration: duration,
             startLed: startLed,
             endLed: endLed,
             r: c.r,
             g: c.g,
             b: c.b,
-        };
-        return await this.doFetch("/api/leds", "POST", req);
+        });
     }
 
     public async createApiKey(): Promise<{ status: "ok"; token: any }> {
@@ -169,7 +165,7 @@ export class RGBClient extends TypedEmitter<Events> {
     }
 
     public async getUsers() {
-        return await this.doFetch("/api/users", "GET");
+        return await this.doFetch("/api/user", "GET");
     }
 
     public async giveAdmin(userId: number) {

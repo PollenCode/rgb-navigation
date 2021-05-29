@@ -51,7 +51,7 @@ export function LedController() {
                     style={{ margin: "0.5em" }}
                     type="button"
                     onClick={async () => {
-                        client.ledController(Number(startLed), Number(endLed), Number(duration), color);
+                        client.enableLedRoute(Number(startLed), Number(endLed), Number(duration), color);
                     }}>
                     Verzenden
                 </Button>

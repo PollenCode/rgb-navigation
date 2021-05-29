@@ -15,7 +15,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(0);
+                            client.enableLedRoomRoute(0);
                         }}>
                         Lokaal 1
                     </Button>
@@ -23,7 +23,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(1);
+                            client.enableLedRoomRoute(1);
                         }}>
                         Lokaal 2
                     </Button>
@@ -31,7 +31,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(2);
+                            client.enableLedRoomRoute(2);
                         }}>
                         Lokaal 3
                     </Button>
@@ -41,7 +41,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(3);
+                            client.enableLedRoomRoute(3);
                         }}>
                         Lokaal 4
                     </Button>
@@ -49,7 +49,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(4);
+                            client.enableLedRoomRoute(4);
                         }}>
                         Lokaal 5
                     </Button>
@@ -57,7 +57,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(5);
+                            client.enableLedRoomRoute(5);
                         }}>
                         Lokaal 6
                     </Button>

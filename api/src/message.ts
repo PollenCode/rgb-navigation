@@ -9,10 +9,6 @@ export type LedControllerServerMessage =
           g: number;
           b: number;
       }
-    | {
-          type: "roomEffect";
-          room: number;
-      }
     | { type: "uploadProgram"; byteCode: string; entryPoint: number };
 
 // Arduino -> Server
