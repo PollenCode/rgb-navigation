@@ -71,7 +71,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                             <>
                                 <hr />
                                 <NavButton icon={faDotCircle} name="Realtime" to="/realtime" />
-                                <NavButton icon={faKey} name="API Keys" to="/admin/token" />
+                                <NavButton icon={faKey} name="API Keys" to="/admin/apikeys" />
                                 <NavButton icon={faUsers} name="Gebruikers" to="/admin/users" />
                                 <NavButton name="D-gang" to="/admin/dgang" />
                                 <NavButton name="LedController" to="/admin/ledcontrol" />

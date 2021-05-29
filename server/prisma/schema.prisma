@@ -38,8 +38,9 @@ model Effect {
 }
 
 model Token {
-  id       Int      @id @default(autoincrement())
-  made     DateTime @default(now())
-  author   User?    @relation(fields: [authorId], references: [id])
-  authorId String?
+  id          Int      @id @default(autoincrement())
+  made        DateTime @default(now())
+  author      User?    @relation(fields: [authorId], references: [id])
+  authorId    String?
+  description String?
 }

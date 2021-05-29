@@ -176,16 +176,6 @@ router.delete("/effect/:id", withAuth(false), async (req, res, next) => {
 router.post("/effect", withAuth(false), async (req, res, next) => {
     let { code, name } = req.body;
 
-    let existing = await prisma.effect.findUnique({
-        where: {
-            name,
-        },
-    });
-
-    if (existing) {
-        return res.status(400).json({ status: "error", error: "Effect with set name already exists." });
-    }
-
     let userEffectCount = await prisma.effect.count({ where: { authorId: req.user.id } });
     if (!req.user.admin && userEffectCount > MAX_EFFECT_PER_USER) {
         return res.status(400).json({

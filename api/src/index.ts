@@ -154,11 +154,16 @@ export class RGBClient extends TypedEmitter<Events> {
         });
     }
 
-    public async createApiKey(): Promise<{ status: "ok"; token: any }> {
-        return await this.doFetch("/api/apikey", "POST");
+    public async createApiKey(description: string): Promise<{ status: "ok"; token: string }> {
+        return await this.doFetch("/api/apikey", "POST", { description });
     }
 
-    public async getApiKeys(): Promise<{ status: "ok"; tokens: any[] }> {
+    public async getApiKeys(): Promise<{
+        status: "ok";
+        tokens: { author: { name: string; email: string; id: string } }[];
+        made: string;
+        description?: string;
+    }> {
         return await this.doFetch("/api/apikey", "GET");
     }
 

@@ -8,7 +8,7 @@ import { PageWrapper } from "./components/PageWrapper";
 import { DGang } from "./pages/DGang";
 import { Effects } from "./pages/Effects";
 import { LedController } from "./pages/LedController";
-import { Token } from "./pages/Token";
+import { ApiKeys } from "./pages/ApiKeys";
 import { GiveAdmin } from "./pages/Users";
 import { EffectEditor } from "./pages/EffectEditor";
 
@@ -96,9 +96,8 @@ function AdminRouter() {
         <Switch>
             {<Route path="/admin/dgang" exact component={DGang} />}
             <Route path="/admin/ledcontrol" exact component={LedController} />
-            <Route path="/admin/token" exact component={Token} />
+            <Route path="/admin/apikeys" exact component={ApiKeys} />
             <Route path="/admin/users" exact component={GiveAdmin} />
-            {/* <Route path="/admin/lessenrooster" exact component={Lessenrooster} /> */}
             <Redirect to="/effects" />
         </Switch>
     );

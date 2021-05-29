@@ -131,6 +131,7 @@ router.delete("/user/admin", withAuth(true), async (req, res, next) => {
 router.post("/apikey", withAuth(true), async (req, res, next) => {
     let token = await prisma.token.create({
         data: {
+            description: req.body.description,
             author: req.user ? { connect: { id: req.user.id } } : undefined,
         },
     });
@@ -138,7 +139,20 @@ router.post("/apikey", withAuth(true), async (req, res, next) => {
 });
 
 router.get("/apikey", withAuth(true), async (req, res, next) => {
-    let tokens = await prisma.token.findMany({});
+    let tokens = await prisma.token.findMany({
+        select: {
+            author: {
+                select: {
+                    name: true,
+                    email: true,
+                    id: true,
+                },
+            },
+            description: true,
+            id: true,
+            made: true,
+        },
+    });
     res.json({ status: "ok", tokens });
 });
 
