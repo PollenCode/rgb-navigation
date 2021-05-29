@@ -1,4 +1,4 @@
-
+#pragma once
 #define FASTLED_ALLOW_INTERRUPTS 0
 #define FASTLED_INTERRUPT_RETRY_COUNT 1
 #include <FastLED.h>
@@ -38,7 +38,7 @@ uint64_t lastShown = 0;
 CRGB currentColors[MAX_LINES];
 
 uint32_t shift = 0;
-byte newId = 0;
+uint8_t idCounter = 0;
 
 int interlacing = 0;
 unsigned short entryPoint = 12;
@@ -213,7 +213,6 @@ void handleSetIdle()
 void handleEnableLine()
 {
     Serial.read();
-    uint8_t id = Serial.read();
 
     // Enable line effect
     uint8_t r = Serial.read(), g = Serial.read(), b = Serial.read();
@@ -222,24 +221,21 @@ void handleEnableLine()
     uint16_t duration = Serial.read() << 8 | Serial.read();
 
     bool exist = false;
-    for (byte i = 0; i <= MAX_LINES; i++)
+    uint8_t id;
+    for (uint8_t i = 0; i <= MAX_LINES; i++)
     {
-        Serial.print("Test ");
-        Serial.print(i);
-        Serial.print(" ");
-        Serial.println((int)routes[i]);
-        if (routes[i]->startLed == startLed && routes[i]->endLed == endLed)
+        if (routes[i] && routes[i]->startLed == startLed && routes[i]->endLed == endLed)
         {
             id = i;
             exist = true;
-            //Serial.print("hit");
-            //break;
+            break;
         }
     }
-
-    if (exist == false)
+    if (!exist)
     {
-        id = newId == (MAX_LINES - 1) ? newId = 0 : newId++;
+        if (idCounter++ >= MAX_LINES)
+            idCounter = 0;
+        id = idCounter;
     }
 
     uint64_t endTime = duration > 0 ? millis() + duration * 1000 : 0;
