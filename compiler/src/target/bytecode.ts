@@ -213,7 +213,7 @@ export class ByteCodeTarget implements Target {
             v.location = this.allocateVariable(token.type);
         }
 
-        if (token.value && (token.constantValue === undefined || v.volatile)) {
+        if (token.value && !token.variable.constant) {
             this.compileToken(token.value);
             if (!isRoot) {
                 this.writer.dup();

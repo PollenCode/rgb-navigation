@@ -61,19 +61,10 @@ export class JavascriptTarget implements Target {
     }
 
     private compileAssignment(token: AssignmentToken) {
-        if (token.typeName) {
-            // this.header.push("let ");
-            // this.header.push(token.varName);
-            // this.header.push(";\n");
-        }
-        if (token.value && (token.constantValue === undefined || token.variable.volatile)) {
+        if (token.value && !token.variable.constant) {
             this.buffer.push("mem.");
             this.buffer.push(token.varName);
             this.buffer.push("=");
-
-            // if (token.type.size === 4 || token.type.size === 1) {
-            //     this.buffer.push("(");
-            // }
 
             this.compileToken(token.value);
 
