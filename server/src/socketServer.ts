@@ -149,7 +149,7 @@ export function numberToLine(roomNumber: number) {
         case 0:
             room = "D027";
             startLed = 784;
-            endLed = 744;
+            endLed = 723;
             r = 255;
             g = 0;
             b = 0;
@@ -157,7 +157,7 @@ export function numberToLine(roomNumber: number) {
         case 1:
             room = "D029";
             startLed = 784;
-            endLed = 557;
+            endLed = 552;
             r = 0;
             g = 0;
             b = 255;
