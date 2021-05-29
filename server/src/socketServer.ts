@@ -148,48 +148,48 @@ export function numberToLine(roomNumber: number) {
     switch (roomNumber) {
         case 0:
             room = "D027";
-            startLed = 0;
-            endLed = 15;
+            startLed = 784;
+            endLed = 744;
             r = 255;
             g = 0;
             b = 0;
             break;
         case 1:
             room = "D029";
-            startLed = 0;
-            endLed = 30;
+            startLed = 784;
+            endLed = 557;
             r = 0;
             g = 0;
             b = 255;
             break;
         case 2:
             room = "D030";
-            startLed = 0;
-            endLed = 50;
+            startLed = 784;
+            endLed = 517;
             r = 238;
             g = 130;
             b = 238;
             break;
         case 3:
             room = "D034a";
-            startLed = 50;
-            endLed = 35;
+            startLed = 0;
+            endLed = 308;
             r = 238;
             g = 130;
             b = 238;
             break;
         case 4:
             room = "D034b";
-            startLed = 50;
-            endLed = 20;
+            startLed = 0;
+            endLed = 206;
             r = 255;
             g = 165;
             b = 0;
             break;
         case 5:
             room = "D035";
-            startLed = 50;
-            endLed = 0;
+            startLed = 0;
+            endLed = 170;
             r = 58;
             g = 255;
             b = 255;
