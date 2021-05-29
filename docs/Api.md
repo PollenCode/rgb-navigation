@@ -1,0 +1,94 @@
+---
+title: REST API
+nav_order: 1
+---
+
+# REST API
+
+If you got a valid authorization token (or api key), you can use the public api to upload effects, update effects and set routes programmatically.
+
+You can use the [npm package]() if possible, otherwise, use the instructions below on how to request these things from the server manually.
+
+## Important!
+
+1. All of the following urls should start with `https://rgb.ikdoeict.be`.
+2. All of the following routes must be authenticated by setting the `Authorization` header to `Bearer <yourtokenhere>`
+
+## Routes
+
+### `POST /api/effectVar/:varName/:value`
+
+Sets a variable on the led controller
+
+-   Replace `:varName` with the variable name in the currently uploaded program you wish to set.
+-   Replace `:value` with a numerical value to set in the variable.
+
+### `POST /api/effect/:id/build?upload=true`
+
+Uploads effect with id to the led controller.
+
+-   Replace `:id` with the effect id you wish to upload.
+
+### `GET /api/effect`
+
+Returns all effects in JSON format.
+
+### `POST /api/route`
+
+Creates a route from a to b with color and duration.
+
+Make sure to add the `Content-Type: application/json` header and include the following body:
+
+```json
+{
+    "startLed": 0,
+    "endLed": 100,
+    "duration": 1,
+    "r": 255,
+    "g": 255,
+    "b": 0
+}
+```
+
+-   `startLed`: the starting led to begin drawing the route line
+-   `endLed`: the ending led to stop drawing at (can be lower than startLed to create a route in the opposite direction)
+-   `duration`: the amount of seconds to show the route
+-   `r`: red value (0 -> 255)
+-   `g`: green value (0 -> 255)
+-   `b`: blue value (0 -> 255)
+
+## Examples
+
+### Setting a single or multiple led
+
+It is not directly possible to set a led directly via an api route. To achieve this you must first create a new effect and create some unset variables:
+
+```c
+// (new effect created at https://rgb.ikdoeict.be/effects/mine)
+
+byte red;
+byte green;
+byte blue;
+
+r = red
+g = green;
+b = blue;
+```
+
+Then, upload this effect program to the led controller (either via the webapp or via the api route above).
+
+When uploaded, the led strip should turn completely black, this is because the `red`, `green` and `blue` variables are initialized to zero on upload.
+
+Now that the effect is active, you can set the `red`, `green` and `blue` variables using the `/api/effectVar/:varName/:value` route in the following ways.
+
+#### Set the `red` variable to `255`
+
+`POST /api/effectVar/red/255`
+
+#### Set the `green` variable to `150`
+
+`POST /api/effectVar/green/255`
+
+#### Set the `blue` variable to `0`
+
+`POST /api/effectVar/blue/0`
