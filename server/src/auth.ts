@@ -1,20 +1,23 @@
 import jsonwebtoken from "jsonwebtoken";
 import querystring from "querystring";
 import { isDevelopment } from "./helpers";
+import debug from "debug";
+
+const logger = debug("rgb:server:jwt");
 
 export function createUserAccessToken(userId: string) {
     return jsonwebtoken.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: 60 * 60 });
 }
 
-export function createToken(tokenId: string) {
-    return jsonwebtoken.sign({ tokenId }, process.env.JWT_SECRET!, { expiresIn: 60 * 60 });
+export function createApiKey(tokenId: number) {
+    return jsonwebtoken.sign({ tokenId }, process.env.JWT_SECRET!);
 }
 
 export function validateUserAccessToken(token: string) {
     try {
         return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { userId: string } | { tokenId: number };
     } catch (ex) {
-        console.error("could not verify user jwt", ex, token);
+        if (ex.message !== "jwt expired") logger("could not verify user jwt", ex, token);
         return null;
     }
 }
@@ -27,7 +30,7 @@ export function validateDeviceAccessToken(token: string) {
     try {
         return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { roomId: string };
     } catch (ex) {
-        console.error("could not verify device jwt", ex, token);
+        if (ex.message !== "jwt expired") logger("could not verify device jwt", ex, token);
         return null;
     }
 }

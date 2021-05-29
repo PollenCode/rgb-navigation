@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createToken, createUserAccessToken, getOAuthUrl } from "./auth";
+import { createApiKey, createDeviceAccessToken, createUserAccessToken, getOAuthUrl } from "./auth";
 import { isDevelopment } from "./helpers";
 import { withAuth as withAuth } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
@@ -134,7 +134,7 @@ router.post("/apikey", withAuth(true), async (req, res, next) => {
             author: req.user ? { connect: { id: req.user.id } } : undefined,
         },
     });
-    res.json({ status: "ok", token: createToken(String(token.id)) });
+    res.json({ status: "ok", token: createApiKey(token.id) });
 });
 
 router.get("/apikey", withAuth(true), async (req, res, next) => {
@@ -149,6 +149,13 @@ router.delete("/apikey", withAuth(true), async (req, res, next) => {
         },
     });
     res.json({ status: "ok", token });
+});
+
+router.get("/deviceToken", withAuth(true), async (req, res, next) => {
+    res.json({
+        status: "ok",
+        deviceToken: createDeviceAccessToken("dgang"),
+    });
 });
 
 export default router;

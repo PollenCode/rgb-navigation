@@ -13,7 +13,6 @@ export function withAuth(requireAdmin: boolean, allowToken: boolean = false) {
         auth = auth.substring("Bearer ".length);
 
         let token = validateUserAccessToken(auth);
-
         if (!token) {
             return res.status(401).end();
         }
@@ -24,17 +23,13 @@ export function withAuth(requireAdmin: boolean, allowToken: boolean = false) {
                 return res.status(401).end();
             }
         }
+
         if ("userId" in token) {
             let user = await prisma.user.findUnique({ where: { id: token.userId } });
-            if (!user) {
+            if (!user || (requireAdmin && !user.admin)) {
                 return res.status(401).end();
             }
-            if (requireAdmin && user.admin == false) {
-                return res.status(401).end;
-            }
-            if (user) {
-                req.user = user;
-            }
+            req.user = user;
         }
 
         next();
