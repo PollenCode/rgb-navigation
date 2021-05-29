@@ -19,11 +19,21 @@ This section explains all of the available language features.
 Variables are like just any other programming language, a temporary location to store a value. Before assigning a value to a variable it must be declared.
 
 ```c
-int a = 1000
-byte b = 200
+int myVar = 1000
+byte myByte = 200
 ```
 
 RGBLang currently only supports **int** and **byte** integer types. An integer can store 32 bit signed values (-2147483647 -> 2147483647) and a byte can store 8 bit unsigned values (0 -> 255)
+
+### Constants
+
+To create a constant variable, you just create a variable like above, but with all capital letters:
+
+```c
+int MY_CONSTANT = 1000
+```
+
+Constants can only be assigned with values that are known before uploading to the ledstrip controller.
 
 #### Builtin variables
 

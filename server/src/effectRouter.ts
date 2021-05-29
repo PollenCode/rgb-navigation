@@ -23,12 +23,12 @@ function compile(input: string): [Buffer, number, ReadonlyMap<string, Var>] {
     let scope = new Scope();
     let target = new ByteCodeTarget();
 
-    scope.defineVar("r", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(0, new ByteType()) });
-    scope.defineVar("g", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(1, new ByteType()) });
-    scope.defineVar("b", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(2, new ByteType()) });
-    scope.defineVar("index", { type: new IntType(), volatile: true, location: target.allocateVariableAt(4, new IntType()), readonly: true });
-    scope.defineVar("timer", { type: new IntType(), volatile: true, location: target.allocateVariableAt(8, new IntType()), readonly: true });
-    scope.defineVar("LED_COUNT", { type: new IntType(), readonly: true });
+    scope.defineVar("r", { type: new ByteType(), location: target.allocateVariableAt(0, new ByteType()) });
+    scope.defineVar("g", { type: new ByteType(), location: target.allocateVariableAt(1, new ByteType()) });
+    scope.defineVar("b", { type: new ByteType(), location: target.allocateVariableAt(2, new ByteType()) });
+    scope.defineVar("index", { type: new IntType(), location: target.allocateVariableAt(4, new IntType()) });
+    scope.defineVar("timer", { type: new IntType(), location: target.allocateVariableAt(8, new IntType()) });
+    scope.defineVar("LED_COUNT", { type: new IntType(), constant: true });
     scope.setVarKnownValue("LED_COUNT", LED_COUNT);
 
     target.defineDefaultMacros(scope);
@@ -313,6 +313,9 @@ router.post("/effectVar/:varName/:value", withAuth(true, true), async (req, res,
         return res
             .status(404)
             .end("variable not found in currently running program, available variables: " + Array.from(lastVariables.keys()).join(", "));
+    }
+    if (v.constant) {
+        return res.status(400).end("the variable you tried to assign is constant, please convert it to a normal variable");
     }
 
     sendLedController({
