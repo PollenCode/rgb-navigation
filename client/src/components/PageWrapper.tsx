@@ -13,11 +13,11 @@ function NavButton(props: { name: string; to: LocationDescriptor; icon?: IconDef
         <li className="text-gray-600">
             <NavLink
                 target={props.target}
-                activeClassName="bg-blue-400 pl-5 text-white hover:text-gray-600"
+                activeClassName="pl-4 bg-gray-100 border-l-8 border-blue-500"
                 exact
                 to={props.to}
-                className="py-2 pl-3 block hover:bg-gray-200 transition-all whitespace-nowrap">
-                {props.icon && <FontAwesomeIcon className="mr-2 opacity-40 text-black scale-110 transform" icon={props.icon} />}
+                className="py-2 pl-3 block hover:text-black hover:bg-gray-200 transition-all whitespace-nowrap">
+                {props.icon && <FontAwesomeIcon className="mr-2 opacity-50 scale-110 transform" icon={props.icon} />}
                 {props.name}
             </NavLink>
         </li>
