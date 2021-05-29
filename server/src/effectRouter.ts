@@ -6,6 +6,8 @@ import { roomNumberToLine, sendLedController } from "./socketServer";
 import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, Var, VoidType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
+import { IdeInfo } from "rgb-navigation-api";
+import { ideInfo } from "./ideInfo";
 
 const MAX_EFFECT_PER_USER = 10;
 const LED_COUNT = 784;
@@ -341,6 +343,10 @@ router.post("/roomRoute", withAuth(true, true), async (req, res, next) => {
     let data = req.body;
     sendLedController(roomNumberToLine(data.roomNumber));
     res.status(201).end();
+});
+
+router.get("/ideInfo", async (req, res, next) => {
+    res.json(ideInfo);
 });
 
 export default router;

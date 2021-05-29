@@ -1,7 +1,7 @@
 import { throws } from "assert/strict";
 import io from "socket.io-client";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { LedControllerServerMessage } from "./message";
+import { IdeInfo, LedControllerServerMessage } from "./message";
 import qs from "querystring";
 
 export const isDevelopment = process.env.NODE_ENV === "development";
@@ -182,6 +182,10 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/user/admin", "DELETE", {
             id: userId,
         });
+    }
+
+    public async ideInfo(): Promise<IdeInfo> {
+        return await this.doFetch("/api/ideInfo", "GET");
     }
 }
 

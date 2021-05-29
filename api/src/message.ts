@@ -18,5 +18,19 @@ export type LedControllerMessage = {
     data: string;
 };
 
+export type IdeInfo = {
+    functions: {
+        name: string;
+        signature: string;
+        documentation?: string;
+        parameters: { label: string; documentation?: string }[];
+    }[];
+    variables: {
+        name: string;
+        documentation?: string;
+        readOnly?: boolean;
+    }[];
+};
+
 // !! Does your change here not reflect in other projects?
 // Make sure to run `yarn start` in this folder (api) to build this package each time you change something
