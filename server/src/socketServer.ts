@@ -18,6 +18,12 @@ export function createSocketServer(server: http.Server) {
     socket.on("connection", (connection) => {
         // logger("new connection", connection.id);
 
+        connection.on("nobind", ({ roomId }) => {
+            if (roomsCurrentlyBinding[roomId] && connection.id === roomsCurrentlyBinding[roomId].socketId) {
+                delete roomsCurrentlyBinding[roomId];
+            }
+        });
+
         connection.on("bind", ({ token, roomId }, callback) => {
             // Validate
             if (typeof token !== "string" || typeof roomId !== "string" || typeof callback !== "function") {
@@ -114,7 +120,7 @@ export function createSocketServer(server: http.Server) {
 
         connection.on("disconnect", () => {
             for (let roomId in roomsCurrentlyBinding) {
-                if (roomsCurrentlyBinding[roomId].socketId === connection.id) {
+                if (roomsCurrentlyBinding[roomId] && roomsCurrentlyBinding[roomId].socketId === connection.id) {
                     delete roomsCurrentlyBinding[roomId];
                 }
             }

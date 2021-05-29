@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState, useContext } from "react";
 import { BrowserRouter as Router, Switch, Route, Redirect, useHistory } from "react-router-dom";
-import { Complete } from "./pages/Complete";
+import { Complete } from "./pages/CardScanner";
 import { User, RGBClient, serverPath } from "rgb-navigation-api";
-import { Overview } from "./pages/CardScanner";
+import { Overview } from "./pages/LiveOverview";
 import { AuthContext } from "./AuthContext";
 import { PageWrapper } from "./components/PageWrapper";
 import { DGang } from "./pages/DGang";

@@ -1,79 +1,101 @@
-import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { RouteComponentProps } from "react-router";
 import { AuthContext } from "../AuthContext";
+import { Button } from "../components/Button";
+import { serverPath } from "rgb-navigation-api";
 import { SocketContext } from "../SocketContext";
 
-export function Overview(props: RouteComponentProps<{ roomId: string }>) {
-    let { socket } = useContext(AuthContext);
-    let [messages, setMessages] = useState<{ name: string; color: string }[]>([]);
-    let [errors, setError] = useState<string>("");
+type Status = "bound" | "loading" | "waiting-for-others" | "scan" | "already-bound";
 
-    async function onNfcAlreadyBound() {
-        setError("kaart al gelinkt");
-        setTimeout(() => {
-            setError("");
-        }, 15000);
+function getTextForStatus(status: Status) {
+    switch (status) {
+        case "scan":
+            return "Scan je kaart";
+        case "waiting-for-others":
+            return "Je staat in de rij";
+        case "bound":
+            return "Verbonden";
+        case "loading":
+            return "Laden...";
+        case "already-bound":
+            return "Kaart al verbonden!";
     }
+}
 
-    async function onNfcUnknownScanned() {
-        setError("onbekende kaart gescanned");
-        setTimeout(() => {
-            setError("");
-        }, 15000);
-    }
-
-    async function onUserShouldFollow(data: any) {
-        console.log(data);
-        setMessages((messages) => [data, ...messages]);
-        setTimeout(() => {
-            console.log("slicing");
-            setMessages((messages) => messages.slice(0, messages.length - 1));
-        }, 30000);
-    }
+export function Complete() {
+    const client = useContext(AuthContext);
+    let [status, setStatus] = useState<Status>("loading");
 
     useEffect(() => {
-        socket.on("nfcAlreadyBound", onNfcAlreadyBound);
-        socket.on("nfcUnknownScanned", onNfcUnknownScanned);
-        socket.on("userShouldFollow", onUserShouldFollow);
-        socket.on("connect", () => {
-            socket.emit("subscribe", { roomId: "dgang" });
-        });
-        socket.emit("subscribe", { roomId: "dgang" });
+        let bindTask: number | undefined = undefined;
+        function tryBind() {
+            client.socket.emit("bind", { roomId: "dgang", token: client.accessToken }, (res: any) => {
+                if (res.status === "busy" || res.status === "error") {
+                    console.log("bind is busy, trying again in 3 seconds", res);
+                    bindTask = setTimeout(tryBind, 1000 + Math.random() * 2000) as any as number;
+                    setStatus("waiting-for-others");
+                } else if (res.status === "ok") {
+                    setStatus("scan");
+                }
+            });
+        }
+        if (!client.user) {
+            setStatus("loading");
+        } else if (client.user.identifier) {
+            setStatus("bound");
+        } else {
+            tryBind();
+        }
         return () => {
-            socket.off("nfcAlreadyBound", onNfcAlreadyBound);
-            socket.off("nfcUnknownScanned", onNfcUnknownScanned);
-            socket.off("userShouldFollow", onUserShouldFollow);
+            if (bindTask !== undefined) clearTimeout(bindTask);
+        };
+    }, [client.user, client.user?.identifier]);
+
+    useEffect(() => {
+        async function onNfcAlreadyBound() {
+            setStatus("already-bound");
+            setTimeout(() => setStatus("scan"), 2000);
+        }
+        async function onNfcBound(data: any) {
+            client.setUser({ ...client.user!, identifier: data.identifier });
+            // setUser((user: any) => ({ ...user, identifier: data.identifier }));
+            setStatus("bound");
+        }
+        async function onUserFollow() {
+            // TODO
+            console.log("User should follow line");
+            setStatus("bound");
+        }
+
+        client.socket.on("nfcAlreadyBound", onNfcAlreadyBound);
+        client.socket.on("nfcBound", onNfcBound);
+        client.socket.on("userShouldFollow", onUserFollow);
+        return () => {
+            client.socket.emit("nobind", { roomId: "dgang" });
+            client.socket.off("nfcAlreadyBound", onNfcAlreadyBound);
+            client.socket.off("nfcBound", onNfcBound);
+            client.socket.off("userShouldFollow", onUserFollow);
         };
     }, []);
 
+    if (!client.user) return null;
+
     return (
-        <div className="flex-col flex h-screen">
-            <ul className="ml-10 mt-10 flex flex-col flex-grow overflow-hidden flex-wrap">
-                {messages.map((e) => (
-                    <Usercolor name={e.name} color={e.color} />
-                ))}
-            </ul>
-            {errors && (
-                <div className="bg-red-700 text-white mt-auto p-8 font-bold text-5xl overflow-hidden flex-shrink-0">
-                    <div className="error-shake">
-                        <FontAwesomeIcon icon={faExclamationTriangle} className="transform scale-125 mr-7 opacity-75" />
-                        {errors}
-                    </div>
-                </div>
+        <div className="items-center justify-center flex flex-col flex-grow">
+            <h1 className="text-3xl px-5 py-3 my-3 bg-green-500 text-white border rounded-lg">{getTextForStatus(status)}</h1>
+            <h2 className="text-lg font-semibold text-blue-700">{client.user.name}</h2>
+            <h3>{client.user.email}</h3>
+            {/* {auth.picture && <img className="rounded m-3" src={user.picture} alt="profile" />} */}
+            {client.user.identifier && (
+                <Button
+                    style={{ margin: "1em 0" }}
+                    onClick={async () => {
+                        await client.unbind();
+                        client.setUser({ ...client.user!, identifier: null });
+                    }}>
+                    Verbreken
+                </Button>
             )}
         </div>
-    );
-}
-
-function Usercolor(props: { name: string; color: string }) {
-    return (
-        <li className="flex items-center mb-10">
-            <span className="text-5xl">
-                <span className="font-bold">{props.name}</span> <span className="font-bold opacity-50">volgt</span>
-            </span>
-            <div className="w-10 h-10 rounded-full ml-6" style={{ backgroundColor: props.color }}></div>
-        </li>
     );
 }

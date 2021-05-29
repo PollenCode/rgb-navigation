@@ -189,12 +189,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     </span>
                 )}
                 {effect && (
-                    <Button
-                        style={{ marginRight: "0.3em" }}
-                        loading={loading}
-                        icon={faUpload}
-                        disabled={loading || !client.user?.admin}
-                        onClick={build}>
+                    <Button style={{ marginRight: "0.3em" }} loading={loading} icon={faUpload} disabled={loading} onClick={build}>
                         Upload
                     </Button>
                 )}
@@ -385,7 +380,7 @@ function registerLanguage(monaco: Monaco, ideInfo: IdeInfo) {
             root: [
                 [/\/\/.*/, "comment"],
                 [/\b(if|else|int|byte|halt)\b/, "keyword"],
-                [/(=|==|>|<|>=|\|\||<=|\+|\/|-|\*|%|\^|:|\?)/, "operator"],
+                [/(=|==|>|<|>=|\|\||&&|<=|\+|\/|-|\*|%|\^|:|\?)/, "operator"],
                 [/\b(\d+)\b/, "number"],
             ],
         },
