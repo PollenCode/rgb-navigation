@@ -22,7 +22,9 @@ export function GiveAdmin() {
                 <List>
                     {users.map((user: any) => (
                         <ListItem key={user.id}>
-                            <p className="ml-5">Gebruiker: {user.name}</p>
+                            <p className="ml-5">
+                                {user.name} <small className="opacity-50">({user.email})</small>
+                            </p>
                             {!user.admin && (
                                 <Button
                                     style={{ margin: "0.5em 0.5em 0.5em auto" }}

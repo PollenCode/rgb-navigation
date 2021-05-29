@@ -127,7 +127,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     }
 
     async function updateName(name: string) {
-        if (!name) return;
+        if (!name || effect!.author!.id !== client.user!.id) return;
         setEffect(await client.updateEffect({ name: name, code: effect!.code, id: effect!.id }));
     }
 
