@@ -132,6 +132,10 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch(`/api/effect/${id}/build` + (upload ? "?upload=true" : ""), "POST");
     }
 
+    public async setEffectVar(varName: string, value: number) {
+        return await this.doFetch(`/effectVar/${varName}/${value}`, "POST");
+    }
+
     public async enableLedRoomRoute(roomNumber: number) {
         return await this.doFetch("/api/roomRoute", "POST", {
             roomNumber: roomNumber,

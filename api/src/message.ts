@@ -9,7 +9,8 @@ export type LedControllerServerMessage =
           g: number;
           b: number;
       }
-    | { type: "uploadProgram"; byteCode: string; entryPoint: number };
+    | { type: "uploadProgram"; byteCode: string; entryPoint: number }
+    | { type: "setVar"; location: number; value: number; size: number };
 
 // Arduino -> Server
 export type LedControllerMessage = {

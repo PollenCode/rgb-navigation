@@ -3,7 +3,7 @@ import { Router } from "express";
 import debug from "debug";
 import { withAuth } from "./middleware";
 import { roomNumberToLine, sendLedController } from "./socketServer";
-import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, VoidType } from "rgb-compiler";
+import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, Var, VoidType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
 
@@ -15,8 +15,9 @@ const router = Router();
 const prisma = new PrismaClient();
 
 let activeEffectId = -1;
+let lastVariables: ReadonlyMap<string, Var>;
 
-function compile(input: string): [Buffer, number] {
+function compile(input: string): [Buffer, number, ReadonlyMap<string, Var>] {
     let scope = new Scope();
     let target = new ByteCodeTarget();
 
@@ -47,7 +48,7 @@ function compile(input: string): [Buffer, number] {
         fs.writeFileSync("../arduino/testing/input.hex", buffer);
     }
 
-    return [buffer, entryPoint];
+    return [buffer, entryPoint, scope.variables];
 }
 
 router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) => {
@@ -67,8 +68,9 @@ router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) =>
         return res.status(404).end();
     }
 
+    let compiled, entryPoint, lastVars;
     try {
-        let [compiled, entryPoint] = compile(effect.code);
+        [compiled, entryPoint, lastVars] = compile(effect.code);
         effect = await prisma.effect.update({
             where: {
                 id: id,
@@ -99,6 +101,7 @@ router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) =>
 
     if (upload) {
         activeEffectId = id;
+        lastVariables = lastVars;
         sendLedController({ type: "uploadProgram", byteCode: effect.compiled!.toString("hex"), entryPoint: effect.entryPoint! });
     }
     res.json({ status: "ok" });
@@ -295,6 +298,29 @@ router.get("/effect/:id", withAuth(false), async (req, res, next) => {
     }
 
     res.json(effect);
+});
+
+router.post("/effectVar/:varName/:value", withAuth(true, true), async (req, res, next) => {
+    let value = parseInt(req.params.value);
+    if (isNaN(value)) {
+        return res.status(406).end("invalid value, must be number");
+    }
+
+    let v = lastVariables.get(req.params.varName);
+    if (!v) {
+        return res
+            .status(404)
+            .end("variable not found in currently running program, available variables: " + Array.from(lastVariables.keys()).join(", "));
+    }
+
+    sendLedController({
+        type: "setVar",
+        location: v.location! as number,
+        size: v.type.size,
+        value: value,
+    });
+
+    res.status(201).end();
 });
 
 router.post("/route", withAuth(true, true), async (req, res, next) => {

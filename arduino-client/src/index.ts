@@ -4,15 +4,18 @@ import { SerialLedController } from "./communicate";
 import fetch from "node-fetch";
 global.fetch = fetch as any;
 import { LedControllerServerMessage, RGBClient } from "rgb-navigation-api";
+import debug from "debug";
+
+const logger = debug("rgb:arduino");
 
 // Read from .env file
 const { SERIAL_PORT, BAUD_RATE } = process.env;
 if (!SERIAL_PORT || !BAUD_RATE) {
-    console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
+    logger("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(-1);
 }
 
-console.log(`opening serial port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
+logger(`opening serial port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
 
 let client = new RGBClient();
 let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
@@ -37,7 +40,7 @@ let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
 // setTimeout(() => arduino.sendEffect(1), 1000);
 
 async function processMessage(data: LedControllerServerMessage) {
-    console.log("receive", data);
+    logger("receive", data.type);
     switch (data.type) {
         case "enableLine":
             arduino.sendEnableLine(data.r, data.g, data.b, data.startLed, data.endLed, data.duration);
@@ -45,8 +48,11 @@ async function processMessage(data: LedControllerServerMessage) {
         case "uploadProgram":
             arduino.uploadProgram(Buffer.from(data.byteCode, "hex"), data.entryPoint);
             break;
+        case "setVar":
+            logger("setVar", data);
+            break;
         default:
-            console.warn(`received unknown message ${JSON.stringify(data)}`);
+            logger(`received unknown message ${JSON.stringify(data)}`);
             break;
     }
 }
@@ -60,7 +66,7 @@ arduino.port.on("error", (data) => {
 });
 
 client.socket.on("connect", () => {
-    console.log("connected");
+    logger("connected");
 });
 
 client.socket.emit("subscribe", { roomId: "dgang" });
