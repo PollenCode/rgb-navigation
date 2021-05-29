@@ -316,9 +316,13 @@ void handlePackets()
         }
         break;
     default:
-        // Consume invalid byte
-        Serial.print("invalid serial byte ");
-        Serial.println(Serial.read());
+        // Consume invalid bytes (packet starts with invalid packet type)
+        Serial.print("consuming ");
+        Serial.print(Serial.available());
+        Serial.println(" invalid serial bytes");
+
+        while (Serial.available() > 0)
+            Serial.read();
         break;
     }
 }
