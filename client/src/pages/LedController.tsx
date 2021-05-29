@@ -36,7 +36,7 @@ export function LedController() {
                     defaultValue={MAX_LEDS}
                     onChange={(event) => setEndLed(event.target.value)}
                     className="border-black h-5 mr-5 "></input>
-                <p className="mr-5 text-lg">Tijd:</p>
+                <p className="mr-5 text-lg">Tijd (in seconden):</p>
                 <input
                     type="number"
                     id="quantity"
