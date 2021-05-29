@@ -18,13 +18,13 @@ export function withUser(admin: boolean, userNeeded: boolean = true) {
             return res.status(401).end();
         }
 
-        if (token.tokenId) {
+        if ("tokenId" in token) {
             let userToken = await prisma.token.findUnique({ where: { id: token.tokenId } });
             if (!userToken || userNeeded) {
                 return res.status(401).end();
             }
         }
-        if (token.userId) {
+        if ("userId" in token) {
             let user = await prisma.user.findUnique({ where: { id: token.userId } });
             if (!user) {
                 return res.status(401).end();

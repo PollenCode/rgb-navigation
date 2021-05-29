@@ -154,41 +154,34 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/leds", "POST", req);
     }
 
-    public async getToken() {
-        return await this.doFetch("/api/createToken", "GET");
+    public async createApiKey(): Promise<{ status: "ok"; token: any }> {
+        return await this.doFetch("/api/apikey", "POST");
     }
 
-    public async getTokens() {
-        return await this.doFetch("/api/getTokens", "GET");
+    public async getApiKeys(): Promise<{ status: "ok"; tokens: any[] }> {
+        return await this.doFetch("/api/apikey", "GET");
     }
 
-    public async deleteToken(id: any) {
-        let req = {
+    public async deleteApiKey(id: number) {
+        return await this.doFetch("/api/apikey", "DELETE", {
             id: id,
-        };
-        return await this.doFetch("/api/deleteToken", "DELETE", req);
+        });
     }
 
     public async getUsers() {
         return await this.doFetch("/api/users", "GET");
     }
 
-    public async giveAdmin(user: any) {
-        let req = {
-            id: user.id,
-        };
-        return await this.doFetch("/api/giveAdmin", "PUT", req);
+    public async giveAdmin(userId: number) {
+        return await this.doFetch("/api/user/admin", "PUT", {
+            id: userId,
+        });
     }
 
-    public async takeAdmin(user: any) {
-        let req = {
-            id: user.id,
-        };
-        return await this.doFetch("/api/takeAdmin", "PUT", req);
-    }
-
-    public async lessenrooster() {
-        return await this.doFetch("/api/lessenrooster", "GET");
+    public async takeAdmin(userId: number) {
+        return await this.doFetch("/api/user/admin", "DELETE", {
+            id: userId,
+        });
     }
 }
 

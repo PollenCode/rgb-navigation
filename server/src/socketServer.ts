@@ -26,7 +26,7 @@ export function createSocketServer(server: http.Server) {
 
             // Check user credentials
             let tok = validateUserAccessToken(token);
-            if (!tok) return callback({ status: "error" });
+            if (!tok || !("userId" in tok)) return callback({ status: "error" });
 
             // The system only supports one binding at a time
             if (roomsCurrentlyBinding[roomId]) {
