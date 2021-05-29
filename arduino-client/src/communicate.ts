@@ -2,10 +2,7 @@ import EventEmitter from "events";
 import SerialPort from "serialport";
 
 export enum SerialPacketType {
-    Effect = 1,
     EnableLine = 2,
-    DisableLine = 3,
-    Room = 4,
     Program = 5,
 }
 
@@ -40,16 +37,10 @@ export class SerialLedController {
         this.port.write(buffer);
     }
 
-    public sendEffect(effectType: number) {
-        this.port.write(Buffer.from([SerialPacketType.Effect, effectType]));
-    }
-
-    public sendEnableLine(id: number, r: number, g: number, b: number, startLed: number, endLed: number, duration: number) {
-        // console.log(`enable id=${id} startLed=${startLed} endLed=${endLed} duration=${duration}`);
+    public sendEnableLine(r: number, g: number, b: number, startLed: number, endLed: number, duration: number) {
         this.port.write(
             Buffer.from([
                 SerialPacketType.EnableLine,
-                id,
                 r,
                 g,
                 b,
@@ -61,15 +52,6 @@ export class SerialLedController {
                 duration & 0xff,
             ])
         );
-    }
-
-    public sendDisableLine(id: number) {
-        // console.log(`disable id=${id}`);
-        this.port.write(Buffer.from([SerialPacketType.DisableLine, id]));
-    }
-
-    public sendRoom(id: number, room: number) {
-        this.port.write(Buffer.from([SerialPacketType.Room, id, room]));
     }
 
     public uploadProgram(program: Buffer, entryPoint: number) {

@@ -40,10 +40,7 @@ async function processMessage(data: LedControllerServerMessage) {
     console.log("receive", data);
     switch (data.type) {
         case "enableLine":
-            arduino.sendEnableLine(1, data.r, data.g, data.b, data.startLed, data.endLed, data.duration);
-            break;
-        case "roomEffect":
-            arduino.sendRoom(1, data.room);
+            arduino.sendEnableLine(data.r, data.g, data.b, data.startLed, data.endLed, data.duration);
             break;
         case "uploadProgram":
             arduino.uploadProgram(Buffer.from(data.byteCode, "hex"), data.entryPoint);
