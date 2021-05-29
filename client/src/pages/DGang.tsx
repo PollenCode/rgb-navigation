@@ -16,24 +16,27 @@ export function DGang() {
                         type="button"
                         onClick={async () => {
                             client.sendRoom(0);
-                        }}>
-                        Lokaal 1
+                        }}
+                    >
+                        D027
                     </Button>
                     <Button
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
                             client.sendRoom(1);
-                        }}>
-                        Lokaal 2
+                        }}
+                    >
+                        D029
                     </Button>
                     <Button
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
                             client.sendRoom(2);
-                        }}>
-                        Lokaal 3
+                        }}
+                    >
+                        D030
                     </Button>
                 </div>
                 <div className="flex items-center flex-col">
@@ -42,24 +45,27 @@ export function DGang() {
                         type="button"
                         onClick={async () => {
                             client.sendRoom(3);
-                        }}>
-                        Lokaal 4
+                        }}
+                    >
+                        D034a
                     </Button>
                     <Button
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
                             client.sendRoom(4);
-                        }}>
-                        Lokaal 5
+                        }}
+                    >
+                        D034b
                     </Button>
                     <Button
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
                             client.sendRoom(5);
-                        }}>
-                        Lokaal 6
+                        }}
+                    >
+                        D035
                     </Button>
                 </div>
             </div>

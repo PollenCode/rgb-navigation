@@ -101,6 +101,7 @@ router.post("/unbind", withUser(false, true), async (req, res, next) => {
 
 router.post("/leds", withUser(true, false), async (req, res, next) => {
     let message = req.body;
+    console.log(message);
     if (message.type == "roomEffect") {
         message = numberToLine(message.room);
     }
