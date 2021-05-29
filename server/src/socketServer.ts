@@ -26,7 +26,7 @@ export function createSocketServer(server: http.Server) {
 
             // Check user credentials
             let tok = validateUserAccessToken(token);
-            if (!tok) return callback({ status: "error" });
+            if (!tok || !("userId" in tok)) return callback({ status: "error" });
 
             // The system only supports one binding at a time
             if (roomsCurrentlyBinding[roomId]) {
@@ -100,7 +100,7 @@ export function createSocketServer(server: http.Server) {
 
             // TODO: enable leds for user
             let numb = Math.floor(Math.random() * 6);
-            let ledMessage: LedControllerServerMessage = numberToLine(numb);
+            let ledMessage: LedControllerServerMessage = roomNumberToLine(numb);
             let color = "rgb(" + ledMessage.r + "," + ledMessage.b + "," + ledMessage.g + ")";
             let followData = { name: boundUser.name, color: color };
             logger("enable led for user", boundUser.id, boundUser.name);
@@ -133,12 +133,12 @@ export function createSocketServer(server: http.Server) {
     return socket;
 }
 
-export function sendArduino(message: LedControllerServerMessage) {
+export function sendLedController(message: LedControllerServerMessage) {
     logger("sendArduino", message);
     socket.emit("ledController", message);
 }
 
-export function numberToLine(roomNumber: number) {
+export function roomNumberToLine(roomNumber: number) {
     let room;
     let startLed = 0;
     let endLed = 0;

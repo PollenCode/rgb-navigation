@@ -4,7 +4,7 @@ import { validateUserAccessToken } from "./auth";
 
 let prisma = new PrismaClient();
 
-export function withUser(admin: boolean, userNeeded: boolean = true) {
+export function withAuth(requireAdmin: boolean, allowToken: boolean = false) {
     return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
         let auth = req.headers["authorization"];
         if (!auth || !auth.startsWith("Bearer ")) {
@@ -18,18 +18,18 @@ export function withUser(admin: boolean, userNeeded: boolean = true) {
             return res.status(401).end();
         }
 
-        if (token.tokenId) {
+        if ("tokenId" in token) {
             let userToken = await prisma.token.findUnique({ where: { id: token.tokenId } });
-            if (!userToken || userNeeded) {
+            if (!userToken || !allowToken) {
                 return res.status(401).end();
             }
         }
-        if (token.userId) {
+        if ("userId" in token) {
             let user = await prisma.user.findUnique({ where: { id: token.userId } });
             if (!user) {
                 return res.status(401).end();
             }
-            if (admin && user.admin == false) {
+            if (requireAdmin && user.admin == false) {
                 return res.status(401).end;
             }
             if (user) {

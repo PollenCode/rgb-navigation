@@ -25,8 +25,7 @@ export function LedController() {
                     max={MAX_LEDS}
                     defaultValue="0"
                     onChange={(event) => setStartLed(event.target.value)}
-                    className="border-black h-5 mr-5 "
-                ></input>
+                    className="border-black h-5 mr-5 "></input>
                 <p className="mr-5 text-lg">End led:</p>
                 <input
                     type="number"
@@ -36,8 +35,7 @@ export function LedController() {
                     max={MAX_LEDS}
                     defaultValue={MAX_LEDS}
                     onChange={(event) => setEndLed(event.target.value)}
-                    className="border-black h-5 mr-5 "
-                ></input>
+                    className="border-black h-5 mr-5 "></input>
                 <p className="mr-5 text-lg">Tijd (in seconden):</p>
                 <input
                     type="number"
@@ -46,17 +44,15 @@ export function LedController() {
                     min="1"
                     defaultValue="1"
                     onChange={(event) => setDuration(event.target.value)}
-                    className="border-black h-5 mr-5 "
-                ></input>
+                    className="border-black h-5 mr-5 "></input>
                 <p className="mr-5 text-lg">Kleur:</p>
                 <input type="color" onChange={(event) => setColor(event.target.value)}></input>
                 <Button
                     style={{ margin: "0.5em" }}
                     type="button"
                     onClick={async () => {
-                        client.ledController(Number(startLed), Number(endLed), Number(duration), color);
-                    }}
-                >
+                        client.enableLedRoute(Number(startLed), Number(endLed), Number(duration), color);
+                    }}>
                     Verzenden
                 </Button>
             </div>

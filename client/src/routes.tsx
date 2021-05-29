@@ -9,7 +9,7 @@ import { DGang } from "./pages/DGang";
 import { Effects } from "./pages/Effects";
 import { LedController } from "./pages/LedController";
 import { Token } from "./pages/Token";
-import { GiveAdmin } from "./pages/GiveAdmin";
+import { GiveAdmin } from "./pages/Users";
 import { EffectEditor } from "./pages/EffectEditor";
 
 const client = new RGBClient();

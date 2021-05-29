@@ -15,7 +15,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(0);
+                            client.enableLedRoomRoute(0);
                         }}
                     >
                         D027
@@ -24,7 +24,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(1);
+                            client.enableLedRoomRoute(1);
                         }}
                     >
                         D029
@@ -33,7 +33,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(2);
+                            client.enableLedRoomRoute(2);
                         }}
                     >
                         D030
@@ -44,7 +44,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(3);
+                            client.enableLedRoomRoute(3);
                         }}
                     >
                         D034a
@@ -53,7 +53,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(4);
+                            client.enableLedRoomRoute(4);
                         }}
                     >
                         D034b
@@ -62,7 +62,7 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(5);
+                            client.enableLedRoomRoute(5);
                         }}
                     >
                         D035
