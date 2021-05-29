@@ -72,7 +72,7 @@ bool functionHandler(uint8_t id)
     {
         // byte random()
         stackPointer -= 4;
-        *(int32_t *)(mem + stackPointer) = (int32_t)random(256);
+        PROGRAM_INDEX32(stackPointer) = (int32_t)random(256);
         break;
     }
     // case 2:
@@ -85,68 +85,67 @@ bool functionHandler(uint8_t id)
     case 3:
     {
         // int min(int, int)
-        int32_t op1 = *(int32_t *)(mem + stackPointer);
-        // int32_t op1 = PROGRAM_INDEX32(stackPointer);
+        int32_t op1 = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t op2 = *(int32_t *)(mem + stackPointer);
-        *(int32_t *)(mem + stackPointer) = op1 > op2 ? op2 : op1;
+        int32_t op2 = PROGRAM_INDEX32(stackPointer);
+        PROGRAM_INDEX32(stackPointer) = op1 > op2 ? op2 : op1;
         break;
     }
     case 4:
     {
         // int max(int, int)
-        int32_t op1 = *(int32_t *)(mem + stackPointer);
+        int32_t op1 = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t op2 = *(int32_t *)(mem + stackPointer);
-        *(int32_t *)(mem + stackPointer) = op1 < op2 ? op2 : op1;
+        int32_t op2 = PROGRAM_INDEX32(stackPointer);
+        PROGRAM_INDEX32(stackPointer) = op1 < op2 ? op2 : op1;
         break;
     }
     case 5:
     {
         // int map(int value, int fromLow, int fromHigh, int toLow, int toHigh)
         // Does the same as https://www.arduino.cc/reference/en/language/functions/math/map/
-        int32_t toLow = *(int32_t *)(mem + stackPointer);
+        int32_t toLow = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t toHigh = *(int32_t *)(mem + stackPointer);
+        int32_t toHigh = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t fromHigh = *(int32_t *)(mem + stackPointer);
+        int32_t fromHigh = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t fromLow = *(int32_t *)(mem + stackPointer);
+        int32_t fromLow = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t value = *(int32_t *)(mem + stackPointer);
-        *(int32_t *)(mem + stackPointer) = map(value, fromLow, fromHigh, toLow, toHigh);
+        int32_t value = PROGRAM_INDEX32(stackPointer);
+        PROGRAM_INDEX32(stackPointer) = map(value, fromLow, fromHigh, toLow, toHigh);
         break;
     }
     case 6:
     {
         // int lerp(int from, int to, int percentage)
-        int32_t percentage = *(int32_t *)(mem + stackPointer);
+        int32_t percentage = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t to = *(int32_t *)(mem + stackPointer);
+        int32_t to = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t from = *(int32_t *)(mem + stackPointer);
-        *(int32_t *)(mem + stackPointer) = from + (percentage / 256.0f) * (to - from);
+        int32_t from = PROGRAM_INDEX32(stackPointer);
+        PROGRAM_INDEX32(stackPointer) = from + (percentage / 256.0f) * (to - from);
         break;
     }
     case 7:
     {
         // int clamp(int value, int min, int max)
-        int32_t max = *(int32_t *)(mem + stackPointer);
+        int32_t max = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t min = *(int32_t *)(mem + stackPointer);
+        int32_t min = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t value = *(int32_t *)(mem + stackPointer);
+        int32_t value = PROGRAM_INDEX32(stackPointer);
         if (value > max)
         {
-            *(int32_t *)(mem + stackPointer) = max;
+            PROGRAM_INDEX32(stackPointer) = max;
         }
         else if (value < min)
         {
-            *(int32_t *)(mem + stackPointer) = min;
+            PROGRAM_INDEX32(stackPointer) = min;
         }
         else
         {
-            *(int32_t *)(mem + stackPointer) = value;
+            PROGRAM_INDEX32(stackPointer) = value;
         }
         break;
     }
