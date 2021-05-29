@@ -7,7 +7,7 @@ extern "C"
 #include "interpreter.h"
 }
 
-#define BAUD_RATE 19200
+#define BAUD_RATE 115200
 
 // 784 / 2
 #define LED_COUNT 50
@@ -16,7 +16,7 @@ extern "C"
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
 #define INTERLACE_LEVEL 2
-#define MAX_PROGRAM_SIZE 250
+#define MAX_PROGRAM_SIZE 200
 #define SHIFT_INTERVAL 100
 #define SPLIT_SIZE 2
 
@@ -169,7 +169,7 @@ void setup()
     memset(routes, 0, sizeof(LineEffect *) * MAX_LINES);
 
     Serial.println("Adding leds");
-    delay(2000);
+    delay(500);
 
     FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, LED_COUNT);
     FastLED.setBrightness(40);
@@ -183,8 +183,6 @@ void setup()
     }
 
     Serial.println("Ready...");
-    delay(2000);
-    Serial.println("Going");
 
     // Serial.println("Copying program");
     // memcpy(mem, program, sizeof(program));
@@ -224,24 +222,31 @@ void handleEnableLine()
     uint16_t duration = Serial.read() << 8 | Serial.read();
 
     bool exist = false;
-    for(byte i = 0; i <= MAX_LINES; i++) {
-      if (routes[i]->startLed == startLed && routes[i]->endLed == endLed){
-        id = i;
-        exist = true;
-        //Serial.print("hit");
-        //break;
-      }
+    for (byte i = 0; i <= MAX_LINES; i++)
+    {
+        Serial.print("Test ");
+        Serial.print(i);
+        Serial.print(" ");
+        Serial.println((int)routes[i]);
+        if (routes[i]->startLed == startLed && routes[i]->endLed == endLed)
+        {
+            id = i;
+            exist = true;
+            //Serial.print("hit");
+            //break;
+        }
     }
 
-    if(exist == false) {
-      id = newId == (MAX_LINES - 1) ? newId = 0 : newId++;
+    if (exist == false)
+    {
+        id = newId == (MAX_LINES - 1) ? newId = 0 : newId++;
     }
-    
+
     uint64_t endTime = duration > 0 ? millis() + duration * 1000 : 0;
     routes[id] = new LineEffect(startLed, endLed, endTime, CRGB(r, g, b));
 
-    //Serial.print("Enable line ");
-    Serial.print(id);
+    Serial.print("Enable line ");
+    Serial.println(id);
     /*Serial.print(", startLed=");
     Serial.print(startLed);
     Serial.print(", endLed=");
