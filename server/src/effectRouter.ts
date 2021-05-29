@@ -1,8 +1,8 @@
 import { PrismaClient } from ".prisma/client";
 import { Router } from "express";
 import debug from "debug";
-import { withUser } from "./middleware";
-import { sendArduino } from "./socketServer";
+import { withAuth } from "./middleware";
+import { roomNumberToLine, sendLedController } from "./socketServer";
 import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, VoidType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
@@ -50,7 +50,7 @@ function compile(input: string): [Buffer, number] {
     return [buffer, entryPoint];
 }
 
-router.post("/effect/build/:id", async (req, res, next) => {
+router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) => {
     let id = parseInt(req.params.id);
     let upload = !!req.query.upload;
     if (isNaN(id)) {
@@ -99,12 +99,12 @@ router.post("/effect/build/:id", async (req, res, next) => {
 
     if (upload) {
         activeEffectId = id;
-        sendArduino({ type: "uploadProgram", byteCode: effect.compiled!.toString("hex"), entryPoint: effect.entryPoint! });
+        sendLedController({ type: "uploadProgram", byteCode: effect.compiled!.toString("hex"), entryPoint: effect.entryPoint! });
     }
     res.json({ status: "ok" });
 });
 
-router.get("/effect", withUser(false, false), async (req, res, next) => {
+router.get("/effect", withAuth(false, true), async (req, res, next) => {
     let effects = await prisma.effect.findMany({
         where: {
             authorId: req.user && req.query.onlyUser === "true" ? req.user.id : undefined,
@@ -138,7 +138,7 @@ router.get("/effect", withUser(false, false), async (req, res, next) => {
     res.json(effects.map((e) => ({ ...e, active: activeEffectId === e.id })));
 });
 
-router.delete("/effect/:id", withUser(false), async (req, res, next) => {
+router.delete("/effect/:id", withAuth(false), async (req, res, next) => {
     let id = parseInt(req.params.id);
     if (isNaN(id)) {
         return res.status(400).end();
@@ -168,7 +168,7 @@ router.delete("/effect/:id", withUser(false), async (req, res, next) => {
     res.end();
 });
 
-router.post("/effect", withUser(false), async (req, res, next) => {
+router.post("/effect", withAuth(false), async (req, res, next) => {
     let { code, name } = req.body;
 
     let existing = await prisma.effect.findUnique({
@@ -219,7 +219,7 @@ router.post("/effect", withUser(false), async (req, res, next) => {
     });
 });
 
-router.patch("/effect", withUser(false), async (req, res, next) => {
+router.patch("/effect", withAuth(false), async (req, res, next) => {
     let { code, name, id } = req.body;
 
     let existing = await prisma.effect.findUnique({
@@ -263,7 +263,7 @@ router.patch("/effect", withUser(false), async (req, res, next) => {
     res.json(effect);
 });
 
-router.get("/effect/:id", withUser(false), async (req, res, next) => {
+router.get("/effect/:id", withAuth(false), async (req, res, next) => {
     let id = parseInt(req.params.id);
     if (isNaN(id)) {
         return res.status(400).end();
@@ -295,6 +295,26 @@ router.get("/effect/:id", withUser(false), async (req, res, next) => {
     }
 
     res.json(effect);
+});
+
+router.post("/route", withAuth(true, true), async (req, res, next) => {
+    let data = req.body;
+    sendLedController({
+        type: "enableLine",
+        r: data.r,
+        g: data.g,
+        b: data.b,
+        duration: data.duration,
+        endLed: data.endLed,
+        startLed: data.startLed,
+    });
+    res.status(201).end();
+});
+
+router.post("/roomRoute", withAuth(true, true), async (req, res, next) => {
+    let data = req.body;
+    sendLedController(roomNumberToLine(data.roomNumber));
+    res.status(201).end();
 });
 
 export default router;

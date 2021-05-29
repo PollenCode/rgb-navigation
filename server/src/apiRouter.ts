@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { createToken, createUserAccessToken, getOAuthUrl } from "./auth";
 import { isDevelopment } from "./helpers";
-import { withUser } from "./middleware";
+import { withAuth as withAuth } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
 import { PrismaClient } from ".prisma/client";
 import fetch from "node-fetch";
-import { sendArduino as sendLedController, roomNumberToLine } from "./socketServer";
+import { sendLedController, roomNumberToLine } from "./socketServer";
 import debug from "debug";
 import effectRouter from "./effectRouter";
 
@@ -77,7 +77,7 @@ router.get("/oauth/complete", async (req, res, next) => {
     res.redirect((isDevelopment ? "http://localhost:3000/oauth?s=" : "/oauth?s=") + createUserAccessToken(user.id));
 });
 
-router.get("/user/me", withUser(false, true), (req, res, next) => {
+router.get("/user/me", withAuth(false), (req, res, next) => {
     res.json({
         name: req.user.name,
         identifier: req.user.identifier,
@@ -87,7 +87,7 @@ router.get("/user/me", withUser(false, true), (req, res, next) => {
     });
 });
 
-router.post("/user/unbind", withUser(false, true), async (req, res, next) => {
+router.post("/user/unbind", withAuth(false), async (req, res, next) => {
     let user = await prisma.user.update({
         where: {
             id: req.user!.id,
@@ -99,55 +99,12 @@ router.post("/user/unbind", withUser(false, true), async (req, res, next) => {
     res.json({ status: "ok", user: user });
 });
 
-router.post("/leds/route", withUser(true, false), async (req, res, next) => {
-    let data = req.body;
-    sendLedController({
-        type: "enableLine",
-        r: data.r,
-        g: data.g,
-        b: data.b,
-        duration: data.duration,
-        endLed: data.endLed,
-        startLed: data.startLed,
-    });
-    res.status(201).end();
-});
-
-router.post("/leds/roomRoute", withUser(true, false), async (req, res, next) => {
-    let data = req.body;
-    sendLedController(roomNumberToLine(data.roomNumber));
-    res.status(201).end();
-});
-
-router.get("/user", withUser(true, false), async (req, res, next) => {
+router.get("/user", withAuth(true), async (req, res, next) => {
     let users = await prisma.user.findMany({});
     res.json({ status: "ok", users });
 });
 
-router.post("/apikey", withUser(true, false), async (req, res, next) => {
-    let token = await prisma.token.create({
-        data: {
-            author: req.user ? { connect: { id: req.user.id } } : undefined,
-        },
-    });
-    res.json({ status: "ok", token: createToken(String(token.id)) });
-});
-
-router.get("/apikey", withUser(true, false), async (req, res, next) => {
-    let tokens = await prisma.token.findMany({});
-    res.json({ status: "ok", tokens });
-});
-
-router.delete("/apikey", withUser(true, false), async (req, res, next) => {
-    let token = await prisma.token.delete({
-        where: {
-            id: req.body.id,
-        },
-    });
-    res.json({ status: "ok", token });
-});
-
-router.put("/user/admin", withUser(true, false), async (req, res, next) => {
+router.put("/user/admin", withAuth(true), async (req, res, next) => {
     let user = await prisma.user.update({
         where: {
             id: req.body.id,
@@ -159,7 +116,7 @@ router.put("/user/admin", withUser(true, false), async (req, res, next) => {
     res.json({ status: "ok", user });
 });
 
-router.delete("/user/admin", withUser(true, false), async (req, res, next) => {
+router.delete("/user/admin", withAuth(true), async (req, res, next) => {
     let user = await prisma.user.update({
         where: {
             id: req.body.id,
@@ -169,6 +126,29 @@ router.delete("/user/admin", withUser(true, false), async (req, res, next) => {
         },
     });
     res.json({ status: "ok", user });
+});
+
+router.post("/apikey", withAuth(true), async (req, res, next) => {
+    let token = await prisma.token.create({
+        data: {
+            author: req.user ? { connect: { id: req.user.id } } : undefined,
+        },
+    });
+    res.json({ status: "ok", token: createToken(String(token.id)) });
+});
+
+router.get("/apikey", withAuth(true), async (req, res, next) => {
+    let tokens = await prisma.token.findMany({});
+    res.json({ status: "ok", tokens });
+});
+
+router.delete("/apikey", withAuth(true), async (req, res, next) => {
+    let token = await prisma.token.delete({
+        where: {
+            id: req.body.id,
+        },
+    });
+    res.json({ status: "ok", token });
 });
 
 export default router;

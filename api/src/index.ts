@@ -128,19 +128,19 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect", "PATCH", effect);
     }
 
-    public async buildEffect(id: number, upload: boolean): Promise<{ status: "error"; error: string } | { status: "ok" }> {
-        return await this.doFetch("/api/effect/build/" + id + (upload ? "?upload=true" : ""), "POST");
+    public async buildEffect(id: number, upload: boolean = true): Promise<{ status: "error"; error: string } | { status: "ok" }> {
+        return await this.doFetch(`/api/effect/${id}/build` + (upload ? "?upload=true" : ""), "POST");
     }
 
     public async enableLedRoomRoute(roomNumber: number) {
-        return await this.doFetch("/api/leds/roomRoute", "POST", {
+        return await this.doFetch("/api/roomRoute", "POST", {
             roomNumber: roomNumber,
         });
     }
 
     public async enableLedRoute(startLed: number, endLed: number, duration: number, color: string) {
         let c = hexToRgb(color)!;
-        return await this.doFetch("/api/leds/route", "POST", {
+        return await this.doFetch("/api/route", "POST", {
             duration: duration,
             startLed: startLed,
             endLed: endLed,

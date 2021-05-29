@@ -133,7 +133,7 @@ export function createSocketServer(server: http.Server) {
     return socket;
 }
 
-export function sendArduino(message: LedControllerServerMessage) {
+export function sendLedController(message: LedControllerServerMessage) {
     logger("sendArduino", message);
     socket.emit("ledController", message);
 }
