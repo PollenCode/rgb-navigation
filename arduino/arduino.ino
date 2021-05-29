@@ -316,6 +316,44 @@ void handlePackets()
             Serial.println(")");
         }
         break;
+    case 6:
+    {
+        if (Serial.available() >= 8)
+        {
+            // Consume packettype
+            Serial.read();
+
+            uint16_t location = Serial.read() << 8 | Serial.read();
+            uint8_t size = Serial.read();
+            int32_t value = Serial.read() << 24 | Serial.read() << 16 | Serial.read() << 8 | Serial.read();
+
+            if (location >= MAX_PROGRAM_SIZE - size)
+            {
+                Serial.println("set var location too high");
+                return;
+            }
+
+            if (size == 4)
+            {
+                PROGRAM_INDEX32(location) = value;
+            }
+            else if (size == 1)
+            {
+                mem[location] = value;
+            }
+            else
+            {
+                Serial.println("not setting var, invalid size");
+                return;
+            }
+
+            Serial.print("set var at ");
+            Serial.print(location);
+            Serial.print(" to ");
+            Serial.println(value);
+        }
+        break;
+    }
     default:
         // Consume invalid bytes (packet starts with invalid packet type)
         Serial.print("consuming ");

@@ -49,7 +49,7 @@ async function processMessage(data: LedControllerServerMessage) {
             arduino.uploadProgram(Buffer.from(data.byteCode, "hex"), data.entryPoint);
             break;
         case "setVar":
-            logger("setVar", data);
+            arduino.sendSetVar(data.location, data.size as 1 | 4, data.value);
             break;
         default:
             logger(`received unknown message ${JSON.stringify(data)}`);

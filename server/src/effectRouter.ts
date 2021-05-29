@@ -307,6 +307,9 @@ router.post("/effectVar/:varName/:value", withAuth(true, true), async (req, res,
     if (isNaN(value)) {
         return res.status(406).end("invalid value, must be number");
     }
+    if (!lastVariables) {
+        return res.status(400).end("no program has been uploaded");
+    }
 
     let v = lastVariables.get(req.params.varName);
     if (!v) {

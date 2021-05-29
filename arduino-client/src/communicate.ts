@@ -4,6 +4,7 @@ import SerialPort from "serialport";
 export enum SerialPacketType {
     EnableLine = 2,
     Program = 5,
+    SetVar = 6,
 }
 
 export class SerialLedController {
@@ -61,5 +62,20 @@ export class SerialLedController {
         buffer.writeInt16BE(entryPoint, 3);
         program.copy(buffer, 5, 0, program.length);
         this.port.write(buffer);
+    }
+
+    public sendSetVar(location: number, size: 1 | 4, value: number) {
+        this.port.write(
+            Buffer.from([
+                SerialPacketType.SetVar,
+                (location >> 8) & 0xff,
+                location & 0xff,
+                size,
+                (value >> 24) & 0xff,
+                (value >> 16) & 0xff,
+                (value >> 8) & 0xff,
+                value & 0xff,
+            ])
+        );
     }
 }

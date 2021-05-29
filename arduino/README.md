@@ -6,8 +6,6 @@ Each data packet starts with 1 byte containing the packet type. From this packet
 
 ### Packet types
 
--   `[1, type]`: enable a special effect, with effect type specified by `type`.
--   `[2, id, r, g, b, start[2], end[2], duration[2]]`: enable line named id, starting from led at index `start` and ending at led at index `end` with color `r`,`g`,`b`.
--   `[3, id]`: stops the line effect with set id.
--   ~~`[4, roomId]`: enables a route to a certain room.~~
+-   `[2, r, g, b, start[2], end[2], duration[2]]`: enable route starting from led at index `start` and ending at led at index `end` with color `r`,`g`,`b`.
 -   `[5, bytesToReceive[2], entryPoint[2]]`: receives rgblang bytecode. `bytesToReceive` contains the program size, entryPoint contains the address of the first instruction in memory to execute.
+-   `[6, location[2], size, value[4]]`: sets variable in effect memory
