@@ -10,14 +10,27 @@ If you've got an api key, you can use the following api to upload effects, updat
 
 You can use the [npm package](http://npmjs.com/package/rgb-navigation-api) if possible, otherwise, use the instructions below on how to request these things from the server manually.
 
-## Important!
+All of the following endpoints start with `https://rgb.ikdoeict.be`.
 
-1. All of the following urls should start with `https://rgb.ikdoeict.be`.
-2. All of the following routes must be authenticated by setting the `Authorization` header to `Bearer <yourtokenhere>`
+## Public endpoints
 
-## Routes
+The following endpoints do not require authentication.
 
-**Only the routes that can be used with an api key are displayed, the other routes require a user**
+### `GET /api/effect`
+
+Get all effects in JSON format.
+
+### `GET /api/effect/:id`
+
+Get information about an effect in JSON format.
+
+- Replace `:id` with the id of an effect
+
+## Authenticated endpoints
+
+**All of the following routes must be authenticated by setting the `Authorization` header to `Bearer <yourtokenhere>`**
+
+**Note**: only the routes that can be used with an api key are displayed here.
 
 ### `POST /api/effectVar/:varName/:value`
 
@@ -28,7 +41,7 @@ Sets a variable on the led controller
 
 ### `POST /api/effect/:id/build?upload=true`
 
-Uploads effect with id to the led controller.
+Uploads effect with id to the led controller. This will automatically disable the effect carrousel.
 
 -   Replace `:id` with the effect id you wish to upload.
 
@@ -74,6 +87,60 @@ Enables or disables the effect carrousel.
 
 ## Examples
 
+### Using javascript to fetch
+
+Set effect variable `myVarName` to `123`:
+```js
+fetch("https://rgb.ikdoeict.be/api/effectVar/myVarName/123", { 
+    method: "POST", 
+    headers: { 
+        "Authorization": "Bearer <yourtokenhere>" 
+    } 
+})
+```
+
+Get effect with id `1`:
+```js
+fetch("https://rgb.ikdoeict.be/api/effect/1", { method: "GET" })
+```
+
+Create a `purple` route from led `10` to `20`:
+```js
+fetch("https://rgb.ikdoeict.be/api/effect/1", { 
+    method: "POST", 
+    headers: {
+        "Authorization": "Bearer <yourtokenhere>",
+        "Content-Type": "application/json"
+    },
+    body: {
+        startLed: 10,
+        endLed: 20,
+        duration: 10, // 10 seconds visible
+        r: 255,
+        g: 0,
+        b: 255
+    }
+})
+```
+
+### Using curl to fetch
+
+Set effect variable `myVarName` to `123`:
+```
+curl -H "Authorization: Bearer <yourtokenhere>" -X POST https://rgb.ikdoeict.be/api/effectVar/myVarName/123
+```
+
+Disable the effect carrousel:
+```
+curl -H "Authorization: Bearer <yourtokenhere>" -X POST https://rgb.ikdoeict.be/api/effect/carrousel/0
+```
+
+Upload effect 3 to the led controller:
+```
+curl -H "Authorization: Bearer <yourtokenhere>" -X POST https://rgb.ikdoeict.be/api/effect/3/build?upload=true
+```
+
+
 ### Setting a single or multiple leds
 
 It is not directly possible to set a led directly via an api route. To achieve this you must first create a new effect and create some unset variables:
@@ -99,4 +166,3 @@ Now that the effect is active, you can set the `red`, `green` and `blue` variabl
 - Set the `red` variable to `255`: `POST /api/effectVar/red/255`
 - Set the `green` variable to `150`:`POST /api/effectVar/green/150`
 - Set the `blue` variable to `0`: `POST /api/effectVar/blue/0`
-
