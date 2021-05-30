@@ -47,3 +47,5 @@ export function getOAuthUrl() {
     };
     return `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(options)}`;
 }
+
+logger("device token", createDeviceAccessToken("dgang"));

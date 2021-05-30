@@ -46,8 +46,8 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
     return (
         <div className="flex flex-col h-full overflow-hidden">
             <div className="flex flex-grow overflow-hidden md:flex-row flex-col">
-                <nav className="border-r z-10">
-                    <div className="flex items-center h-12 flex-shrink-0 bg-white text-gray-800 border-b ">
+                <nav className="md:border-r z-10">
+                    <div className="flex items-center h-12 flex-shrink-0 bg-white text-gray-800  md:border-b ">
                         <img ref={iconRef} src="/icon64.png" className="w-6 h-6 ml-2.5 icon-animation" alt="" />
                         <span className="ml-2.5 mt-0.5 font-extrabold text-lg" onClick={() => history.push("/")}>
                             DGANG
@@ -57,7 +57,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                         </span>
                     </div>
                     <ul
-                        className="transition-all duration-300 overflow-hidden w-full md:w-44"
+                        className="transition-all duration-300 overflow-hidden w-full md:w-44 md:border-b-0 border-b"
                         style={{ maxHeight: window.innerWidth > 600 || showMenu ? "100vh" : "0" }}>
                         <NavButton icon={faMagic} name="Mijn effecten" to="/effects/mine" />
                         <NavButton icon={faMagic} name="Alle effecten" to="/effects/all" />
@@ -79,7 +79,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                         )}
                     </ul>
                 </nav>
-                <div className="flex-grow relative flex flex-col">{props.children}</div>
+                <div className="flex-grow relative flex flex-col overflow-auto">{props.children}</div>
             </div>
             <footer className="text-gray-300 px-2 flex mt-auto md:text-sm text-xs" style={{ background: "#111", borderTop: "1px solid #222" }}>
                 <button className="hover:underline mr-5 py-1 inline" onClick={() => client.setAccessToken(undefined)}>

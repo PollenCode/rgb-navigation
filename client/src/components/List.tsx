@@ -1,7 +1,7 @@
 import { HTMLAttributes } from "react";
 
 export function List({ className, ...props }: HTMLAttributes<HTMLUListElement>) {
-    return <ul className={`mt-4 border-collapse border rounded overflow-hidden ${className}`} {...props} />;
+    return <ul className={`mt-4 border-collapse border rounded ${className}`} {...props} />;
 }
 
 export function ListItem({ active, error, className, ...props }: HTMLAttributes<HTMLLIElement> & { active?: boolean; error?: boolean }) {

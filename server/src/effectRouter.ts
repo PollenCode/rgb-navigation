@@ -175,7 +175,7 @@ router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) =>
     res.json({ status: "ok" });
 });
 
-router.get("/effect", withAuth(false, true), async (req, res, next) => {
+router.get("/effect", async (req, res, next) => {
     let effects = await prisma.effect.findMany({
         where: {
             authorId: req.user && req.query.onlyUser === "true" ? req.user.id : undefined,
@@ -354,7 +354,7 @@ router.put("/effect/:id", withAuth(false), withValidator(CreateEffectRequestSche
     res.json(effect);
 });
 
-router.get("/effect/:id", withAuth(false), async (req, res, next) => {
+router.get("/effect/:id", async (req, res, next) => {
     let id = parseInt(req.params.id);
     if (isNaN(id)) {
         return res.status(406).end();
