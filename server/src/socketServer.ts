@@ -139,8 +139,8 @@ export function createSocketServer(server: http.Server) {
     return socket;
 }
 
-export function sendActiveEffect(activeEffectId: number, carrouselActive: boolean) {
-    socket.emit("activeEffect", { activeEffectId, carrouselActive });
+export function sendActiveEffect(activeEffectId: number, carrouselInterval: number) {
+    socket.emit("activeEffect", { activeEffectId, carrouselInterval });
 }
 
 export function sendLedController(message: LedControllerServerMessage) {

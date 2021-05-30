@@ -127,6 +127,10 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect", "POST", effect);
     }
 
+    public async setCarrousel(interval: number | undefined) {
+        return await this.doFetch(`/api/effect/carrousel/${interval || 0}`, "POST");
+    }
+
     public async favoriteEffect(effectId: number, favorite: boolean) {
         return await this.doFetch(`/api/effect/${effectId}?favorite=${String(favorite)}`, "PATCH");
     }

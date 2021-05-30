@@ -18,6 +18,7 @@ import {
     faStar,
     faTimes,
     faTrash,
+    faUndo,
     faUpload,
     IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
@@ -76,9 +77,11 @@ function EffectListItem(props: { effect: Effect; onActivate: () => Promise<void>
                         </>
                     )}
 
-                    <small className="whitespace-nowrap">
-                        Aangepast <Timer date={new Date(props.effect.modifiedAt)} /> geleden
-                    </small>
+                    {props.effect.modifiedAt && (
+                        <small className="whitespace-nowrap">
+                            Aangepast <Timer date={new Date(props.effect.modifiedAt)} /> geleden
+                        </small>
+                    )}
                 </div>
             </div>
 
@@ -144,15 +147,15 @@ b = 0
 export function Effects(props: { userOnly?: boolean }) {
     const client = useContext(AuthContext);
     const [effects, setEffects] = useState<Effect[] | undefined>();
-    const [carrouselActive, setCarrouselActive] = useState(false);
+    const [carrouselInterval, setCarrouselInterval] = useState(0);
     const history = useHistory();
 
     useEffect(() => {
-        function onActiveEffect({ activeEffectId, carrouselActive }: { activeEffectId: number; carrouselActive: boolean }) {
+        function onActiveEffect({ activeEffectId, carrouselInterval }: { activeEffectId: number; carrouselInterval: number }) {
             setEffects((effects) =>
                 effects!.map((t) => (t.id === activeEffectId ? { ...t, active: true, lastError: null } : { ...t, active: false }))
             );
-            setCarrouselActive(carrouselActive);
+            setCarrouselInterval(carrouselInterval);
         }
         client.socket.on("activeEffect", onActiveEffect);
         return () => {
@@ -161,9 +164,9 @@ export function Effects(props: { userOnly?: boolean }) {
     }, []);
 
     useEffect(() => {
-        client.getEffects(false, props.userOnly).then(({ effects, carrouselActive }) => {
+        client.getEffects(false, props.userOnly).then(({ effects, carrouselInterval }) => {
             setEffects(effects);
-            setCarrouselActive(carrouselActive);
+            setCarrouselInterval(carrouselInterval);
         });
     }, [props.userOnly]);
 
@@ -174,7 +177,7 @@ export function Effects(props: { userOnly?: boolean }) {
     return (
         <div className="flex justify-center px-1 md:px-4 pt-3 md:pt-10 overflow-auto">
             <div style={{ width: "800px" }}>
-                <div className="flex">
+                <div className="flex items-center  flex-wrap">
                     <Button
                         icon={faPlus}
                         onClick={async () => {
@@ -190,7 +193,31 @@ export function Effects(props: { userOnly?: boolean }) {
                         }}>
                         Nieuw effect maken
                     </Button>
-                    <div>{carrouselActive ? "true" : "false"}</div>
+                    {client.user!.admin && (
+                        <div className="ml-auto p-2 flex">
+                            <p className="text-xs opacity-50 w-40 text-right leading-3 mr-2">
+                                {carrouselInterval > 0 ? (
+                                    <>Het carrousel switch elke {carrouselInterval / 1000} seconden tussen de favoriete effecten.</>
+                                ) : (
+                                    <>Het carrousel is inactief.</>
+                                )}
+                            </p>
+                            <Button
+                                allowSmall
+                                icon={faUndo}
+                                onClick={() => {
+                                    let input = parseInt(
+                                        prompt(
+                                            "Het carrousel wisselt elke x seconden tussen de favoriete effecten. Voer het interval in seconden in om tussen effecten te switchen, voer 0 in om deze functie uit te schakelen."
+                                        )!
+                                    );
+                                    if (isNaN(input)) return;
+                                    client.setCarrousel(input);
+                                }}>
+                                Instellen
+                            </Button>
+                        </div>
+                    )}
                 </div>
                 <List>
                     {effects.map((e) => (

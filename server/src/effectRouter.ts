@@ -19,6 +19,7 @@ const prisma = new PrismaClient();
 
 let activeEffectId = -1;
 let lastVariables: ReadonlyMap<string, Var>;
+let carrouselInterval = 0;
 let effectCarrouselTask: NodeJS.Timeout | undefined = undefined;
 
 async function startEffectCarrousel() {
@@ -46,7 +47,7 @@ async function startEffectCarrousel() {
         activeEffectId = effect.id;
         lastVariables = lastVars;
         sendLedController({ type: "uploadProgram", byteCode: compiled.toString("hex"), entryPoint: entryPoint });
-        sendActiveEffect(activeEffectId, true);
+        sendActiveEffect(activeEffectId, carrouselInterval);
     } catch (ex) {
         logger("could not play next carrousel effect with id %d: %s", effect.id, ex);
     }
@@ -55,13 +56,14 @@ async function startEffectCarrousel() {
 }
 
 function stopEffectCarrousel() {
+    carrouselInterval = 0;
     if (effectCarrouselTask !== undefined) {
         clearTimeout(effectCarrouselTask);
         effectCarrouselTask = undefined;
     }
 }
 
-effectCarrouselTask = setTimeout(startEffectCarrousel, 5000);
+// effectCarrouselTask = setTimeout(startEffectCarrousel, 5000);
 
 function compile(input: string): [Buffer, number, ReadonlyMap<string, Var>] {
     let scope = new Scope();
@@ -96,6 +98,25 @@ function compile(input: string): [Buffer, number, ReadonlyMap<string, Var>] {
 
     return [buffer, entryPoint, scope.variables];
 }
+
+router.post("/effect/carrousel/:seconds", withAuth(true, true), async (req, res, next) => {
+    let seconds = parseInt(req.params.seconds);
+    if (isNaN(seconds)) {
+        return res.status(406);
+    }
+
+    stopEffectCarrousel();
+
+    if (seconds >= 4) {
+        carrouselInterval = seconds * 1000;
+        await startEffectCarrousel();
+        effectCarrouselTask = setTimeout(startEffectCarrousel, carrouselInterval);
+    }
+
+    sendActiveEffect(activeEffectId, carrouselInterval);
+
+    res.end();
+});
 
 router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) => {
     let id = parseInt(req.params.id);
@@ -150,7 +171,7 @@ router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) =>
         lastVariables = lastVars;
         stopEffectCarrousel();
         sendLedController({ type: "uploadProgram", byteCode: effect.compiled!.toString("hex"), entryPoint: effect.entryPoint! });
-        sendActiveEffect(activeEffectId, false);
+        sendActiveEffect(activeEffectId, carrouselInterval);
     }
     res.json({ status: "ok" });
 });
@@ -187,7 +208,8 @@ router.get("/effect", withAuth(false, true), async (req, res, next) => {
     }
     res.json({
         effects: effects.map((e) => ({ ...e, active: activeEffectId === e.id })),
-        carrouselActive: effectCarrouselTask !== undefined,
+        activeEffectId: activeEffectId,
+        carrouselInterval: carrouselInterval,
     });
 });
 
