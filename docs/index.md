@@ -5,7 +5,7 @@ nav_order: 1
 
 # Examples
 
-This chapter contains example programs for the ledstrip written in [RGBLang](). You can also use it is a tutorial because the programs get more complicated each time.
+This chapter contains example programs for the ledstrip written in [RGBLang](). You can also use it as a tutorial because the programs get more complicated each step.
 
 ### Solid color
 
@@ -53,7 +53,7 @@ g = 0
 b = sin(timer)
 ```
 
-You can also use the `cos()` function, look [here]() for a list of builtin utility functions.
+You can also use the `cos()` function, look [here](https://pollencode.github.io/rgb-navigation/RGBLang.html#functions) for a list of builtin utility functions.
 
 ### Combine timer and index
 

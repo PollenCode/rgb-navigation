@@ -25,6 +25,17 @@ byte myByte = 200
 
 RGBLang currently only supports **int** and **byte** integer types. An integer can store 32 bit signed values (-2147483647 -> 2147483647) and a byte can store 8 bit unsigned values (0 -> 255)
 
+#### Builtin variables
+
+RGBLang defines some builtin variables:
+
+| Name          | Usage                                                                                                                                                                                                                                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `r`, `g`, `b` | These magic variables contain the red green and blue color components of the current led the program is executing for (remember, your program gets executed for every led). You can set this to change the leds color or read its previous value. You can also set these using the [hsv utility function](https://pollencode.github.io/rgb-navigation/RGBLang.html#functions) if you'd like to the hsv colorspace. |
+| `index`       | This magic variable contains the index of the current led (the nth-led in the ledstrip). Its maximum value is defined by the `LED_COUNT` variable - 1                                                                                                                                                                                            |
+| `timer`       | This magic variable increases constantly. It contains the amount of milliseconds since the program has started running.                                                                                                                                                                                                                          |
+| `LED_COUNT`   | This constant variable contains the amount of leds in the ledstrip.                                                                                                                                                                                                                                                                              |
+
 ### Constants
 
 To create a constant variable, you just create a variable like above, but with all capital letters:
@@ -34,17 +45,6 @@ int MY_CONSTANT = 1000
 ```
 
 Constants can only be assigned with values that are known before uploading to the ledstrip controller.
-
-#### Builtin variables
-
-RGBLang defines some builtin variables:
-
-| Name          | Usage                                                                                                                                                                                                                                                                                                                                            |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `r`, `g`, `b` | These magic variables contain the red green and blue color components of the current led the program is executing for (remember, your program gets executed for every led). You can set this to change the leds color or read its previous value. You can also set these using the [hsv utility function]() if you'd like to the hsv colorspace. |
-| `index`       | This magic variable contains the index of the current led (the nth-led in the ledstrip). Its maximum value is defined by the `LED_COUNT` variable - 1                                                                                                                                                                                            |
-| `timer`       | This magic variable increases constantly. It contains the amount of milliseconds since the program has started running.                                                                                                                                                                                                                          |
-| `LED_COUNT`   | This constant variable contains the amount of leds in the ledstrip.                                                                                                                                                                                                                                                                              |
 
 ### If/else
 
