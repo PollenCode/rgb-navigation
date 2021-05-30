@@ -74,7 +74,7 @@ Enables or disables the effect carrousel.
 
 ## Examples
 
-### Setting a single or multiple led
+### Setting a single or multiple leds
 
 It is not directly possible to set a led directly via an api route. To achieve this you must first create a new effect and create some unset variables:
 
@@ -94,16 +94,9 @@ Then, upload this effect program to the led controller (either via the webapp or
 
 When uploaded, the led strip should turn completely black, this is because the `red`, `green` and `blue` variables are initialized to zero on upload.
 
-Now that the effect is active, you can set the `red`, `green` and `blue` variables using the `/api/effectVar/:varName/:value` route in the following ways.
+Now that the effect is active, you can set the `red`, `green` and `blue` variables using the `/api/effectVar/:varName/:value` route in the following ways. This change will be sent to the led controller and the ledstrip will change color.
 
-#### Set the `red` variable to `255`
+- Set the `red` variable to `255`: `POST /api/effectVar/red/255`
+- Set the `green` variable to `150`:`POST /api/effectVar/green/150`
+- Set the `blue` variable to `0`: `POST /api/effectVar/blue/0`
 
-`POST /api/effectVar/red/255`
-
-#### Set the `green` variable to `150`
-
-`POST /api/effectVar/green/255`
-
-#### Set the `blue` variable to `0`
-
-`POST /api/effectVar/blue/0`
