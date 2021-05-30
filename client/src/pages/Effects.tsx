@@ -54,7 +54,6 @@ function EffectListItem(props: { effect: Effect; onActivate: () => Promise<void>
     const history = useHistory();
     const readOnly = !client.user || !props.effect.author || (client.user.id !== props.effect.author.id && !client.user.admin);
     const [loading, setLoading] = useState(false);
-    // const lastEdited = useMemo(() => ms(new Date().getTime() - new Date(props.effect.modifiedAt).getTime()), [props.effect.modifiedAt]);
 
     return (
         <ListItem active={props.effect.active} onClick={() => history.push(`/effects/${props.effect.id}`)}>
@@ -145,10 +144,27 @@ b = 0
 export function Effects(props: { userOnly?: boolean }) {
     const client = useContext(AuthContext);
     const [effects, setEffects] = useState<Effect[] | undefined>();
+    const [carrouselActive, setCarrouselActive] = useState(false);
     const history = useHistory();
 
     useEffect(() => {
-        client.getEffects(false, props.userOnly).then(setEffects);
+        function onActiveEffect({ activeEffectId, carrouselActive }: { activeEffectId: number; carrouselActive: boolean }) {
+            setEffects((effects) =>
+                effects!.map((t) => (t.id === activeEffectId ? { ...t, active: true, lastError: null } : { ...t, active: false }))
+            );
+            setCarrouselActive(carrouselActive);
+        }
+        client.socket.on("activeEffect", onActiveEffect);
+        return () => {
+            client.socket.off("activeEffect", onActiveEffect);
+        };
+    }, []);
+
+    useEffect(() => {
+        client.getEffects(false, props.userOnly).then(({ effects, carrouselActive }) => {
+            setEffects(effects);
+            setCarrouselActive(carrouselActive);
+        });
     }, [props.userOnly]);
 
     if (!effects) {
@@ -158,21 +174,24 @@ export function Effects(props: { userOnly?: boolean }) {
     return (
         <div className="flex justify-center px-1 md:px-4 pt-3 md:pt-10 overflow-auto">
             <div style={{ width: "800px" }}>
-                <Button
-                    icon={faPlus}
-                    onClick={async () => {
-                        let name = prompt("Geef je nieuwe effect een naam");
-                        if (!name) return;
-                        let newEffect = await client.createEffect({ code: DEFAULT_CODE, name: name });
-                        if (newEffect.status === "ok") {
-                            setEffects([...effects, newEffect.effect]);
-                            history.push(`/effects/${newEffect.effect.id}`);
-                        } else {
-                            alert(`Kon geen nieuw effect aanmaken:\n${newEffect.error}`);
-                        }
-                    }}>
-                    Nieuw effect maken
-                </Button>
+                <div className="flex">
+                    <Button
+                        icon={faPlus}
+                        onClick={async () => {
+                            let name = prompt("Geef je nieuwe effect een naam");
+                            if (!name) return;
+                            let newEffect = await client.createEffect({ code: DEFAULT_CODE, name: name });
+                            if (newEffect.status === "ok") {
+                                setEffects([...effects, newEffect.effect]);
+                                history.push(`/effects/${newEffect.effect.id}`);
+                            } else {
+                                alert(`Kon geen nieuw effect aanmaken:\n${newEffect.error}`);
+                            }
+                        }}>
+                        Nieuw effect maken
+                    </Button>
+                    <div>{carrouselActive ? "true" : "false"}</div>
+                </div>
                 <List>
                     {effects.map((e) => (
                         <EffectListItem
@@ -187,9 +206,9 @@ export function Effects(props: { userOnly?: boolean }) {
                                 if (e.active) return;
                                 let res = await client.buildEffect(e.id, true);
                                 if (res.status === "ok") {
-                                    setEffects((effects) =>
-                                        effects!.map((t) => (t.id === e.id ? { ...t, active: true, lastError: null } : { ...t, active: false }))
-                                    );
+                                    // setEffects((effects) =>
+                                    //     effects!.map((t) => (t.id === e.id ? { ...t, active: true, lastError: null } : { ...t, active: false }))
+                                    // );
                                     await new Promise((res) => setTimeout(res, 500));
                                 } else {
                                     alert("Kon niet uploaden: " + res.error);
