@@ -106,3 +106,19 @@ body {
         max-height: 100vh;
     }
 }
+
+.animate-red {
+    animation: red 1000ms infinite;
+}
+
+@keyframes red {
+    0% {
+        background-color: rgb(185, 28, 28);
+    }
+    50% {
+        background-color: rgb(220, 28, 28);
+    }
+    100% {
+        background-color: rgb(185, 28, 28);
+    }
+}
