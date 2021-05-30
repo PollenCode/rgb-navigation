@@ -1,4 +1,4 @@
-import React, { HTMLProps, useContext, useEffect, useRef, useState } from "react";
+import React, { HTMLProps, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Prompt, RouteComponentProps, useHistory } from "react-router";
 import { Link, NavLink, NavLinkProps } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
@@ -24,6 +24,8 @@ import {
 import { Effect, LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
+import ms from "ms";
+import { Timer } from "../components/Timer";
 
 function EffectListItemButton(props: {
     icon?: IconDefinition;
@@ -52,6 +54,8 @@ function EffectListItem(props: { effect: Effect; onActivate: () => Promise<void>
     const history = useHistory();
     const readOnly = !client.user || !props.effect.author || (client.user.id !== props.effect.author.id && !client.user.admin);
     const [loading, setLoading] = useState(false);
+    // const lastEdited = useMemo(() => ms(new Date().getTime() - new Date(props.effect.modifiedAt).getTime()), [props.effect.modifiedAt]);
+
     return (
         <ListItem active={props.effect.active} onClick={() => history.push(`/effects/${props.effect.id}`)}>
             {(props.effect.active || loading) && (
@@ -59,15 +63,30 @@ function EffectListItem(props: { effect: Effect; onActivate: () => Promise<void>
                     <FontAwesomeIcon className={`${loading ? "animate-spin" : "pop-in"}`} icon={loading ? faCircleNotch : faCheckCircle} />
                 </span>
             )}
-            <span className={`font-semibold py-2 pl-3.5 ${props.effect.active ? "text-blue-600" : ""}`}>{props.effect.name}</span>
-            {props.effect.author && props.showAuthor && (
-                <span className="ml-1.5 text-sm text-gray-400 py-2" title={props.effect.author.email}>
-                    (door {props.effect.author.name})
-                </span>
-            )}
+
+            <div className="leading-4 py-2 pl-3.5 mt-1">
+                <span className={`font-semibold py-2 ${props.effect.active ? "text-blue-600" : ""}`}>{props.effect.name}</span>
+
+                <div className="opacity-50 lg:text-sm text-xs flex">
+                    {props.effect.author && props.showAuthor && (
+                        <>
+                            <small className="whitespace-nowrap" title={props.effect.author.email}>
+                                Door {props.effect.author.name}
+                            </small>
+                            <span className="mx-1">·</span>
+                        </>
+                    )}
+
+                    <small className="whitespace-nowrap">
+                        Aangepast <Timer date={new Date(props.effect.modifiedAt)} /> geleden
+                    </small>
+                </div>
+            </div>
+
             <span className="ml-auto"></span>
 
             <span
+                className="p-2"
                 onClick={(ev) => {
                     ev.stopPropagation();
                     if (client.user!.admin) {
@@ -137,7 +156,7 @@ export function Effects(props: { userOnly?: boolean }) {
     }
 
     return (
-        <div className="flex justify-center px-1 md:px-4 pt-3 md:pt-10">
+        <div className="flex justify-center px-1 md:px-4 pt-3 md:pt-10 overflow-auto">
             <div style={{ width: "800px" }}>
                 <Button
                     icon={faPlus}
@@ -182,6 +201,7 @@ export function Effects(props: { userOnly?: boolean }) {
                         <p className="text-gray-500 px-4 py-3">{props.userOnly ? "Je hebt nog geen effecten." : "Er zijn nog geen effecten"}</p>
                     )}
                 </List>
+                <div className="h-32"></div>
             </div>
         </div>
     );

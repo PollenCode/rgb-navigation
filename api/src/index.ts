@@ -19,6 +19,8 @@ export interface Effect {
     name: string;
     code: string;
     id: number;
+    createdAt: string;
+    modifiedAt: string;
     active?: boolean;
     favorite: boolean;
     lastError: string | null;

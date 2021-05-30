@@ -131,9 +131,7 @@ router.get("/effect", withAuth(false, true), async (req, res, next) => {
                 },
             },
         },
-        orderBy: {
-            modifiedAt: "desc",
-        },
+        orderBy: [{ favorite: "desc" }, { modifiedAt: "desc" }],
     });
     // Move active effect to beginning of array
     if (activeEffectId >= 0) {
