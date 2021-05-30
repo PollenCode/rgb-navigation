@@ -175,11 +175,13 @@ router.delete("/effect/:id", withAuth(false), async (req, res, next) => {
     res.end();
 });
 
-router.post("/effect", withAuth(false), async (req, res, next) => {
-    let { code, name } = req.body;
-    if (!code || !name) {
-        return res.status(406).end();
-    }
+const CreateEffectRequestSchema = tv.object({
+    code: tv.string().min(0).max(2000),
+    name: tv.string().min(1).max(30),
+});
+
+router.post("/effect", withAuth(false), withValidator(CreateEffectRequestSchema), async (req, res, next) => {
+    let data: tv.SchemaType<typeof CreateEffectRequestSchema> = req.body;
 
     let userEffectCount = await prisma.effect.count({ where: { authorId: req.user.id } });
     if (!req.user.admin && userEffectCount > MAX_EFFECT_PER_USER) {
@@ -191,8 +193,8 @@ router.post("/effect", withAuth(false), async (req, res, next) => {
 
     let effect = await prisma.effect.create({
         data: {
-            name: name,
-            code: code,
+            name: data.name,
+            code: data.code,
             author: {
                 connect: {
                     id: req.user!.id,
@@ -237,12 +239,12 @@ router.patch("/effect/:id", withAuth(true), async (req, res, next) => {
     res.end();
 });
 
-router.put("/effect/:id", withAuth(false), async (req, res, next) => {
+router.put("/effect/:id", withAuth(false), withValidator(CreateEffectRequestSchema), async (req, res, next) => {
     let id = parseInt(req.params.id);
-    let { code, name } = req.body;
-    if (isNaN(id) || !name || !code) {
+    if (isNaN(id)) {
         return res.status(406).end();
     }
+    let data: tv.SchemaType<typeof CreateEffectRequestSchema> = req.body;
 
     let existing = await prisma.effect.findUnique({
         where: {
@@ -264,8 +266,8 @@ router.put("/effect/:id", withAuth(false), async (req, res, next) => {
             id: existing.id,
         },
         data: {
-            code: code,
-            name: name,
+            code: data.code,
+            name: data.name,
             modifiedAt: new Date(),
         },
         select: {
@@ -349,7 +351,7 @@ router.post("/effectVar/:varName/:value", withAuth(true, true), async (req, res,
     res.status(201).end();
 });
 
-const RouteValidator = tv.object({
+const RouteRequestSchema = tv.object({
     r: tv.number().min(0).max(255),
     g: tv.number().min(0).max(255),
     b: tv.number().min(0).max(255),
@@ -358,8 +360,8 @@ const RouteValidator = tv.object({
     duration: tv.number().min(0).max(1000),
 });
 
-router.post("/route", withAuth(true, true), withValidator(RouteValidator), async (req, res, next) => {
-    let data = req.body as tv.SchemaType<typeof RouteValidator>;
+router.post("/route", withAuth(true, true), withValidator(RouteRequestSchema), async (req, res, next) => {
+    let data = req.body as tv.SchemaType<typeof RouteRequestSchema>;
     sendLedController({
         type: "enableLine",
         r: data.r,

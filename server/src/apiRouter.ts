@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { createApiKey, createDeviceAccessToken, createUserAccessToken, getOAuthUrl } from "./auth";
 import { isDevelopment } from "./helpers";
-import { withAuth as withAuth } from "./middleware";
+import { withAuth as withAuth, withValidator } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
 import { PrismaClient } from ".prisma/client";
 import fetch from "node-fetch";
 import { sendLedController, roomNumberToLine } from "./socketServer";
 import debug from "debug";
 import effectRouter from "./effectRouter";
+import tv, { SchemaType } from "typed-object-validator";
 
 const logger = debug("rgb:router");
 const router = Router();
@@ -104,10 +105,15 @@ router.get("/user", withAuth(true), async (req, res, next) => {
     res.json({ status: "ok", users });
 });
 
-router.put("/user/admin", withAuth(true), async (req, res, next) => {
+router.put("/user/:id/admin", withAuth(true), async (req, res, next) => {
+    let userId = req.params.id;
+    if (!userId) {
+        return res.status(406);
+    }
+
     let user = await prisma.user.update({
         where: {
-            id: req.body.id,
+            id: userId,
         },
         data: {
             admin: true,
@@ -116,10 +122,14 @@ router.put("/user/admin", withAuth(true), async (req, res, next) => {
     res.json({ status: "ok", user });
 });
 
-router.delete("/user/admin", withAuth(true), async (req, res, next) => {
+router.delete("/user/:id/admin", withAuth(true), async (req, res, next) => {
+    let userId = req.params.id;
+    if (!userId) {
+        return res.status(406);
+    }
     let user = await prisma.user.update({
         where: {
-            id: req.body.id,
+            id: userId,
         },
         data: {
             admin: false,
@@ -128,10 +138,15 @@ router.delete("/user/admin", withAuth(true), async (req, res, next) => {
     res.json({ status: "ok", user });
 });
 
-router.post("/apikey", withAuth(true), async (req, res, next) => {
+const CreateApiKeyRequestSchema = tv.object({
+    description: tv.string().min(1).max(100).optional(),
+});
+
+router.post("/apikey", withAuth(true), withValidator(CreateApiKeyRequestSchema), async (req, res, next) => {
+    let data: SchemaType<typeof CreateApiKeyRequestSchema> = req.body;
     let token = await prisma.token.create({
         data: {
-            description: req.body.description,
+            description: data.description,
             author: req.user ? { connect: { id: req.user.id } } : undefined,
         },
     });
@@ -156,10 +171,14 @@ router.get("/apikey", withAuth(true), async (req, res, next) => {
     res.json({ status: "ok", tokens });
 });
 
-router.delete("/apikey", withAuth(true), async (req, res, next) => {
+router.delete("/apikey/:id", withAuth(true), async (req, res, next) => {
+    let id = parseInt(req.params.id);
+    if (isNaN(id)) {
+        return res.status(406);
+    }
     let token = await prisma.token.delete({
         where: {
-            id: req.body.id,
+            id: id,
         },
     });
     res.json({ status: "ok", token });

@@ -157,7 +157,7 @@ export class RGBClient extends TypedEmitter<Events> {
         });
     }
 
-    public async createApiKey(description: string): Promise<{ status: "ok"; token: string }> {
+    public async createApiKey(description?: string): Promise<{ status: "ok"; token: string }> {
         return await this.doFetch("/api/apikey", "POST", { description });
     }
 
@@ -171,25 +171,19 @@ export class RGBClient extends TypedEmitter<Events> {
     }
 
     public async deleteApiKey(id: number) {
-        return await this.doFetch("/api/apikey", "DELETE", {
-            id: id,
-        });
+        return await this.doFetch("/api/apikey/" + id, "DELETE");
     }
 
     public async getUsers() {
         return await this.doFetch("/api/user", "GET");
     }
 
-    public async giveAdmin(userId: number) {
-        return await this.doFetch("/api/user/admin", "PUT", {
-            id: userId,
-        });
+    public async giveAdmin(userId: string) {
+        return await this.doFetch(`/api/user/${userId}/admin`, "PUT");
     }
 
-    public async takeAdmin(userId: number) {
-        return await this.doFetch("/api/user/admin", "DELETE", {
-            id: userId,
-        });
+    public async takeAdmin(userId: string) {
+        return await this.doFetch(`/api/user/${userId}/admin`, "DELETE");
     }
 
     public async ideInfo(): Promise<IdeInfo> {
