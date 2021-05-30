@@ -16,11 +16,11 @@ All of the following endpoints start with `https://rgb.ikdoeict.be`.
 
 The following endpoints do not require authentication.
 
-- #### `GET /api/effect`
+- ### `GET /api/effect`
 
     Get all effects in JSON format.
 
-- #### `GET /api/effect/:id`
+- ### `GET /api/effect/:id`
 
     Get information about an effect in JSON format.
 
@@ -33,20 +33,20 @@ The following endpoints do not require authentication.
 **Note**: only the routes that can be used with an api key are displayed here.
 
 
-- #### `POST /api/effectVar/:varName/:value`
+- ### `POST /api/effectVar/:varName/:value`
 
     Sets a variable on the led controller
 
     -   Replace `:varName` with the variable name in the currently uploaded program you wish to set.
     -   Replace `:value` with a numerical value to set in the variable.
 
-- #### `POST /api/effect/:id/build?upload=true`
+- ### `POST /api/effect/:id/build?upload=true`
 
     Uploads effect with id to the led controller. This will automatically disable the effect carrousel.
 
     -   Replace `:id` with the effect id you wish to upload.
 
-- #### `POST /api/route`
+- ### `POST /api/route`
 
     Creates a route from a to b with color and duration.
 
@@ -70,13 +70,13 @@ The following endpoints do not require authentication.
     -   `g`: green value (0 -> 255)
     -   `b`: blue value (0 -> 255)
 
-- #### `POST /api/roomRoute/:roomNumber`
+- ### `POST /api/roomRoute/:roomNumber`
 
     Creates a route to a fixed room.
 
     -   Replace `:roomNumber` with the room number (0 -> 6).
 
-- #### `POST /api/effect/carrousel/:seconds`
+- ### `POST /api/effect/carrousel/:seconds`
 
     Enables or disables the effect carrousel.
 
