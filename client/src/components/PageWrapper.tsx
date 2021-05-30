@@ -79,7 +79,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                         )}
                     </ul>
                 </nav>
-                <div className="flex-grow relative flex flex-col">{props.children}</div>
+                <div className="flex-grow relative flex flex-col overflow-auto">{props.children}</div>
             </div>
             <footer className="text-gray-300 px-2 flex mt-auto md:text-sm text-xs" style={{ background: "#111", borderTop: "1px solid #222" }}>
                 <button className="hover:underline mr-5 py-1 inline" onClick={() => client.setAccessToken(undefined)}>

@@ -175,9 +175,9 @@ export function Effects(props: { userOnly?: boolean }) {
     }
 
     return (
-        <div className="flex justify-center px-1 md:px-4 pt-3 md:pt-10 overflow-auto">
+        <div className="flex justify-center px-1 md:px-4 pt-3 md:pt-10">
             <div style={{ width: "800px" }}>
-                <div className="flex items-center  flex-wrap">
+                <div className="flex items-center flex-wrap">
                     <Button
                         icon={faPlus}
                         onClick={async () => {
@@ -195,7 +195,7 @@ export function Effects(props: { userOnly?: boolean }) {
                     </Button>
                     {client.user!.admin && (
                         <div className="ml-auto p-2 flex">
-                            <p className="text-xs opacity-50 w-40 text-right leading-3 mr-2">
+                            <p className="text-xs opacity-50 w-24 lg:w-40 text-right leading-3 mr-2">
                                 {carrouselInterval > 0 ? (
                                     <>Het carrousel switcht elke {carrouselInterval / 1000} seconden tussen de favoriete effecten.</>
                                 ) : (
