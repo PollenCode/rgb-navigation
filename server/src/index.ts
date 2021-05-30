@@ -31,9 +31,34 @@ if (isDevelopment) {
         res.setHeader("Access-Control-Allow-Methods", "*");
         next();
     });
-} else {
-    app.use(helmet());
 }
+
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                "default-src": ["'self'"],
+                "base-uri": ["'self'"],
+                "block-all-mixed-content": [],
+                "font-src": ["'self'", "https:", "data:"],
+                "frame-ancestors": ["'self'"],
+                "img-src": ["'self'", "data:", "https://www.google-analytics.com"],
+                "object-src": ["'none'"],
+                "script-src": [
+                    "'self'",
+                    "https://www.google-analytics.com",
+                    "https://ssl.google-analytics.com",
+                    "https://cdn.jsdelivr.net",
+                    "unsafe-eval",
+                ],
+                "script-src-attr": ["'none'"],
+                "style-src": ["'self'", "https:", "'unsafe-inline'"],
+                "upgrade-insecure-requests": [],
+                "connect-src": ["'self'", "https://maps.googleapis.com", "https://www.google-analytics.com"],
+            },
+        },
+    })
+);
 
 app.use(express.static("public"));
 app.use("/api", apiRouter);
