@@ -60,6 +60,12 @@ Make sure to add the `Content-Type: application/json` header and include the fol
 -   `g`: green value (0 -> 255)
 -   `b`: blue value (0 -> 255)
 
+### `POST /effect/carrousel/:seconds`
+
+Enables or disables the effect carrousel.
+
+-   Replace `:seconds` with the interval to switch between favorite effects or use 0 to disable the carrousel.
+
 ## Examples
 
 ### Setting a single or multiple led
