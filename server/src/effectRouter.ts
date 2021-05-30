@@ -31,7 +31,7 @@ async function startEffectCarrousel() {
         },
     });
 
-    if (favorites.length < 0) {
+    if (favorites.length <= 0) {
         return;
     }
 
