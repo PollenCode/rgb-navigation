@@ -15,6 +15,7 @@ import {
     faPen,
     faPlus,
     faSave,
+    faStar,
     faTimes,
     faTrash,
     faUpload,
@@ -46,7 +47,7 @@ function EffectListItemButton(props: {
     );
 }
 
-function EffectListItem(props: { effect: Effect; onActivate?: () => Promise<void>; showAuthor: boolean }) {
+function EffectListItem(props: { effect: Effect; onActivate: () => Promise<void>; onFavorite: () => void; showAuthor: boolean }) {
     const client = useContext(AuthContext);
     const history = useHistory();
     const readOnly = !client.user || !props.effect.author || (client.user.id !== props.effect.author.id && !client.user.admin);
@@ -66,6 +67,23 @@ function EffectListItem(props: { effect: Effect; onActivate?: () => Promise<void
             )}
             <span className="ml-auto"></span>
 
+            <span
+                onClick={(ev) => {
+                    ev.stopPropagation();
+                    if (client.user!.admin) {
+                        props.onFavorite();
+                    } else {
+                        alert(
+                            "Een effect heeft een ster wanneer deze zich in de actieve effecten-cyclus bevindt. Dit kan enkel aangevinkt worden door een administrator. Enkel de beste effecten krijgen een ster!"
+                        );
+                    }
+                }}>
+                <FontAwesomeIcon
+                    icon={faStar}
+                    className={"text-lg " + (props.effect.favorite ? "text-yellow-400 hover:text-yellow-600" : "text-gray-200 hover:text-gray-500")}
+                />
+            </span>
+
             <EffectListItemButton
                 onClick={() => history.push(`/effects/${props.effect.id}`)}
                 icon={readOnly ? faEye : faPen}
@@ -80,7 +98,7 @@ function EffectListItem(props: { effect: Effect; onActivate?: () => Promise<void
                     onClick={async (ev) => {
                         ev.stopPropagation();
                         setLoading(true);
-                        await props.onActivate?.();
+                        await props.onActivate();
                         setLoading(false);
                     }}>
                     Activeren
@@ -142,10 +160,12 @@ export function Effects(props: { userOnly?: boolean }) {
                             showAuthor={!props.userOnly}
                             key={e.id}
                             effect={e}
+                            onFavorite={async () => {
+                                await client.favoriteEffect(e.id, !e.favorite);
+                                setEffects((effects) => effects!.map((t) => (e.id === t.id ? { ...t, favorite: !e.favorite } : t)));
+                            }}
                             onActivate={async () => {
-                                console.log("activate");
                                 if (e.active) return;
-                                console.log("activate2");
                                 let res = await client.buildEffect(e.id, true);
                                 if (res.status === "ok") {
                                     setEffects((effects) =>

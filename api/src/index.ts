@@ -20,6 +20,7 @@ export interface Effect {
     code: string;
     id: number;
     active?: boolean;
+    favorite: boolean;
     lastError: string | null;
     author?: {
         id: string;
