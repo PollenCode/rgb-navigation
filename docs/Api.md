@@ -60,6 +60,12 @@ Make sure to add the `Content-Type: application/json` header and include the fol
 -   `g`: green value (0 -> 255)
 -   `b`: blue value (0 -> 255)
 
+### `POST /api/roomRoute/:roomNumber`
+
+Creates a route to a fixed room.
+
+-   Replace `:roomNumber` with the room number (0 -> 6).
+
 ### `POST /effect/carrousel/:seconds`
 
 Enables or disables the effect carrousel.
