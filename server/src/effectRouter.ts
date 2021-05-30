@@ -52,7 +52,7 @@ async function startEffectCarrousel() {
         logger("could not play next carrousel effect with id %d: %s", effect.id, ex);
     }
 
-    effectCarrouselTask = setTimeout(startEffectCarrousel, 10000);
+    effectCarrouselTask = setTimeout(startEffectCarrousel, carrouselInterval);
 }
 
 function stopEffectCarrousel() {
@@ -110,7 +110,6 @@ router.post("/effect/carrousel/:seconds", withAuth(true, true), async (req, res,
     if (seconds >= 4) {
         carrouselInterval = seconds * 1000;
         await startEffectCarrousel();
-        effectCarrouselTask = setTimeout(startEffectCarrousel, carrouselInterval);
     }
 
     sendActiveEffect(activeEffectId, carrouselInterval);
