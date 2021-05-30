@@ -53,7 +53,7 @@ g = 0
 b = sin(timer)
 ```
 
-You can also use the `cos()` function, look [here]() for a list of builtin utility functions.
+You can also use the `cos()` function, look [here](https://pollencode.github.io/rgb-navigation/RGBLang.html#functions) for a list of builtin utility functions.
 
 ### Combine timer and index
 
