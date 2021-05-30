@@ -66,7 +66,7 @@ Creates a route to a fixed room.
 
 -   Replace `:roomNumber` with the room number (0 -> 6).
 
-### `POST /effect/carrousel/:seconds`
+### `POST /api/effect/carrousel/:seconds`
 
 Enables or disables the effect carrousel.
 
