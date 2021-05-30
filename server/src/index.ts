@@ -9,6 +9,7 @@ import apiRouter from "./apiRouter";
 import path from "path";
 import fs from "fs";
 import debug from "debug";
+import helmet from "helmet";
 
 const logger = debug("rgb:server");
 
@@ -20,6 +21,7 @@ if (!process.env.NODE_ENV || !process.env.PORT || !process.env.JWT_SECRET) {
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
 if (isDevelopment) {
     // Bypass cors during development
     app.use((req, res, next) => {
@@ -29,16 +31,12 @@ if (isDevelopment) {
         res.setHeader("Access-Control-Allow-Methods", "*");
         next();
     });
+} else {
+    app.use(helmet());
 }
 
 app.use(express.static("public"));
 app.use("/api", apiRouter);
-
-if (isDevelopment) {
-    app.get("/deviceToken/:roomId", (req, res, next) => {
-        res.end(createDeviceAccessToken(req.params.roomId));
-    });
-}
 
 app.use((req, res, next) => {
     res.sendFile("index.html", { root: "public" });
