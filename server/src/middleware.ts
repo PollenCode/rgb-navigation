@@ -1,6 +1,8 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import { validateUserAccessToken } from "./auth";
+import { Schema } from "typed-object-validator";
+import { isDevelopment } from "./helpers";
 
 let prisma = new PrismaClient();
 
@@ -30,6 +32,21 @@ export function withAuth(requireAdmin: boolean, allowToken: boolean = false) {
                 return res.status(401).end();
             }
             req.user = user;
+        }
+
+        next();
+    };
+}
+
+export function withValidator(schema: Schema<any>) {
+    return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+        let err = schema.validate(req.body, { abortEarly: true });
+        if (err) {
+            if (isDevelopment) {
+                return res.status(406).json(err);
+            } else {
+                return res.status(406).end();
+            }
         }
 
         next();

@@ -1,13 +1,14 @@
 import { PrismaClient } from ".prisma/client";
 import { Router } from "express";
 import debug from "debug";
-import { withAuth } from "./middleware";
+import { withAuth, withValidator } from "./middleware";
 import { roomNumberToLine, sendLedController } from "./socketServer";
 import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, Var, VoidType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
 import { IdeInfo } from "rgb-navigation-api";
 import { ideInfo } from "./ideInfo";
+import * as tv from "typed-object-validator";
 
 const MAX_EFFECT_PER_USER = 8;
 const LED_COUNT = 784;
@@ -57,7 +58,7 @@ router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) =>
     let id = parseInt(req.params.id);
     let upload = !!req.query.upload;
     if (isNaN(id)) {
-        return res.status(400).end();
+        return res.status(406).end();
     }
 
     let effect = await prisma.effect.findUnique({
@@ -121,6 +122,7 @@ router.get("/effect", withAuth(false, true), async (req, res, next) => {
             lastError: true,
             modifiedAt: true,
             createdAt: true,
+            favorite: true,
             author: {
                 select: {
                     id: true,
@@ -146,7 +148,7 @@ router.get("/effect", withAuth(false, true), async (req, res, next) => {
 router.delete("/effect/:id", withAuth(false), async (req, res, next) => {
     let id = parseInt(req.params.id);
     if (isNaN(id)) {
-        return res.status(400).end();
+        return res.status(406).end();
     }
 
     let effect = await prisma.effect.findUnique({
@@ -175,6 +177,9 @@ router.delete("/effect/:id", withAuth(false), async (req, res, next) => {
 
 router.post("/effect", withAuth(false), async (req, res, next) => {
     let { code, name } = req.body;
+    if (!code || !name) {
+        return res.status(406).end();
+    }
 
     let userEffectCount = await prisma.effect.count({ where: { authorId: req.user.id } });
     if (!req.user.admin && userEffectCount > MAX_EFFECT_PER_USER) {
@@ -214,8 +219,30 @@ router.post("/effect", withAuth(false), async (req, res, next) => {
     });
 });
 
-router.patch("/effect", withAuth(false), async (req, res, next) => {
-    let { code, name, id } = req.body;
+router.patch("/effect/:id", withAuth(true), async (req, res, next) => {
+    let id = parseInt(req.params.id);
+    if (isNaN(id)) {
+        return res.status(406).end();
+    }
+
+    await prisma.effect.update({
+        where: {
+            id: id,
+        },
+        data: {
+            favorite: !!req.query.favorite,
+        },
+    });
+
+    res.end();
+});
+
+router.put("/effect/:id", withAuth(false), async (req, res, next) => {
+    let id = parseInt(req.params.id);
+    let { code, name } = req.body;
+    if (isNaN(id) || !name || !code) {
+        return res.status(406).end();
+    }
 
     let existing = await prisma.effect.findUnique({
         where: {
@@ -261,7 +288,7 @@ router.patch("/effect", withAuth(false), async (req, res, next) => {
 router.get("/effect/:id", withAuth(false), async (req, res, next) => {
     let id = parseInt(req.params.id);
     if (isNaN(id)) {
-        return res.status(400).end();
+        return res.status(406).end();
     }
 
     let effect = await prisma.effect.findUnique({
@@ -294,14 +321,15 @@ router.get("/effect/:id", withAuth(false), async (req, res, next) => {
 
 router.post("/effectVar/:varName/:value", withAuth(true, true), async (req, res, next) => {
     let value = parseInt(req.params.value);
-    if (isNaN(value)) {
-        return res.status(406).end("invalid value, must be number");
+    let varName = req.params.varName;
+    if (isNaN(value) || !varName) {
+        return res.status(406).end("invalid value or varName");
     }
     if (!lastVariables) {
         return res.status(400).end("no program has been uploaded");
     }
 
-    let v = lastVariables.get(req.params.varName);
+    let v = lastVariables.get(varName);
     if (!v) {
         return res
             .status(404)
@@ -321,8 +349,17 @@ router.post("/effectVar/:varName/:value", withAuth(true, true), async (req, res,
     res.status(201).end();
 });
 
-router.post("/route", withAuth(true, true), async (req, res, next) => {
-    let data = req.body;
+const RouteValidator = tv.object({
+    r: tv.number().min(0).max(255),
+    g: tv.number().min(0).max(255),
+    b: tv.number().min(0).max(255),
+    startLed: tv.number().min(0).max(LED_COUNT),
+    endLed: tv.number().min(0).max(LED_COUNT),
+    duration: tv.number().min(0).max(1000),
+});
+
+router.post("/route", withAuth(true, true), withValidator(RouteValidator), async (req, res, next) => {
+    let data = req.body as tv.SchemaType<typeof RouteValidator>;
     sendLedController({
         type: "enableLine",
         r: data.r,
@@ -335,9 +372,12 @@ router.post("/route", withAuth(true, true), async (req, res, next) => {
     res.status(201).end();
 });
 
-router.post("/roomRoute", withAuth(true, true), async (req, res, next) => {
-    let data = req.body;
-    sendLedController(roomNumberToLine(data.roomNumber));
+router.post("/roomRoute/:n", withAuth(true, true), async (req, res, next) => {
+    let roomNumber = parseInt(req.params.n);
+    if (isNaN(roomNumber)) {
+        return res.status(406);
+    }
+    sendLedController(roomNumberToLine(roomNumber));
     res.status(201).end();
 });
 

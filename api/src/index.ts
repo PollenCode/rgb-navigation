@@ -124,8 +124,12 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect", "POST", effect);
     }
 
+    public async favoriteEffect(effectId: number, favorite: boolean) {
+        return await this.doFetch(`/api/effect/${effectId}?favorite=${String(favorite)}`, "PATCH");
+    }
+
     public async updateEffect(effect: { name: string; code: string; id: number }) {
-        return await this.doFetch("/api/effect", "PATCH", effect);
+        return await this.doFetch("/api/effect/" + effect.id, "PUT", effect);
     }
 
     public async buildEffect(id: number, upload: boolean = true): Promise<{ status: "error"; error: string } | { status: "ok" }> {
@@ -137,13 +141,12 @@ export class RGBClient extends TypedEmitter<Events> {
     }
 
     public async enableLedRoomRoute(roomNumber: number) {
-        return await this.doFetch("/api/roomRoute", "POST", {
-            roomNumber: roomNumber,
-        });
+        return await this.doFetch("/api/roomRoute/" + roomNumber, "POST");
     }
 
     public async enableLedRoute(startLed: number, endLed: number, duration: number, color: string) {
-        let c = hexToRgb(color)!;
+        let c = hexToRgb(color);
+        if (!c) return;
         return await this.doFetch("/api/route", "POST", {
             duration: duration,
             startLed: startLed,

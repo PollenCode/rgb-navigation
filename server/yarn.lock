@@ -1546,6 +1546,11 @@ type-is@~1.6.17, type-is@~1.6.18:
     media-typer "0.3.0"
     mime-types "~2.1.24"
 
+typed-object-validator@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/typed-object-validator/-/typed-object-validator-1.0.7.tgz#2913ed6f5052b7e2f3f52abcbc9dfc03247eba20"
+  integrity sha512-SrjHAivyGYAB1xmX3aZCaqNrubp7ZjHlYlGgMx4+R2n5ymv5R9HdajUPWRe/LxYOtMztKpLiC7Vwh+wP85bKYg==
+
 typedarray-to-buffer@^3.1.5:
   version "3.1.5"
   resolved "https://registry.yarnpkg.com/typedarray-to-buffer/-/typedarray-to-buffer-3.1.5.tgz#a97ee7a9ff42691b9f783ff1bc5112fe3fca9080"
