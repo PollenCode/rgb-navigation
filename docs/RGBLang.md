@@ -25,16 +25,6 @@ byte myByte = 200
 
 RGBLang currently only supports **int** and **byte** integer types. An integer can store 32 bit signed values (-2147483647 -> 2147483647) and a byte can store 8 bit unsigned values (0 -> 255)
 
-### Constants
-
-To create a constant variable, you just create a variable like above, but with all capital letters:
-
-```c
-int MY_CONSTANT = 1000
-```
-
-Constants can only be assigned with values that are known before uploading to the ledstrip controller.
-
 #### Builtin variables
 
 RGBLang defines some builtin variables:
@@ -45,6 +35,16 @@ RGBLang defines some builtin variables:
 | `index`       | This magic variable contains the index of the current led (the nth-led in the ledstrip). Its maximum value is defined by the `LED_COUNT` variable - 1                                                                                                                                                                                            |
 | `timer`       | This magic variable increases constantly. It contains the amount of milliseconds since the program has started running.                                                                                                                                                                                                                          |
 | `LED_COUNT`   | This constant variable contains the amount of leds in the ledstrip.                                                                                                                                                                                                                                                                              |
+
+### Constants
+
+To create a constant variable, you just create a variable like above, but with all capital letters:
+
+```c
+int MY_CONSTANT = 1000
+```
+
+Constants can only be assigned with values that are known before uploading to the ledstrip controller.
 
 ### If/else
 
