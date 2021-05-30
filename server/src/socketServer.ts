@@ -17,7 +17,7 @@ let socket: Server;
 function validateMessage<T>(schema: Schema<T>, handler: (val: T, callback: (...params: any) => void) => void) {
     return (data: any, callback: any) => {
         let err = schema.validate(data, { abortEarly: true });
-        if (err || typeof callback !== "function") {
+        if (err) {
             logger("could not validate", data, err);
             return;
         }
@@ -148,7 +148,7 @@ export function createSocketServer(server: http.Server) {
                 tv.object({
                     token: tv.string(),
                     type: tv.string(),
-                    data: tv.string(),
+                    data: tv.string().doTrim(false),
                 }),
                 ({ token, data, type }) => {
                     let deviceToken = validateDeviceAccessToken(token);

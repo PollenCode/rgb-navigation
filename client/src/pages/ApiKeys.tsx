@@ -66,7 +66,7 @@ export function ApiKeys() {
 
                 <small className="mt-5 block opacity-50">
                     Bekijk wat je kan doen met deze api-keys{" "}
-                    <a className="underline" target="_blank" href="https://pollencode.github.io/rgb-navigation/">
+                    <a className="underline" target="_blank" href="https://pollencode.github.io/rgb-navigation/Api">
                         hier
                     </a>
                 </small>

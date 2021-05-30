@@ -197,7 +197,7 @@ export function Effects(props: { userOnly?: boolean }) {
                         <div className="ml-auto p-2 flex">
                             <p className="text-xs opacity-50 w-40 text-right leading-3 mr-2">
                                 {carrouselInterval > 0 ? (
-                                    <>Het carrousel switch elke {carrouselInterval / 1000} seconden tussen de favoriete effecten.</>
+                                    <>Het carrousel switcht elke {carrouselInterval / 1000} seconden tussen de favoriete effecten.</>
                                 ) : (
                                     <>Het carrousel is inactief.</>
                                 )}
