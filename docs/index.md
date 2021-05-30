@@ -5,7 +5,7 @@ nav_order: 1
 
 # Examples
 
-This chapter contains example programs for the ledstrip written in [RGBLang](). You can also use it as a tutorial because the programs get more complicated each step.
+This chapter contains example programs for the ledstrip written in [RGBLang](https://pollencode.github.io/rgb-navigation/RGBLang). You can also use it as a tutorial because the programs get more complicated each step.
 
 ### Solid color
 
