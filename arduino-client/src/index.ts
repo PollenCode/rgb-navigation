@@ -9,8 +9,8 @@ import debug from "debug";
 const logger = debug("rgb:arduino");
 
 // Read from .env file
-const { SERIAL_PORT, BAUD_RATE } = process.env;
-if (!SERIAL_PORT || !BAUD_RATE) {
+const { SERIAL_PORT, BAUD_RATE, TOKEN } = process.env;
+if (!SERIAL_PORT || !BAUD_RATE || !TOKEN) {
     logger("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(-1);
 }
@@ -58,11 +58,11 @@ async function processMessage(data: LedControllerServerMessage) {
 }
 
 arduino.port.on("data", (data) => {
-    client.socket.emit("arduinoOutput", { type: "data", data: data.toString("utf-8") });
+    client.socket.emit("arduinoOutput", { token: TOKEN, type: "data", data: data.toString("utf-8") });
 });
 
 arduino.port.on("error", (data) => {
-    client.socket.emit("arduinoOutput", { type: "error", data: String(data) });
+    client.socket.emit("arduinoOutput", { token: TOKEN, type: "error", data: String(data) });
 });
 
 client.socket.on("connect", () => {

@@ -5,7 +5,7 @@ import { withAuth as withAuth, withValidator } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
 import { PrismaClient } from ".prisma/client";
 import fetch from "node-fetch";
-import { sendLedController, roomNumberToLine } from "./socketServer";
+import { notifyLedController, roomNumberToLine } from "./socketServer";
 import debug from "debug";
 import effectRouter from "./effectRouter";
 import tv, { SchemaType } from "typed-object-validator";

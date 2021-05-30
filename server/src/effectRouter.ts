@@ -2,7 +2,7 @@ import { Effect, PrismaClient } from ".prisma/client";
 import { Router } from "express";
 import debug from "debug";
 import { withAuth, withValidator } from "./middleware";
-import { roomNumberToLine, sendActiveEffect, sendLedController } from "./socketServer";
+import { roomNumberToLine, notifyActiveEffect, notifyLedController } from "./socketServer";
 import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, Var, VoidType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
@@ -46,8 +46,8 @@ async function startEffectCarrousel() {
         let [compiled, entryPoint, lastVars] = compile(effect.code);
         activeEffectId = effect.id;
         lastVariables = lastVars;
-        sendLedController({ type: "uploadProgram", byteCode: compiled.toString("hex"), entryPoint: entryPoint });
-        sendActiveEffect(activeEffectId, carrouselInterval);
+        notifyLedController({ type: "uploadProgram", byteCode: compiled.toString("hex"), entryPoint: entryPoint });
+        notifyActiveEffect(activeEffectId, carrouselInterval);
     } catch (ex) {
         logger("could not play next carrousel effect with id %d: %s", effect.id, ex);
     }
@@ -112,7 +112,7 @@ router.post("/effect/carrousel/:seconds", withAuth(true, true), async (req, res,
         await startEffectCarrousel();
     }
 
-    sendActiveEffect(activeEffectId, carrouselInterval);
+    notifyActiveEffect(activeEffectId, carrouselInterval);
 
     res.end();
 });
@@ -169,8 +169,8 @@ router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) =>
         activeEffectId = id;
         lastVariables = lastVars;
         stopEffectCarrousel();
-        sendLedController({ type: "uploadProgram", byteCode: effect.compiled!.toString("hex"), entryPoint: effect.entryPoint! });
-        sendActiveEffect(activeEffectId, carrouselInterval);
+        notifyLedController({ type: "uploadProgram", byteCode: effect.compiled!.toString("hex"), entryPoint: effect.entryPoint! });
+        notifyActiveEffect(activeEffectId, carrouselInterval);
     }
     res.json({ status: "ok" });
 });
@@ -408,7 +408,7 @@ router.post("/effectVar/:varName/:value", withAuth(true, true), async (req, res,
         return res.status(400).end("the variable you tried to assign is constant, please convert it to a normal variable");
     }
 
-    sendLedController({
+    notifyLedController({
         type: "setVar",
         location: v.location! as number,
         size: v.type.size,
@@ -429,7 +429,7 @@ const RouteRequestSchema = tv.object({
 
 router.post("/route", withAuth(true, true), withValidator(RouteRequestSchema), async (req, res, next) => {
     let data = req.body as tv.SchemaType<typeof RouteRequestSchema>;
-    sendLedController({
+    notifyLedController({
         type: "enableLine",
         r: data.r,
         g: data.g,
@@ -446,7 +446,7 @@ router.post("/roomRoute/:n", withAuth(true, true), async (req, res, next) => {
     if (isNaN(roomNumber)) {
         return res.status(406);
     }
-    sendLedController(roomNumberToLine(roomNumber));
+    notifyLedController(roomNumberToLine(roomNumber));
     res.status(201).end();
 });
 

@@ -4,10 +4,10 @@
 -   [x] tv scherm (michiel)
 -   [x] responsive adminpanel
 -   [x] admin users
--   [ ] documentatie (iedereen)
--   [ ] opengraph
--   [ ] fix error on rename
+-   [x] documentatie
+-   [x] opengraph
+-   [x] fix error on rename
 -   [ ] limit only one arduino build at a time
--   [ ] je staat in de rij terwijl dat niet zo is fixen
--   [ ] validation
+-   [x] je staat in de rij terwijl dat niet zo is fixen
+-   [x] validation
 -   [ ] rate limiting
