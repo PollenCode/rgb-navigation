@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useContext } from "react";
 import { BrowserRouter as Router, Switch, Route, Redirect, useHistory } from "react-router-dom";
 import { Complete } from "./pages/CardScanner";
 import { User, RGBClient, serverPath } from "rgb-navigation-api";
-import { Overview } from "./pages/LiveOverview";
+import { LiveOverview } from "./pages/LiveOverview";
 import { AuthContext } from "./AuthContext";
 import { PageWrapper } from "./components/PageWrapper";
 import { DGang } from "./pages/DGang";
@@ -15,6 +15,17 @@ import { EffectEditor } from "./pages/EffectEditor";
 const client = new RGBClient();
 
 export function Routes() {
+    return (
+        <AuthContext.Provider value={client}>
+            <Switch>
+                <Route path="/realtime" exact component={LiveOverview} />
+                <Route component={UserRouter} />
+            </Switch>
+        </AuthContext.Provider>
+    );
+}
+
+function UserRouter() {
     const query = new URLSearchParams(window.location.search);
     const [user, setUser] = useState<User | undefined>(undefined);
     const history = useHistory();
@@ -56,30 +67,23 @@ export function Routes() {
     }
 
     return (
-        <AuthContext.Provider value={client}>
+        <PageWrapper>
             <Switch>
-                <Route path="/realtime" exact component={Overview} />
-                <Route>
-                    <PageWrapper>
-                        <Switch>
-                            <Route path="/" exact component={Complete} />
-                            <Route path="/effects/mine" exact>
-                                <Effects userOnly />
-                            </Route>
-                            <Route path="/effects/all" exact>
-                                <Effects />
-                            </Route>
-                            <Route path="/effects/:id" exact component={EffectEditor} />
-                            <Route path="/effects">
-                                <Redirect to="/effects/mine" />
-                            </Route>
-                            <Route path="/admin" component={AdminRouter} />
-                            <Redirect to="/" />
-                        </Switch>
-                    </PageWrapper>
+                <Route path="/" exact component={Complete} />
+                <Route path="/effects/mine" exact>
+                    <Effects userOnly />
                 </Route>
+                <Route path="/effects/all" exact>
+                    <Effects />
+                </Route>
+                <Route path="/effects/:id" exact component={EffectEditor} />
+                <Route path="/effects">
+                    <Redirect to="/effects/mine" />
+                </Route>
+                <Route path="/admin" component={AdminRouter} />
+                <Redirect to="/" />
             </Switch>
-        </AuthContext.Provider>
+        </PageWrapper>
     );
 }
 

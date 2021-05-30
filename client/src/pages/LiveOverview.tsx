@@ -6,7 +6,7 @@ import { Effect } from "rgb-navigation-api";
 import { AuthContext } from "../AuthContext";
 import { SocketContext } from "../SocketContext";
 
-export function Overview(props: RouteComponentProps<{ roomId: string }>) {
+export function LiveOverview() {
     const client = useContext(AuthContext);
     const [messages, setMessages] = useState<{ name: string; color: string }[]>([]);
     const [error, setError] = useState<string>();
