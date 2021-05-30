@@ -37,7 +37,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     // const [status, setStatus] = useState<{ percent: number; status: string }>({ percent: 0, status: "" });
     const [showOutput, setShowOutput] = useState(false);
     const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor>();
-    const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
+    const readOnly = !effect || !effect.author || !client.user || (client.user.id !== effect.author.id && !client.user.admin);
     const history = useHistory();
     const outputRef = useRef<HTMLPreElement>(null);
     const simulateDataRef = useRef<HTMLPreElement>(null);
@@ -91,10 +91,6 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
         client.socket.on("arduinoOutput", onArduinoData);
         client.socket.emit("arduinoSubscribe", true);
 
-        for (let i = 0; i < 100; i++) {
-            appendOutput("starting...\n");
-        }
-
         return () => {
             client.socket.off("arduinoOutput", onArduinoData);
             client.socket.emit("arduinoSubscribe", false);
@@ -127,15 +123,15 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     }
 
     async function updateName(name: string) {
-        if (!name || effect!.author!.id !== client.user!.id) return;
+        if (!name || readOnly) return;
         setEffect(await client.updateEffect({ name: name, code: effect!.code, id: effect!.id }));
     }
 
     async function save() {
         setLoading(true);
         let eff = await client.updateEffect({ name: effect!.name, code: code!, id: effect!.id });
-        await new Promise((res) => setTimeout(res, 500));
         setEffect(eff);
+        await new Promise((res) => setTimeout(res, 300));
         setLoading(false);
     }
 
@@ -146,10 +142,11 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
             );
         }
 
-        setLoading(true);
-        setShowOutput(true);
+        if (!readOnly) await save();
+
         clearOutput();
-        if (effect!.author!.id === client.user!.id) await save();
+        setShowOutput(true);
+        setLoading(true);
 
         let res = await client.buildEffect(effect!.id, true);
         if (res.status === "error") {
@@ -194,18 +191,12 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     </Button>
                 )}
                 {effect && !readOnly && (
-                    <Button
-                        allowSmall
-                        style={{ marginRight: "0.3em" }}
-                        loading={loading}
-                        icon={faSave}
-                        disabled={loading || effect.code === code}
-                        onClick={save}>
+                    <Button allowSmall style={{ marginRight: "0.3em" }} icon={faSave} disabled={loading || effect.code === code} onClick={save}>
                         Opslaan
                     </Button>
                 )}
                 {effect && (
-                    <Button allowSmall style={{ marginRight: "0.3em" }} loading={loading} icon={faFileAlt} onClick={() => setShowOutput(!showOutput)}>
+                    <Button allowSmall style={{ marginRight: "0.3em" }} icon={faFileAlt} onClick={() => setShowOutput(!showOutput)}>
                         {showOutput ? "Sluit" : "Toon"} output
                     </Button>
                 )}
@@ -263,14 +254,14 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                             <FontAwesomeIcon icon={faTimes} />
                         </span>
                         <div className="flex overflow-hidden">
-                            <div className=" flex-grow overflow-hidden">
+                            <div className=" flex-grow overflow-hidden text-xs lg:text-base">
                                 <h2 className="px-4 py-2 font-bold mb-1">Output</h2>
                                 <pre
                                     className="px-4 py-2 overflow-auto max-h-80 h-80"
                                     style={{ borderRight: "1px solid #222" }}
                                     ref={outputRef}></pre>
                             </div>
-                            <div className=" flex-shrink-0 w-72">
+                            <div className=" flex-shrink-0 w-40 lg:w-72 text-xs lg:text-base">
                                 <h2 className="px-4 py-2 font-bold">Memory</h2>
                                 <pre className="px-4 py-2 overflow-hidden" ref={simulateDataRef}></pre>
                                 <small className="px-4 py-2 mb-t block opacity-40">(waardes van de laatste led)</small>

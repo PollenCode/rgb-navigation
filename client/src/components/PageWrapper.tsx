@@ -46,7 +46,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
     return (
         <div className="flex flex-col h-full overflow-hidden">
             <div className="flex flex-grow overflow-hidden md:flex-row flex-col">
-                <nav className="border-r shadow-lg z-10">
+                <nav className="border-r z-10">
                     <div className="flex items-center h-12 flex-shrink-0 bg-white text-gray-800 border-b ">
                         <img ref={iconRef} src="/icon64.png" className="w-6 h-6 ml-2.5 icon-animation" alt="" />
                         <span className="ml-2.5 mt-0.5 font-extrabold text-lg" onClick={() => history.push("/")}>

@@ -9,7 +9,7 @@ import fs from "fs";
 import { IdeInfo } from "rgb-navigation-api";
 import { ideInfo } from "./ideInfo";
 
-const MAX_EFFECT_PER_USER = 10;
+const MAX_EFFECT_PER_USER = 8;
 const LED_COUNT = 784;
 
 const logger = debug("rgb:effects");
@@ -159,7 +159,7 @@ router.delete("/effect/:id", withAuth(false), async (req, res, next) => {
         logger("user %d tried to delete effect that doesn't exist (%d)", req.user!.id, id);
         return res.status(404).end();
     }
-    if (effect.authorId !== req.user!.id) {
+    if (effect.authorId !== req.user!.id && !req.user.admin) {
         logger("user %d tried to delete effect that isn't his (%s)", req.user.id, effect.name);
         return res.status(403).end();
     }
@@ -227,7 +227,7 @@ router.patch("/effect", withAuth(false), async (req, res, next) => {
         return res.status(404).end();
     }
 
-    if (existing.authorId !== req.user.id) {
+    if (existing.authorId !== req.user.id && !req.user.admin) {
         logger("user %d tried to update other user's effect (%s)", req.user.id, name);
         return res.status(403).end();
     }

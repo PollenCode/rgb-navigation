@@ -92,3 +92,17 @@ body {
         transform: rotate(360deg);
     }
 }
+
+.animate-reveal {
+    animation: reveal 500ms;
+    overflow: hidden;
+}
+
+@keyframes reveal {
+    0% {
+        max-height: 0px;
+    }
+    100% {
+        max-height: 100vh;
+    }
+}
