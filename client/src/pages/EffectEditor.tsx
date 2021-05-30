@@ -224,8 +224,11 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     {status.status}
                 </div>
             </div> */}
-            <div className="flex-grow flex-shrink relative w-full max-w-full">
+            <div className="flex-grow relative w-full max-w-full flex flex-col">
                 <Editor
+                    loading={<FontAwesomeIcon icon={faCircleNotch} className="animate-spin text-3xl opacity-50" />}
+                    className="flex-grow flex flex-col"
+                    wrapperClassName="flex-grow"
                     onMount={(editor) => {
                         setEditor(editor);
                     }}
