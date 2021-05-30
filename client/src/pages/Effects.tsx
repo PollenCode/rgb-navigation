@@ -164,7 +164,7 @@ export function Effects(props: { userOnly?: boolean }) {
     }, []);
 
     useEffect(() => {
-        client.getEffects(false, props.userOnly).then(({ effects, carrouselInterval }) => {
+        client.getEffects(false, props.userOnly ? client.user!.id : undefined).then(({ effects, carrouselInterval }) => {
             setEffects(effects);
             setCarrouselInterval(carrouselInterval);
         });

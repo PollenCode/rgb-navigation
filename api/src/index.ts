@@ -108,8 +108,8 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/user/unbind", "POST");
     }
 
-    public async getEffects(code: boolean = false, onlyUser: boolean = false) {
-        return await this.doFetch("/api/effect?" + qs.stringify({ code, onlyUser }), "GET");
+    public async getEffects(includeCode: boolean = false, authorId?: string) {
+        return await this.doFetch("/api/effect?" + qs.stringify({ code: includeCode, authorId }), "GET");
     }
 
     public async getEffect(id: number) {
