@@ -300,7 +300,7 @@ router.patch("/effect/:id", withAuth(true), async (req, res, next) => {
             id: id,
         },
         data: {
-            favorite: !!req.query.favorite,
+            favorite: req.query.favorite === "true",
         },
     });
 
