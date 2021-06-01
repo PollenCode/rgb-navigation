@@ -20,12 +20,13 @@ model User {
   token        String?
   ownedEffects Effect[]
   admin        Boolean  @default(false)
+  tokens       Token[]
 }
 
 // A custom arduino effect
 model Effect {
   id         Int      @id @default(autoincrement())
-  name       String   @unique
+  name       String
   code       String
   lastError  String?
   entryPoint Int?
@@ -34,9 +35,13 @@ model Effect {
   authorId   String?
   createdAt  DateTime @default(now())
   modifiedAt DateTime @default(now())
+  favorite   Boolean  @default(false)
 }
 
 model Token {
-  id   String   @id @default(uuid())
-  made DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  made        DateTime @default(now())
+  author      User?    @relation(fields: [authorId], references: [id])
+  authorId    String?
+  description String?
 }

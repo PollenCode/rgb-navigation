@@ -7,20 +7,46 @@ extern "C"
 #include "interpreter.h"
 }
 
+<<<<<<< HEAD
 #define BAUD_RATE 115200
 
 // 784 / 2
 #define LED_COUNT 784
+=======
+// Uncomment if using in production
+// #define PRODUCTION
+
+#define BRIGHTNESS 40
+#define LED_ORDER RGB
+#define LED_COUNT 50
+#define BAUD_RATE 4800
+>>>>>>> ec5d91073185d12108cc96524cb044da25922e2d
 #define DATA_PIN 4
 // Max amount of routes that can be drawn at once
 #define MAX_LINES 32
 // Every x other pixel is rendered in the next frame
 #define INTERLACE_LEVEL 2
+<<<<<<< HEAD
 #define MAX_PROGRAM_SIZE 1000
 #define SHIFT_INTERVAL 100
 #define SPLIT_SIZE 2
+=======
+// The max size of an idle program, must be aligned to 4
+#define MAX_PROGRAM_SIZE 200
+#define ROUTE_SHIFT_INTERVAL 500
+#define ROUTE_BLEND_FACTOR 35
+#define ROUTE_SPLIT_SIZE 3
 
-// A route
+#ifdef PRODUCTION
+#define BRIGHTNESS 255
+#define LED_ORDER RGB
+#define LED_COUNT 784
+#define BAUD_RATE 115200
+#define DATA_PIN 4
+#define MAX_PROGRAM_SIZE 2000
+#endif
+>>>>>>> ec5d91073185d12108cc96524cb044da25922e2d
+
 struct LineEffect
 {
     uint16_t startLed;
@@ -31,18 +57,21 @@ struct LineEffect
     LineEffect(uint16_t startLed, uint16_t endLed, uint64_t endTime, CRGB color) : startLed(startLed), endLed(endLed), endTime(endTime), color(color) {}
 };
 
-LineEffect *routes[MAX_LINES] = {0};
+uint32_t fpsCounter = 0;
+uint64_t lastShownInfoTime = 0;
+
 CRGB leds[LED_COUNT];
-uint16_t fpsCounter = 0;
-uint64_t lastShown = 0;
-CRGB currentColors[MAX_LINES];
 
-uint32_t shift = 0;
-byte newId = 0;
+LineEffect *routes[MAX_LINES] = {0};
+CRGB routeColors[MAX_LINES];
+uint8_t routeIdCounter = 0;
 
-int interlacing = 0;
-unsigned short entryPoint = 12;
+int effectInterlacing = 0;
+unsigned short effectEntryPoint = 12;
 uint8_t mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x04, 0x03, 0x00, 0x22, 0x03, 0x04, 0xff, 0x00, 0x08, 0x00, 0x00, 0x03, 0x00, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x05, 0x04, 0xff, 0x00, 0x22, 0x02, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
+int lastExitCode = 0;
+
+#define PROGRAM_INDEX32(address) *(int32_t *)(mem + address)
 
 void setColorLine(int start, int end, CRGB color);
 
@@ -56,7 +85,7 @@ bool functionHandler(uint8_t id)
     {
         // byte random()
         stackPointer -= 4;
-        *(int32_t *)(mem + stackPointer) = (int32_t)random(256);
+        PROGRAM_INDEX32(stackPointer) = (int32_t)random(256);
         break;
     }
     // case 2:
@@ -69,67 +98,67 @@ bool functionHandler(uint8_t id)
     case 3:
     {
         // int min(int, int)
-        int32_t op1 = *(int32_t *)(mem + stackPointer);
+        int32_t op1 = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t op2 = *(int32_t *)(mem + stackPointer);
-        *(int32_t *)(mem + stackPointer) = op1 > op2 ? op2 : op1;
+        int32_t op2 = PROGRAM_INDEX32(stackPointer);
+        PROGRAM_INDEX32(stackPointer) = op1 > op2 ? op2 : op1;
         break;
     }
     case 4:
     {
         // int max(int, int)
-        int32_t op1 = *(int32_t *)(mem + stackPointer);
+        int32_t op1 = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t op2 = *(int32_t *)(mem + stackPointer);
-        *(int32_t *)(mem + stackPointer) = op1 < op2 ? op2 : op1;
+        int32_t op2 = PROGRAM_INDEX32(stackPointer);
+        PROGRAM_INDEX32(stackPointer) = op1 < op2 ? op2 : op1;
         break;
     }
     case 5:
     {
         // int map(int value, int fromLow, int fromHigh, int toLow, int toHigh)
         // Does the same as https://www.arduino.cc/reference/en/language/functions/math/map/
-        int32_t toLow = *(int32_t *)(mem + stackPointer);
+        int32_t toLow = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t toHigh = *(int32_t *)(mem + stackPointer);
+        int32_t toHigh = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t fromHigh = *(int32_t *)(mem + stackPointer);
+        int32_t fromHigh = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t fromLow = *(int32_t *)(mem + stackPointer);
+        int32_t fromLow = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t value = *(int32_t *)(mem + stackPointer);
-        *(int32_t *)(mem + stackPointer) = map(value, fromLow, fromHigh, toLow, toHigh);
+        int32_t value = PROGRAM_INDEX32(stackPointer);
+        PROGRAM_INDEX32(stackPointer) = map(value, fromLow, fromHigh, toLow, toHigh);
         break;
     }
     case 6:
     {
         // int lerp(int from, int to, int percentage)
-        int32_t percentage = *(int32_t *)(mem + stackPointer);
+        int32_t percentage = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t to = *(int32_t *)(mem + stackPointer);
+        int32_t to = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t from = *(int32_t *)(mem + stackPointer);
-        *(int32_t *)(mem + stackPointer) = from + (percentage / 256.0f) * (to - from);
+        int32_t from = PROGRAM_INDEX32(stackPointer);
+        PROGRAM_INDEX32(stackPointer) = from + (percentage / 256.0f) * (to - from);
         break;
     }
     case 7:
     {
         // int clamp(int value, int min, int max)
-        int32_t max = *(int32_t *)(mem + stackPointer);
+        int32_t max = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t min = *(int32_t *)(mem + stackPointer);
+        int32_t min = PROGRAM_INDEX32(stackPointer);
         stackPointer += 4;
-        int32_t value = *(int32_t *)(mem + stackPointer);
+        int32_t value = PROGRAM_INDEX32(stackPointer);
         if (value > max)
         {
-            *(int32_t *)(mem + stackPointer) = max;
+            PROGRAM_INDEX32(stackPointer) = max;
         }
         else if (value < min)
         {
-            *(int32_t *)(mem + stackPointer) = min;
+            PROGRAM_INDEX32(stackPointer) = min;
         }
         else
         {
-            *(int32_t *)(mem + stackPointer) = value;
+            PROGRAM_INDEX32(stackPointer) = value;
         }
         break;
     }
@@ -161,18 +190,18 @@ void setup()
     executed = 0;
     callHandler = functionHandler;
 
-    // Increasing the baud rate will cause corruption and inconsistency
     Serial.begin(BAUD_RATE);
     Serial.println("Starting...");
 
     pinMode(LED_BUILTIN, OUTPUT);
     memset(routes, 0, sizeof(LineEffect *) * MAX_LINES);
 
-    Serial.println("Adding leds");
-    delay(2000);
+    delay(500);
 
-    FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, LED_COUNT);
-    FastLED.setBrightness(40);
+    FastLED.addLeds<WS2812B, DATA_PIN, LED_ORDER>(leds, LED_COUNT);
+    FastLED.setBrightness(BRIGHTNESS);
+
+    Serial.println("Done");
 
     for (int i = 0; i < 5; i++)
     {
@@ -181,48 +210,31 @@ void setup()
         digitalWrite(LED_BUILTIN, false);
         delay(50);
     }
-
-    Serial.println("Ready...");
-    delay(2000);
-    Serial.println("Going");
-
-    // Serial.println("Copying program");
-    // memcpy(mem, program, sizeof(program));
 }
 
 void setColorLine(int start, int end, CRGB color)
 {
-    for (int i = 0; i < LED_COUNT; i++)
+    if (start > end)
     {
-        leds[i] = CRGB(0, 0, 0);
+        for (int i = end; i <= start; i++)
+            leds[i] = color;
     }
-
-    int dir = end > start ? 1 : -1;
-    for (int i = start; i != end && i < LED_COUNT && i >= 0; i += dir)
+    else
     {
-        leds[i] = color;
+        for (int i = start; i <= end; i++)
+            leds[i] = color;
     }
-}
-
-void handleSetIdle()
-{
-    Serial.read();
-    // idleEffect = Serial.read();
-    //Serial.print("Set idle effect ");
-    // Serial.println(idleEffect);
 }
 
 void handleEnableLine()
 {
-    Serial.read();
-    uint8_t id = Serial.read();
-
     // Enable line effect
     uint8_t r = Serial.read(), g = Serial.read(), b = Serial.read();
     uint16_t startLed = Serial.read() << 8 | Serial.read();
     uint16_t endLed = Serial.read() << 8 | Serial.read();
     uint16_t duration = Serial.read() << 8 | Serial.read();
 
+<<<<<<< HEAD
 //    bool exist = false;
 //    for (byte i = 0; i <= MAX_LINES; i++)
 //    {
@@ -239,70 +251,38 @@ void handleEnableLine()
 //    {
 //        id = newId == (MAX_LINES - 1) ? newId = 0 : newId++;
 //    }
+=======
+    // Check if there already exists a line with this range
+    bool exist = false;
+    uint8_t id;
+    for (uint8_t i = 0; i < MAX_LINES; i++)
+    {
+        if (routes[i] && routes[i]->startLed == startLed && routes[i]->endLed == endLed)
+        {
+            id = i;
+            exist = true;
+            break;
+        }
+    }
+    if (!exist)
+    {
+        if (routeIdCounter++ >= MAX_LINES)
+            routeIdCounter = 0;
+        id = routeIdCounter;
+    }
+>>>>>>> ec5d91073185d12108cc96524cb044da25922e2d
 
-    uint64_t endTime = duration > 0 ? millis() + duration * 1000 : 0;
+    uint64_t endTime = millis() + duration * 1000;
     routes[id] = new LineEffect(startLed, endLed, endTime, CRGB(r, g, b));
 
-    //Serial.print("Enable line ");
-    Serial.print(id);
-    /*Serial.print(", startLed=");
-    Serial.print(startLed);
-    Serial.print(", endLed=");
-    Serial.print(endLed);
-    Serial.print(", duration=");
-    Serial.println(duration);*/
-}
-
-void handleDisableLine()
-{
-    Serial.read();
-    int id = Serial.read();
-
-    if (routes[id] != nullptr)
-    {
-        setColorLine(routes[id]->startLed, routes[id]->endLed, CRGB(0, 0, 0));
-        delete routes[id];
-        routes[id] = nullptr;
-    }
-
-    Serial.print("Disable line ");
-    Serial.println(id);
-}
-
-void handleSetRoom()
-{
-    Serial.read();
-    Serial.read();
-    uint8_t room = Serial.read();
-    uint64_t endTime = millis() + 10 * 1000;
-
-    switch (room)
-    {
-    case 0:
-        routes[room] = new LineEffect(0, 50, endTime, CRGB(255, 0, 0));
-        Serial.println("Room 1");
-        break;
-    case 1:
-        routes[room] = new LineEffect(0, 50, endTime, CRGB(0, 255, 0));
-        Serial.println("Room 2");
-        break;
-    case 2:
-        routes[room] = new LineEffect(0, 50, endTime, CRGB(0, 0, 255));
-        Serial.println("Room 3");
-        break;
-    case 3:
-        routes[room] = new LineEffect(0, 50, endTime, CRGB(255, 255, 255));
-        Serial.println("Room 4");
-        break;
-    case 4:
-        routes[room] = new LineEffect(0, 50, endTime, CRGB(255, 255, 0));
-        Serial.println("Room 5");
-        break;
-    case 5:
-        routes[room] = new LineEffect(0, 50, endTime, CRGB(0, 255, 255));
-        Serial.println("Room 6");
-        break;
-    }
+    // Serial.print("Enable line ");
+    // Serial.print(id);
+    // Serial.print(", startLed=");
+    // Serial.print(startLed);
+    // Serial.print(", endLed=");
+    // Serial.print(endLed);
+    // Serial.print(", duration=");
+    // Serial.println(duration);
 }
 
 void handlePackets()
@@ -313,45 +293,44 @@ void handlePackets()
     case -1:
         break;
     case 2:
-        if (Serial.available() >= 11)
+        if (Serial.available() >= 10)
+        {
+            // Consume packettype
+            Serial.read();
             handleEnableLine();
-        break;
-    case 3:
-        if (Serial.available() >= 2)
-            handleDisableLine();
-        break;
-    case 4:
-        if (Serial.available() >= 3)
-            handleSetRoom();
+        }
         break;
     case 5:
         if (Serial.available() >= 5)
         {
-            // handle program receive
+            // Consume packettype
             Serial.read();
 
+            // Handle program receive
             int bytesToReceive = Serial.read() << 8 | Serial.read();
-            int receivePosition = 0;
-            entryPoint = Serial.read() << 8 | Serial.read();
 
-            Serial.print("receiving program, size=");
-            Serial.print(bytesToReceive);
-            Serial.print("/");
-            Serial.print(MAX_PROGRAM_SIZE);
-            Serial.print(", entryPoint=");
-            Serial.println(entryPoint);
+            effectEntryPoint = Serial.read() << 8 | Serial.read();
 
             if (bytesToReceive >= MAX_PROGRAM_SIZE)
             {
-                Serial.println("program is too big, not receiving");
+                Serial.print("program is too big (");
+                Serial.print(bytesToReceive);
+                Serial.print("/");
+                Serial.print(MAX_PROGRAM_SIZE);
+                Serial.println("), not receiving");
+
                 while (Serial.available())
                     Serial.read();
                 return;
             }
 
+            // Remove previous program
             memset(mem, 0, MAX_PROGRAM_SIZE);
+            // Set all leds to black
             memset(leds, 0, LED_COUNT * sizeof(CRGB));
 
+            // Keep receiving bytes until reached bytesToReceive
+            int receivePosition = 0;
             while (receivePosition < bytesToReceive)
             {
                 if (Serial.available() <= 0)
@@ -360,84 +339,157 @@ void handlePackets()
                 mem[receivePosition++] = Serial.read();
             }
 
-            Serial.println("receiving done :DDDDDD");
+            Serial.print("received program successfully :DDDDD (size=");
+            Serial.print(bytesToReceive);
+            Serial.print("/");
+            Serial.print(MAX_PROGRAM_SIZE);
+            Serial.print(", entryPoint=");
+            Serial.print(effectEntryPoint);
+            Serial.println(")");
         }
         break;
+    case 6:
+    {
+        if (Serial.available() >= 8)
+        {
+            // Consume packettype
+            Serial.read();
+
+            uint16_t location = Serial.read() << 8 | Serial.read();
+            uint8_t size = Serial.read();
+            int32_t value = Serial.read() << 24 | Serial.read() << 16 | Serial.read() << 8 | Serial.read();
+
+            if (location >= MAX_PROGRAM_SIZE - size)
+            {
+                Serial.println("set var location too high");
+                return;
+            }
+
+            if (size == 4)
+            {
+                PROGRAM_INDEX32(location) = value;
+            }
+            else if (size == 1)
+            {
+                mem[location] = value;
+            }
+            else
+            {
+                Serial.println("not setting var, invalid size");
+                return;
+            }
+
+            Serial.print("set var at ");
+            Serial.print(location);
+            Serial.print(" to ");
+            Serial.println(value);
+        }
+        break;
+    }
     default:
-        // Consume invalid byte
-        Serial.print("invalid serial byte ");
-        Serial.println(Serial.read());
+        // Consume invalid bytes (packet starts with invalid packet type)
+        Serial.print("consuming ");
+        Serial.print(Serial.available());
+        Serial.println(" invalid serial bytes");
+
+        while (Serial.available() > 0)
+            Serial.read();
         break;
     }
 }
 
-void drawRoutes()
+void drawRoutes(uint32_t time)
 {
+    // Iterate every led
     for (int i = 0; i < LED_COUNT; i++)
     {
-        byte currentColorCount = 0;
-        bool high = false;
-        bool low = false;
-        memset(currentColors, 0, MAX_LINES * sizeof(CRGB));
-        for (byte j = 0; j < MAX_LINES; j++)
+        uint8_t currentColorCount = 0;
+        memset(routeColors, 0, MAX_LINES * sizeof(CRGB));
+        int8_t direction = 0;
+
+        // Check if there are any lines which overlay this led, if so, save its color in currentColors
+        for (uint8_t j = 0; j < MAX_LINES; j++)
         {
-            if (((routes[j]->startLed <= i && routes[j]->endLed >= i) ||
-                 (routes[j]->startLed >= i && routes[j]->endLed <= i)) &&
-                routes[j] != nullptr)
+            if (routes[j] && ((routes[j]->startLed <= i && routes[j]->endLed >= i) ||
+                              (routes[j]->startLed >= i && routes[j]->endLed <= i)))
             {
-                currentColors[currentColorCount] = routes[j]->color;
+                routeColors[currentColorCount] = routes[j]->color;
                 currentColorCount++;
+
                 if (routes[j]->startLed < routes[j]->endLed)
-                    high = true;
+                {
+                    direction--;
+                }
                 else if (routes[j]->startLed > routes[j]->endLed)
-                    low = true;
+                {
+                    direction++;
+                }
             }
         }
+
         if (currentColorCount == 0)
         {
             leds[i] = CRGB(0, 0, 0);
             continue;
         }
-        int colorId = (i / SPLIT_SIZE) % currentColorCount;
-        if (high == true && low == false && currentColorCount > 1)
+        else if (currentColorCount == 1)
         {
-            colorId = (i - shift / SHIFT_INTERVAL + SPLIT_SIZE * currentColorCount) / SPLIT_SIZE % currentColorCount;
+            // Add black if only one color so the direction is still shown
+            routeColors[currentColorCount] = CRGB(0, 0, 0);
+            currentColorCount++;
         }
-        else if (high == false && low == true && currentColorCount > 1)
+
+        int colorIndex;
+        if (direction == 0)
         {
-            colorId = (i + shift / SHIFT_INTERVAL) / SPLIT_SIZE % currentColorCount;
+            colorIndex = i % currentColorCount;
         }
-        leds[i] = currentColors[colorId];
+        else if (direction > 0)
+        {
+            colorIndex = ((i + time / ROUTE_SHIFT_INTERVAL) / ROUTE_SPLIT_SIZE) % currentColorCount;
+        }
+        else // direction < 0
+        {
+            colorIndex = ((i - time / ROUTE_SHIFT_INTERVAL) / ROUTE_SPLIT_SIZE) % currentColorCount;
+        }
+
+        // Update led color by blending it with the new color
+        leds[i] = blend(leds[i], routeColors[colorIndex], ROUTE_BLEND_FACTOR);
     }
-    shift++;
 }
 
 void drawEffect(uint32_t time)
 {
+    // Set timer int variable which is located at 8
     *(uint32_t *)(mem + 8) = (uint32_t)time;
-    int res;
-    for (int i = interlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
+
+    // Execute program for every led on the strip
+    lastExitCode = 0;
+    for (int i = effectInterlacing; i < LED_COUNT; i += INTERLACE_LEVEL)
     {
+        // Set index int variable which is located at 4
         *(uint32_t *)(mem + 4) = i;
+        // Set red byte variable which is located at 0
         mem[0] = leds[i].r;
+        // Set green byte variable which is located at 1
         mem[1] = leds[i].g;
+        // Set blue byte variable which is located at 2
         mem[2] = leds[i].b;
-        // *(uint32_t *)(mem + 0) = 0; //leds[i]
+
+        // Run the program in effect
         stackPointer = MAX_PROGRAM_SIZE;
-        exePointer = entryPoint;
-        res = run();
-        if (res)
+        exePointer = effectEntryPoint;
+        lastExitCode = run();
+        if (lastExitCode)
             break;
+
+        // Update led color with result of program
         leds[i] = CRGB(mem[0], mem[1], mem[2]);
     }
-    if (res)
-    {
-        Serial.print("non 0 exit code ");
-        Serial.println(res);
-    }
-    interlacing++;
-    if (interlacing >= INTERLACE_LEVEL)
-        interlacing = 0;
+
+    effectInterlacing++;
+    if (effectInterlacing >= INTERLACE_LEVEL)
+        effectInterlacing = 0;
 }
 
 void loop()
@@ -456,7 +508,6 @@ void loop()
         // Delete line if it has expired
         if (le->endTime != 0 && le->endTime <= time)
         {
-            setColorLine(le->startLed, le->endLed, CRGB(0, 0, 0));
             delete le;
             routes[i] = nullptr;
             continue;
@@ -466,25 +517,36 @@ void loop()
     }
 
     if (anyRoute)
-        drawRoutes();
-    else
-        drawEffect(time);
-
-    fpsCounter++;
-    if (time - lastShown >= 1000)
     {
-        Serial.print("FPS: ");
-        Serial.println(fpsCounter);
-        Serial.print("executed: ");
-        Serial.println(executed);
-        // Serial.print("a: ");
-        // Serial.println(*(uint32_t *)(mem + 0xc));
-        // Serial.print((int32_t)(executed & 0xFFFFFFFF));
-        // Serial.println((int32_t)(executed >> 32) & 0xFFFFFFFF);
-        lastShown = time;
-        fpsCounter = 0;
-        executed = 0;
+        drawRoutes(time);
+    }
+    else
+    {
+        drawEffect(time);
     }
 
     FastLED.show();
+
+    fpsCounter++;
+    if (time - lastShownInfoTime >= 1000)
+    {
+        // Show frames per second
+        Serial.print("FPS: ");
+        Serial.println(fpsCounter);
+
+        // Show instructions per second
+        Serial.print("IPS: ");
+        Serial.println(executed);
+
+        // Only show exit code if non-zero (error occured)
+        if (lastExitCode)
+        {
+            Serial.print("Error exit code: ");
+            Serial.println(lastExitCode);
+        }
+
+        lastShownInfoTime = time;
+        fpsCounter = 0;
+        executed = 0;
+    }
 }

@@ -1,7 +1,7 @@
 import { throws } from "assert/strict";
 import io from "socket.io-client";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { LedControllerServerMessage } from "./message";
+import { IdeInfo, LedControllerServerMessage } from "./message";
 import qs from "querystring";
 
 export const isDevelopment = process.env.NODE_ENV === "development";
@@ -19,7 +19,10 @@ export interface Effect {
     name: string;
     code: string;
     id: number;
+    createdAt: string;
+    modifiedAt: string;
     active?: boolean;
+    favorite: boolean;
     lastError: string | null;
     author?: {
         id: string;
@@ -58,7 +61,7 @@ export class RGBClient extends TypedEmitter<Events> {
         this.accessToken = token;
         if (token) {
             // Try to get the user
-            let res = await fetch(serverPath + "/api/user", {
+            let res = await fetch(serverPath + "/api/user/me", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -102,19 +105,11 @@ export class RGBClient extends TypedEmitter<Events> {
     }
 
     public async unbind() {
-        return await this.doFetch("/api/unbind", "POST");
+        return await this.doFetch("/api/user/unbind", "POST");
     }
 
-    public async sendRoom(room: number) {
-        let req: LedControllerServerMessage = {
-            type: "roomEffect",
-            room: room,
-        };
-        return await this.doFetch("/api/leds", "POST", req);
-    }
-
-    public async getEffects(code: boolean = false, onlyUser: boolean = false) {
-        return await this.doFetch("/api/effect?" + qs.stringify({ code, onlyUser }), "GET");
+    public async getEffects(includeCode: boolean = false, authorId?: string) {
+        return await this.doFetch("/api/effect?" + qs.stringify({ code: includeCode, authorId }), "GET");
     }
 
     public async getEffect(id: number) {
@@ -132,63 +127,74 @@ export class RGBClient extends TypedEmitter<Events> {
         return await this.doFetch("/api/effect", "POST", effect);
     }
 
+    public async setCarrousel(interval: number | undefined) {
+        return await this.doFetch(`/api/effect/carrousel/${interval || 0}`, "POST");
+    }
+
+    public async favoriteEffect(effectId: number, favorite: boolean) {
+        return await this.doFetch(`/api/effect/${effectId}?favorite=${String(favorite)}`, "PATCH");
+    }
+
     public async updateEffect(effect: { name: string; code: string; id: number }) {
-        return await this.doFetch("/api/effect", "PATCH", effect);
+        return await this.doFetch("/api/effect/" + effect.id, "PUT", effect);
     }
 
-    public async buildEffect(id: number, upload: boolean): Promise<{ status: "error"; error: string } | { status: "ok" }> {
-        return await this.doFetch("/api/effect/build/" + id + (upload ? "?upload=true" : ""), "POST");
+    public async buildEffect(id: number, upload: boolean = true): Promise<{ status: "error"; error: string } | { status: "ok" }> {
+        return await this.doFetch(`/api/effect/${id}/build` + (upload ? "?upload=true" : ""), "POST");
     }
 
-    public async ledController(startLed: number, endLed: number, duration: number, color: string) {
-        let c = hexToRgb(color)!;
-        let req: LedControllerServerMessage = {
-            type: "enableLine",
+    public async setEffectVar(varName: string, value: number) {
+        return await this.doFetch(`/api/effectVar/${varName}/${value}`, "POST");
+    }
+
+    public async enableLedRoomRoute(roomNumber: number) {
+        return await this.doFetch("/api/roomRoute/" + roomNumber, "POST");
+    }
+
+    public async enableLedRoute(startLed: number, endLed: number, duration: number, color: string) {
+        let c = hexToRgb(color);
+        if (!c) return;
+        return await this.doFetch("/api/route", "POST", {
             duration: duration,
             startLed: startLed,
             endLed: endLed,
             r: c.r,
             g: c.g,
             b: c.b,
-        };
-        return await this.doFetch("/api/leds", "POST", req);
+        });
     }
 
-    public async getToken() {
-        return await this.doFetch("/api/createToken", "GET");
+    public async createApiKey(description?: string): Promise<{ status: "ok"; token: string }> {
+        return await this.doFetch("/api/apikey", "POST", { description });
     }
 
-    public async getTokens() {
-        return await this.doFetch("/api/getTokens", "GET");
+    public async getApiKeys(): Promise<{
+        status: "ok";
+        tokens: { author: { name: string; email: string; id: string } }[];
+        made: string;
+        description?: string;
+    }> {
+        return await this.doFetch("/api/apikey", "GET");
     }
 
-    public async deleteToken(id: any) {
-        let req = {
-            id: id,
-        };
-        return await this.doFetch("/api/deleteToken", "DELETE", req);
+    public async deleteApiKey(id: number) {
+        return await this.doFetch("/api/apikey/" + id, "DELETE");
     }
 
     public async getUsers() {
-        return await this.doFetch("/api/users", "GET");
+        return await this.doFetch("/api/user", "GET");
     }
 
-    public async giveAdmin(user: any) {
-        let req = {
-            id: user.id,
-        };
-        return await this.doFetch("/api/giveAdmin", "PUT", req);
+    public async giveAdmin(userId: string) {
+        return await this.doFetch(`/api/user/${userId}/admin`, "PUT");
     }
 
-    public async takeAdmin(user: any) {
-        let req = {
-            id: user.id,
-        };
-        return await this.doFetch("/api/takeAdmin", "PUT", req);
+    public async takeAdmin(userId: string) {
+        return await this.doFetch(`/api/user/${userId}/admin`, "DELETE");
     }
 
-    public async lessenrooster() {
-        return await this.doFetch("/api/lessenrooster", "GET");
+    public async ideInfo(): Promise<IdeInfo> {
+        return await this.doFetch("/api/ideInfo", "GET");
     }
 }
 

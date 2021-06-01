@@ -27,11 +27,12 @@ export function Complete() {
     let [status, setStatus] = useState<Status>("loading");
 
     useEffect(() => {
+        let bindTask: number | undefined = undefined;
         function tryBind() {
             client.socket.emit("bind", { roomId: "dgang", token: client.accessToken }, (res: any) => {
                 if (res.status === "busy" || res.status === "error") {
-                    console.log("bind is busy, trying again in 4 seconds", res);
-                    setTimeout(tryBind, 3000 + Math.random() * 2000);
+                    console.log("bind is busy, trying again in 3 seconds", res);
+                    bindTask = setTimeout(tryBind, 1000 + Math.random() * 2000) as any as number;
                     setStatus("waiting-for-others");
                 } else if (res.status === "ok") {
                     setStatus("scan");
@@ -45,6 +46,9 @@ export function Complete() {
         } else {
             tryBind();
         }
+        return () => {
+            if (bindTask !== undefined) clearTimeout(bindTask);
+        };
     }, [client.user, client.user?.identifier]);
 
     useEffect(() => {
@@ -67,6 +71,7 @@ export function Complete() {
         client.socket.on("nfcBound", onNfcBound);
         client.socket.on("userShouldFollow", onUserFollow);
         return () => {
+            client.socket.emit("nobind", { roomId: "dgang" });
             client.socket.off("nfcAlreadyBound", onNfcAlreadyBound);
             client.socket.off("nfcBound", onNfcBound);
             client.socket.off("userShouldFollow", onUserFollow);

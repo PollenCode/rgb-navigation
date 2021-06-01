@@ -301,8 +301,18 @@ export class ReferenceToken extends Token {
     setTypes(scope: Scope): void {
         this.variable = scope.getVar(this.varName)!;
         if (!this.variable) throw new TypeError(`Unknown variable '${this.varName}'`, this);
+
         this.type = this.variable.type;
-        if (!this.variable.volatile) this.constantValue = scope.getVarKnownValue(this.varName);
+
+        if (this.variable.constant) {
+            this.constantValue = scope.getVarKnownValue(this.varName);
+            if (this.constantValue === undefined) {
+                throw new TypeError(
+                    `Constant variable '${this.varName}' value is not known at this moment, please assign it a value before using it`,
+                    this
+                );
+            }
+        }
     }
 
     toString() {
@@ -365,7 +375,14 @@ export function expectValue(c: Lexer) {
 export class AssignmentToken extends Token {
     variable!: Var;
 
-    constructor(context: Lexer, position: number, public typeName: string | undefined, public varName: string, public value: Token | undefined) {
+    constructor(
+        context: Lexer,
+        position: number,
+        public typeName: string | undefined,
+        public varName: string,
+        public value: Token | undefined,
+        public constant: boolean
+    ) {
         super(TokenId.Assignment, context, position);
     }
 
@@ -392,17 +409,26 @@ export class AssignmentToken extends Token {
             if (scope.hasVar(this.varName)) {
                 throw new TypeError(`Variable ${this.varName} has already been declared before`, this);
             }
-            this.variable = scope.defineVar(this.varName, { type: this.type, volatile: false })!;
+            this.variable = scope.defineVar(this.varName, { type: this.type, constant: this.constant })!;
 
             if (this.value) {
                 if (this.value.type.size > this.type.size) {
                     warning(`Possible data loss when assigning type ${this.value.type.name} to ${this.type.name}`);
                 }
+
+                this.constantValue = this.value.constantValue;
                 if (!this.value.type.isAssignableTo(this.type)) {
                     throw new TypeError(`Type ${this.value.type.name} is not assignable to ${this.type.name}`, this);
                 }
-                // this.constantValue = this.value.constantValue;
-                scope.setVarKnownValue(this.varName, this.value.constantValue);
+
+                if (this.variable.constant && this.constantValue === undefined) {
+                    throw new TypeError(
+                        `Because variable ${this.varName} is constant, it can only be assigned with values that are known at compile-time`,
+                        this
+                    );
+                }
+
+                scope.setVarKnownValue(this.varName, this.constantValue);
             }
         } else {
             // Set variable
@@ -410,16 +436,21 @@ export class AssignmentToken extends Token {
             if (!this.variable) {
                 throw new TypeError(`Variable ${this.varName} was not found`, this);
             }
-            if (this.variable.readonly) {
-                throw new TypeError(`Variable ${this.varName} is read-only`, this);
-            }
 
             this.type = this.variable.type;
+            this.constantValue = this.value!.constantValue;
             if (!this.value!.type.isAssignableTo(this.variable.type)) {
                 throw new TypeError(`Type ${this.value!.type.name} is not assignable to ${this.variable.type.name}`, this);
             }
-            // this.constantValue = this.value!.constantValue;
-            scope.setVarKnownValue(this.varName, this.value!.constantValue);
+
+            if (this.variable.constant && this.constantValue === undefined) {
+                throw new TypeError(
+                    `Because variable ${this.varName} is constant, it can only be assigned with values that are known at compile-time`,
+                    this
+                );
+            }
+
+            scope.setVarKnownValue(this.varName, this.constantValue);
         }
     }
 
@@ -463,9 +494,9 @@ export function expectAssignment(c: Lexer) {
     }
 
     if (name1) {
-        return new AssignmentToken(c, position, name0, name1, value);
+        return new AssignmentToken(c, position, name0, name1, value, name1 === name1.toUpperCase());
     } else {
-        return new AssignmentToken(c, position, undefined, name0, value);
+        return new AssignmentToken(c, position, undefined, name0, value, false);
     }
 }
 

@@ -2,11 +2,9 @@ import EventEmitter from "events";
 import SerialPort from "serialport";
 
 export enum SerialPacketType {
-    Effect = 1,
     EnableLine = 2,
-    DisableLine = 3,
-    Room = 4,
     Program = 5,
+    SetVar = 6,
 }
 
 export class SerialLedController {
@@ -40,16 +38,10 @@ export class SerialLedController {
         this.port.write(buffer);
     }
 
-    public sendEffect(effectType: number) {
-        this.port.write(Buffer.from([SerialPacketType.Effect, effectType]));
-    }
-
-    public sendEnableLine(id: number, r: number, g: number, b: number, startLed: number, endLed: number, duration: number) {
-        // console.log(`enable id=${id} startLed=${startLed} endLed=${endLed} duration=${duration}`);
+    public sendEnableLine(r: number, g: number, b: number, startLed: number, endLed: number, duration: number) {
         this.port.write(
             Buffer.from([
                 SerialPacketType.EnableLine,
-                id,
                 r,
                 g,
                 b,
@@ -63,15 +55,6 @@ export class SerialLedController {
         );
     }
 
-    public sendDisableLine(id: number) {
-        // console.log(`disable id=${id}`);
-        this.port.write(Buffer.from([SerialPacketType.DisableLine, id]));
-    }
-
-    public sendRoom(id: number, room: number) {
-        this.port.write(Buffer.from([SerialPacketType.Room, id, room]));
-    }
-
     public uploadProgram(program: Buffer, entryPoint: number) {
         let buffer = Buffer.alloc(program.length + 5);
         buffer.writeInt8(SerialPacketType.Program, 0);
@@ -79,5 +62,20 @@ export class SerialLedController {
         buffer.writeInt16BE(entryPoint, 3);
         program.copy(buffer, 5, 0, program.length);
         this.port.write(buffer);
+    }
+
+    public sendSetVar(location: number, size: 1 | 4, value: number) {
+        this.port.write(
+            Buffer.from([
+                SerialPacketType.SetVar,
+                (location >> 8) & 0xff,
+                location & 0xff,
+                size,
+                (value >> 24) & 0xff,
+                (value >> 16) & 0xff,
+                (value >> 8) & 0xff,
+                value & 0xff,
+            ])
+        );
     }
 }

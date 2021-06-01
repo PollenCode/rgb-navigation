@@ -4,15 +4,18 @@ import { SerialLedController } from "./communicate";
 import fetch from "node-fetch";
 global.fetch = fetch as any;
 import { LedControllerServerMessage, RGBClient } from "rgb-navigation-api";
+import debug from "debug";
+
+const logger = debug("rgb:arduino");
 
 // Read from .env file
-const { SERIAL_PORT, BAUD_RATE } = process.env;
-if (!SERIAL_PORT || !BAUD_RATE) {
-    console.error("Please create an .env file and restart the server. (You should copy the .env.example file)");
+const { SERIAL_PORT, BAUD_RATE, TOKEN } = process.env;
+if (!SERIAL_PORT || !BAUD_RATE || !TOKEN) {
+    logger("Please create an .env file and restart the server. (You should copy the .env.example file)");
     process.exit(-1);
 }
 
-console.log(`opening serial port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
+logger(`opening serial port ${SERIAL_PORT} with baud rate ${BAUD_RATE}`);
 
 let client = new RGBClient();
 let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
@@ -37,33 +40,33 @@ let arduino = new SerialLedController(SERIAL_PORT, parseInt(BAUD_RATE));
 // setTimeout(() => arduino.sendEffect(1), 1000);
 
 async function processMessage(data: LedControllerServerMessage) {
-    console.log("receive", data);
+    logger("receive", data.type);
     switch (data.type) {
         case "enableLine":
-            arduino.sendEnableLine(1, data.r, data.g, data.b, data.startLed, data.endLed, data.duration);
-            break;
-        case "roomEffect":
-            arduino.sendRoom(1, data.room);
+            arduino.sendEnableLine(data.r, data.g, data.b, data.startLed, data.endLed, data.duration);
             break;
         case "uploadProgram":
             arduino.uploadProgram(Buffer.from(data.byteCode, "hex"), data.entryPoint);
             break;
+        case "setVar":
+            arduino.sendSetVar(data.location, data.size as 1 | 4, data.value);
+            break;
         default:
-            console.warn(`received unknown message ${JSON.stringify(data)}`);
+            logger(`received unknown message ${JSON.stringify(data)}`);
             break;
     }
 }
 
 arduino.port.on("data", (data) => {
-    client.socket.emit("arduinoOutput", { type: "data", data: data.toString("utf-8") });
+    client.socket.emit("arduinoOutput", { token: TOKEN, type: "data", data: data.toString("utf-8") });
 });
 
 arduino.port.on("error", (data) => {
-    client.socket.emit("arduinoOutput", { type: "error", data: String(data) });
+    client.socket.emit("arduinoOutput", { token: TOKEN, type: "error", data: String(data) });
 });
 
 client.socket.on("connect", () => {
-    console.log("connected");
+    logger("connected");
 });
 
 client.socket.emit("subscribe", { roomId: "dgang" });

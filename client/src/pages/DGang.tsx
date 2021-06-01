@@ -15,25 +15,28 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(0);
-                        }}>
-                        Lokaal 1
+                            client.enableLedRoomRoute(0);
+                        }}
+                    >
+                        D027
                     </Button>
                     <Button
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(1);
-                        }}>
-                        Lokaal 2
+                            client.enableLedRoomRoute(1);
+                        }}
+                    >
+                        D029
                     </Button>
                     <Button
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(2);
-                        }}>
-                        Lokaal 3
+                            client.enableLedRoomRoute(2);
+                        }}
+                    >
+                        D030
                     </Button>
                 </div>
                 <div className="flex items-center flex-col">
@@ -41,25 +44,28 @@ export function DGang() {
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(3);
-                        }}>
-                        Lokaal 4
+                            client.enableLedRoomRoute(3);
+                        }}
+                    >
+                        D034a
                     </Button>
                     <Button
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(4);
-                        }}>
-                        Lokaal 5
+                            client.enableLedRoomRoute(4);
+                        }}
+                    >
+                        D034b
                     </Button>
                     <Button
                         style={{ margin: "0.5em" }}
                         type="button"
                         onClick={async () => {
-                            client.sendRoom(5);
-                        }}>
-                        Lokaal 6
+                            client.enableLedRoomRoute(5);
+                        }}
+                    >
+                        D035
                     </Button>
                 </div>
             </div>

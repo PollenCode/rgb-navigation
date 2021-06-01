@@ -20,7 +20,7 @@ import {
     faUpload,
     IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
-import { Effect, LedControllerMessage } from "rgb-navigation-api";
+import { Effect, IdeInfo, LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
 import { BlockToken, ByteType, IntType, JavascriptTarget, parseProgram, Scope, SyntaxError, TypeError, VoidType } from "rgb-compiler";
@@ -33,10 +33,11 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     const [effect, setEffect] = useState<Effect>();
     const [code, setCode] = useState<string>();
     const [loading, setLoading] = useState(false);
+    const [ideInfo, setIdeInfo] = useState<IdeInfo>();
     // const [status, setStatus] = useState<{ percent: number; status: string }>({ percent: 0, status: "" });
     const [showOutput, setShowOutput] = useState(false);
     const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor>();
-    const readOnly = !effect || !effect.author || !client.user || client.user.id !== effect.author.id;
+    const readOnly = !effect || !effect.author || !client.user || (client.user.id !== effect.author.id && !client.user.admin);
     const history = useHistory();
     const outputRef = useRef<HTMLPreElement>(null);
     const simulateDataRef = useRef<HTMLPreElement>(null);
@@ -67,14 +68,15 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     }
 
     useEffect(() => {
-        if (!monaco) return;
+        if (!monaco || !ideInfo) return;
         if (!monaco.languages.getLanguages().some((e) => e.id === "rgb-lang")) {
-            registerLanguage(monaco);
+            registerLanguage(monaco, ideInfo);
         }
-    }, [monaco]);
+    }, [monaco, ideInfo]);
 
     useEffect(() => {
         client.getEffect(parseInt(props.match.params.id)).then(setEffect);
+        client.ideInfo().then(setIdeInfo);
 
         function onArduinoData(data: LedControllerMessage) {
             appendOutput(data.data, data.type === "error");
@@ -88,10 +90,6 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
         window.addEventListener("simulate-data" as any, onSimulateData);
         client.socket.on("arduinoOutput", onArduinoData);
         client.socket.emit("arduinoSubscribe", true);
-
-        for (let i = 0; i < 100; i++) {
-            appendOutput("starting...\n");
-        }
 
         return () => {
             client.socket.off("arduinoOutput", onArduinoData);
@@ -125,15 +123,15 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
     }
 
     async function updateName(name: string) {
-        if (!name) return;
+        if (!name || readOnly) return;
         setEffect(await client.updateEffect({ name: name, code: effect!.code, id: effect!.id }));
     }
 
     async function save() {
         setLoading(true);
         let eff = await client.updateEffect({ name: effect!.name, code: code!, id: effect!.id });
-        await new Promise((res) => setTimeout(res, 500));
         setEffect(eff);
+        await new Promise((res) => setTimeout(res, 300));
         setLoading(false);
     }
 
@@ -144,10 +142,11 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
             );
         }
 
-        setLoading(true);
-        setShowOutput(true);
+        if (!readOnly) await save();
+
         clearOutput();
-        if (effect!.author!.id === client.user!.id) await save();
+        setShowOutput(true);
+        setLoading(true);
 
         let res = await client.buildEffect(effect!.id, true);
         if (res.status === "error") {
@@ -187,28 +186,17 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     </span>
                 )}
                 {effect && (
-                    <Button
-                        style={{ marginRight: "0.3em" }}
-                        loading={loading}
-                        icon={faUpload}
-                        disabled={loading || !client.user?.admin}
-                        onClick={build}>
+                    <Button style={{ marginRight: "0.3em" }} loading={loading} icon={faUpload} disabled={loading} onClick={build}>
                         Upload
                     </Button>
                 )}
                 {effect && !readOnly && (
-                    <Button
-                        allowSmall
-                        style={{ marginRight: "0.3em" }}
-                        loading={loading}
-                        icon={faSave}
-                        disabled={loading || effect.code === code}
-                        onClick={save}>
+                    <Button allowSmall style={{ marginRight: "0.3em" }} icon={faSave} disabled={loading || effect.code === code} onClick={save}>
                         Opslaan
                     </Button>
                 )}
                 {effect && (
-                    <Button allowSmall style={{ marginRight: "0.3em" }} loading={loading} icon={faFileAlt} onClick={() => setShowOutput(!showOutput)}>
+                    <Button allowSmall style={{ marginRight: "0.3em" }} icon={faFileAlt} onClick={() => setShowOutput(!showOutput)}>
                         {showOutput ? "Sluit" : "Toon"} output
                     </Button>
                 )}
@@ -227,8 +215,11 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                     {status.status}
                 </div>
             </div> */}
-            <div className="flex-grow flex-shrink relative w-full max-w-full">
+            <div className="flex-grow relative w-full max-w-full flex flex-col">
                 <Editor
+                    loading={<FontAwesomeIcon icon={faCircleNotch} className="animate-spin text-3xl opacity-50" />}
+                    className="flex-grow flex flex-col"
+                    wrapperClassName="flex-grow"
                     onMount={(editor) => {
                         setEditor(editor);
                     }}
@@ -263,14 +254,14 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
                             <FontAwesomeIcon icon={faTimes} />
                         </span>
                         <div className="flex overflow-hidden">
-                            <div className=" flex-grow overflow-hidden">
+                            <div className=" flex-grow overflow-hidden text-xs lg:text-base">
                                 <h2 className="px-4 py-2 font-bold mb-1">Output</h2>
                                 <pre
                                     className="px-4 py-2 overflow-auto max-h-80 h-80"
                                     style={{ borderRight: "1px solid #222" }}
                                     ref={outputRef}></pre>
                             </div>
-                            <div className=" flex-shrink-0 w-72">
+                            <div className=" flex-shrink-0 w-40 lg:w-72 text-xs lg:text-base">
                                 <h2 className="px-4 py-2 font-bold">Memory</h2>
                                 <pre className="px-4 py-2 overflow-hidden" ref={simulateDataRef}></pre>
                                 <small className="px-4 py-2 mb-t block opacity-40">(waardes van de laatste led)</small>
@@ -285,13 +276,13 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
 
 function tryCompile(monaco: Monaco, code: string, model: monaco.editor.ITextModel) {
     let scope = new Scope();
-    scope.defineVar("timer", { type: new IntType(), volatile: true, readonly: true });
-    scope.defineVar("index", { type: new IntType(), volatile: true, readonly: true });
-    scope.defineVar("LED_COUNT", { type: new IntType(), readonly: true });
+    scope.defineVar("timer", { type: new IntType() });
+    scope.defineVar("index", { type: new IntType() });
+    scope.defineVar("LED_COUNT", { type: new IntType(), constant: true });
     scope.setVarKnownValue("LED_COUNT", 784);
-    scope.defineVar("r", { type: new ByteType(), volatile: true });
-    scope.defineVar("g", { type: new ByteType(), volatile: true });
-    scope.defineVar("b", { type: new ByteType(), volatile: true });
+    scope.defineVar("r", { type: new ByteType() });
+    scope.defineVar("g", { type: new ByteType() });
+    scope.defineVar("b", { type: new ByteType() });
     scope.defineFunc("sin", { returnType: new IntType(), parameterCount: 1 });
     scope.defineFunc("cos", { returnType: new IntType(), parameterCount: 1 });
     scope.defineFunc("abs", { returnType: new IntType(), parameterCount: 1 });
@@ -350,127 +341,7 @@ function tryCompile(monaco: Monaco, code: string, model: monaco.editor.ITextMode
     }
 }
 
-function getInfoForFunction(functionName: string): monaco.languages.SignatureInformation[] {
-    switch (functionName) {
-        case "sin":
-            return [
-                {
-                    label: "int sin(int value)",
-                    documentation: "Calculates sine of a value",
-                    parameters: [{ label: "int value", documentation: "0 is mapped to 0pi and 256 is mapped to 2pi" }],
-                },
-            ];
-        case "cos":
-            return [
-                {
-                    label: "int cos(int value)",
-                    documentation: "Calculates cosine of a value",
-                    parameters: [{ label: "int value", documentation: "0 is mapped to 0pi and 256 is mapped to 2pi" }],
-                },
-            ];
-        case "abs":
-            return [
-                {
-                    label: "int abs(int value)",
-                    documentation: "Calculates the absolute value of value",
-                    parameters: [{ label: "int value" }],
-                },
-            ];
-        case "hsv":
-            return [
-                {
-                    label: "void hsv(byte h, byte s, byte v)",
-                    documentation: "Sets the r, g and b variables using the hsv colorspace",
-                    parameters: [
-                        { label: "h", documentation: "The colors hue (0 -> 255)" },
-                        { label: "s", documentation: "The colors saturation (0 -> 255)" },
-                        { label: "v", documentation: "The brightness of the color (0 -> 255)" },
-                    ],
-                },
-            ];
-        case "map":
-            return [
-                {
-                    label: "int map(int value, int fromLow, int fromHigh, int toLow, int toHigh)",
-                    documentation:
-                        "Re-maps a number from one range to another. That is, a value of fromLow would get mapped to toLow, a value of fromHigh to toHigh, values in-between to values in-between, etc.",
-                    parameters: [
-                        { label: "value", documentation: "The number to map." },
-                        { label: "fromLow", documentation: "The lower bound of the value’s current range" },
-                        { label: "fromHigh", documentation: "The upper bound of the value’s current range" },
-                        { label: "toLow", documentation: "The lower bound of the value’s target range" },
-                        { label: "toHigh", documentation: "The upper bound of the value’s target range" },
-                    ],
-                },
-            ];
-        case "max":
-            return [
-                {
-                    label: "int max(int value1, int value2)",
-                    documentation: "Returns the highest value of value1/value2",
-                    parameters: [{ label: "value1" }, { label: "value2" }],
-                },
-            ];
-        case "min":
-            return [
-                {
-                    label: "int min(int value1, int value2)",
-                    documentation: "Returns the lowest value of value1/value2",
-                    parameters: [{ label: "value1" }, { label: "value2" }],
-                },
-            ];
-        case "clamp":
-            return [
-                {
-                    label: "int clamp(int value, int min, int max)",
-                    documentation: "Limits value between min and max",
-                    parameters: [{ label: "value" }, { label: "min" }, { label: "max" }],
-                },
-            ];
-        case "lerp":
-            return [
-                {
-                    label: "int lerp(int a, int b, int percentage)",
-                    documentation: "Goes from a to b, percentage (0 -> 256) determines which number between a and b to return",
-                    parameters: [
-                        { label: "a" },
-                        { label: "b" },
-                        {
-                            label: "percentage",
-                            documentation: "(0 -> 255), when 0 returns a, when 255 returns b, otherwise a number between a and b",
-                        },
-                    ],
-                },
-            ];
-        // case "out":
-        //     return [{ label: "int out(int value)", documentation: "Prints a value to the console and returns it", parameters: [{ label: "value" }] }];
-        case "random":
-            return [{ label: "byte random()", documentation: "Returns a random value between 0 -> 255", parameters: [] }];
-        default:
-            return [];
-    }
-}
-
-function getFunctions(): { name: string; documentation?: string }[] {
-    return [
-        // Macros
-        { name: "sin", documentation: "Calculates sine" },
-        { name: "cos", documentation: "Calculates cosine" },
-        { name: "abs", documentation: "Calculates absolute value" },
-
-        // Functions
-        { name: "out", documentation: "Prints a value to the console and returns it" },
-        { name: "hsv", documentation: "Sets the r, g and b variables using the hsv colorspace" },
-        { name: "min", documentation: "Returns the lowest value of 2 values" },
-        { name: "max", documentation: "Returns the highest value of 2 values" },
-        { name: "random", documentation: "Returns a random byte" },
-        { name: "lerp", documentation: "Linearly interpolates between 2 values" },
-        { name: "clamp", documentation: "Limit a value between min and max" },
-        { name: "map", documentation: "Re-maps a number from one range to another. " },
-    ];
-}
-
-function findVariables(monaco: Monaco, model: monaco.editor.ITextModel): monaco.languages.CompletionItem[] {
+function findVariables(monaco: Monaco, ideInfo: IdeInfo, model: monaco.editor.ITextModel): monaco.languages.CompletionItem[] {
     let vars = Array.from(model!.findMatches("(int|float|byte)+\\s+([a-z0-9]+)\\s*(;|=)", false, true, false, null, true)).map(
         (e) =>
             ({
@@ -481,15 +352,7 @@ function findVariables(monaco: Monaco, model: monaco.editor.ITextModel): monaco.
             } as monaco.languages.CompletionItem)
     );
 
-    const DEFAULT_VARS: { name: string; documentation?: string }[] = [
-        { name: "index", documentation: "The number of the current led" },
-        { name: "timer", documentation: "Time in milliseconds since the program has started" },
-        { name: "r", documentation: "The red value of the current led (the index-th led)" },
-        { name: "g", documentation: "The green value of the current led (the index-th led)" },
-        { name: "b", documentation: "The blue value of the current led (the index-th led)" },
-        { name: "LED_COUNT", documentation: "The amount of leds in the ledstrip" },
-    ];
-    DEFAULT_VARS.forEach((e) =>
+    ideInfo.variables.forEach((e) =>
         vars.push({
             label: e.name,
             insertText: e.name,
@@ -503,7 +366,7 @@ function findVariables(monaco: Monaco, model: monaco.editor.ITextModel): monaco.
     return vars;
 }
 
-function registerLanguage(monaco: Monaco) {
+function registerLanguage(monaco: Monaco, ideInfo: IdeInfo) {
     console.log("registering language...");
     monaco.languages.register({ id: "rgb-lang" });
     monaco.languages.setMonarchTokensProvider("rgb-lang", {
@@ -511,7 +374,7 @@ function registerLanguage(monaco: Monaco) {
             root: [
                 [/\/\/.*/, "comment"],
                 [/\b(if|else|int|byte|halt)\b/, "keyword"],
-                [/(=|==|>|<|>=|\|\||<=|\+|\/|-|\*|%|\^|:|\?)/, "operator"],
+                [/(=|==|>|<|>=|\|\||&&|<=|\+|\/|-|\*|%|\^|:|\?)/, "operator"],
                 [/\b(\d+)\b/, "number"],
             ],
         },
@@ -563,15 +426,23 @@ function registerLanguage(monaco: Monaco) {
                 }
             }
             if (!functionName) return;
-            console.log("functionName", functionName, parameterIndex);
+            // console.log("functionName", functionName, parameterIndex);
 
-            let functionInfo = getInfoForFunction(functionName);
+            let functionInfo = ideInfo.functions.find((e) => e.name === functionName);
             return {
                 dispose: () => {},
                 value: {
                     activeParameter: parameterIndex,
                     activeSignature: 0,
-                    signatures: functionInfo,
+                    signatures: functionInfo
+                        ? [
+                              {
+                                  label: functionInfo.signature,
+                                  documentation: functionInfo.documentation,
+                                  parameters: functionInfo.parameters,
+                              },
+                          ]
+                        : [],
                 },
             };
         },
@@ -597,8 +468,8 @@ function registerLanguage(monaco: Monaco) {
                     label: "halt",
                     documentation: "Exits this program",
                 },
-                ...findVariables(monaco, model),
-                ...getFunctions().map((e) => ({
+                ...findVariables(monaco, ideInfo, model),
+                ...ideInfo.functions.map((e) => ({
                     kind: monaco.languages.CompletionItemKind.Function,
                     insertText: e.name,
                     range: undefined as any,

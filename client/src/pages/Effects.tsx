@@ -1,4 +1,4 @@
-import React, { HTMLProps, useContext, useEffect, useRef, useState } from "react";
+import React, { HTMLProps, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Prompt, RouteComponentProps, useHistory } from "react-router";
 import { Link, NavLink, NavLinkProps } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
@@ -15,14 +15,18 @@ import {
     faPen,
     faPlus,
     faSave,
+    faStar,
     faTimes,
     faTrash,
+    faUndo,
     faUpload,
     IconDefinition,
 } from "@fortawesome/free-solid-svg-icons";
 import { Effect, LedControllerMessage } from "rgb-navigation-api";
 import { List, ListItem } from "../components/List";
 import monaco from "monaco-editor";
+import ms from "ms";
+import { Timer } from "../components/Timer";
 
 function EffectListItemButton(props: {
     icon?: IconDefinition;
@@ -41,97 +45,129 @@ function EffectListItemButton(props: {
                 props.onClick?.(ev);
             }}>
             <span className="hidden md:inline">{props.children}</span>
-            {props.icon && <FontAwesomeIcon className="ml-1" icon={props.icon} />}
+            {props.icon && <FontAwesomeIcon className="text-lg md:text-base md:ml-1" icon={props.icon} />}
         </button>
     );
 }
 
-function EffectListItem(props: { effect: Effect; onClick?: () => Promise<void> }) {
+function EffectListItem(props: { effect: Effect; onActivate: () => Promise<void>; onFavorite: () => void; showAuthor: boolean }) {
     const client = useContext(AuthContext);
     const history = useHistory();
-    const readOnly = !client.user || !props.effect.author || client.user.id !== props.effect.author.id;
+    const readOnly = !client.user || !props.effect.author || (client.user.id !== props.effect.author.id && !client.user.admin);
     const [loading, setLoading] = useState(false);
+
     return (
-        <ListItem
-            error={!!props.effect.lastError}
-            active={props.effect.active}
-            onClick={async () => {
-                setLoading(true);
-                await props.onClick?.();
-                setLoading(false);
-            }}>
-            {(props.effect.active || props.effect.lastError || loading) && (
-                <span className={`${props.effect.lastError ? "text-red-600" : "text-blue-600"} text-lg overflow-hidden pl-3.5`}>
-                    <FontAwesomeIcon
-                        className={`${loading ? "animate-spin" : "pop-in"}`}
-                        icon={loading ? faCircleNotch : props.effect.lastError ? faTimes : faCheckCircle}
-                    />
+        <ListItem active={props.effect.active} onClick={() => history.push(`/effects/${props.effect.id}`)}>
+            {(props.effect.active || loading) && (
+                <span className={`text-blue-600 text-lg overflow-hidden pl-3.5`}>
+                    <FontAwesomeIcon className={`${loading ? "animate-spin" : "pop-in"}`} icon={loading ? faCircleNotch : faCheckCircle} />
                 </span>
             )}
-            <span className={`font-semibold py-2 pl-3.5 ${props.effect.lastError ? "text-red-600" : props.effect.active ? "text-blue-600" : ""}`}>
-                {props.effect.name}
-            </span>
-            {props.effect.author && props.effect.author.id !== client.user?.id && (
-                <span className="ml-1.5 text-sm text-gray-400 py-2" title={props.effect.author.email}>
-                    (door {props.effect.author.name})
-                </span>
-            )}
+
+            <div className="leading-4 py-2 pl-3.5 mt-1">
+                <span className={`font-semibold py-2 ${props.effect.active ? "text-blue-600" : ""}`}>{props.effect.name}</span>
+
+                <div className="opacity-50 lg:text-sm text-xs flex">
+                    {props.effect.author && props.showAuthor && (
+                        <>
+                            <small className="whitespace-nowrap" title={props.effect.author.email}>
+                                Door {props.effect.author.name}
+                            </small>
+                            <span className="mx-1">·</span>
+                        </>
+                    )}
+
+                    {props.effect.modifiedAt && (
+                        <small className="whitespace-nowrap">
+                            Aangepast <Timer date={new Date(props.effect.modifiedAt)} /> geleden
+                        </small>
+                    )}
+                </div>
+            </div>
+
             <span className="ml-auto"></span>
-            {props.effect.lastError && (
-                <EffectListItemButton
-                    icon={faTimes}
-                    style={{ color: "red" }}
-                    title={props.effect.lastError}
-                    onClick={() => alert(`Compilatie fout:\n${props.effect.lastError}`)}>
-                    Error
-                </EffectListItemButton>
-            )}
-            <EffectListItemButton
-                icon={readOnly ? faEye : faPen}
-                style={{ margin: "0 0.4em" }}
+
+            <span
+                className="p-2"
                 onClick={(ev) => {
                     ev.stopPropagation();
-                    history.push(`/effects/${props.effect.id}`);
+                    if (client.user!.admin) {
+                        props.onFavorite();
+                    } else {
+                        alert(
+                            "Een effect heeft een ster wanneer deze zich in de actieve effecten-cyclus bevindt. Dit kan enkel aangevinkt worden door een administrator. Enkel de beste effecten krijgen een ster!"
+                        );
+                    }
                 }}>
+                <FontAwesomeIcon
+                    icon={faStar}
+                    className={"text-lg " + (props.effect.favorite ? "text-yellow-400 hover:text-yellow-600" : "text-gray-200 hover:text-gray-500")}
+                />
+            </span>
+
+            <EffectListItemButton
+                onClick={() => history.push(`/effects/${props.effect.id}`)}
+                icon={readOnly ? faEye : faPen}
+                style={{ margin: "0 0.4em" }}>
                 {readOnly ? "Bekijken" : "Aanpassen"}
             </EffectListItemButton>
+
+            {client.user!.admin && (
+                <EffectListItemButton
+                    icon={faMagic}
+                    style={{ margin: "0 0.4em" }}
+                    onClick={async (ev) => {
+                        ev.stopPropagation();
+                        setLoading(true);
+                        await props.onActivate();
+                        setLoading(false);
+                    }}>
+                    Activeren
+                </EffectListItemButton>
+            )}
         </ListItem>
     );
 }
 
 const DEFAULT_CODE = `
-
 // This code will run for every led on the strip 
-// 'index' contains which led is currently 
-// 'timer' contains the time in millis
+// 'index' contains which led the program is executing for
+// 'timer' contains the time in millis since the program has started
 
 // Use Ctrl+Space to see which utility functions are available
+// More examples and documentation are available at https://pollencode.github.io/rgb-navigation/
 
-// Example effect: pulsing red
+// Example effect: pulsing red with green gradient
 r = sin(timer / 5)
-g = 0
+g = index / 4
 b = 0
 
 `;
 
-// function EffectsTab(props: NavLinkProps) {
-//     return (
-//         <NavLink
-//             activeClassName="bg-blue-600 text-white"
-//             className={`py-1.5 px-2.5 font-bold mr-2 last:mr-0 flex-grow rounded-lg text-center transitio cursor-pointer border bg-white hover:bg-blue-100}`}
-//             {...props}
-//         />
-//     );
-// }
-
 export function Effects(props: { userOnly?: boolean }) {
     const client = useContext(AuthContext);
     const [effects, setEffects] = useState<Effect[] | undefined>();
-    // const [onlyUser, setOnlyUser] = useState(true);
+    const [carrouselInterval, setCarrouselInterval] = useState(0);
     const history = useHistory();
 
     useEffect(() => {
-        client.getEffects(false, props.userOnly).then(setEffects);
+        function onActiveEffect({ activeEffectId, carrouselInterval }: { activeEffectId: number; carrouselInterval: number }) {
+            setEffects((effects) =>
+                effects!.map((t) => (t.id === activeEffectId ? { ...t, active: true, lastError: null } : { ...t, active: false }))
+            );
+            setCarrouselInterval(carrouselInterval);
+        }
+        client.socket.on("activeEffect", onActiveEffect);
+        return () => {
+            client.socket.off("activeEffect", onActiveEffect);
+        };
+    }, []);
+
+    useEffect(() => {
+        client.getEffects(false, props.userOnly ? client.user!.id : undefined).then(({ effects, carrouselInterval }) => {
+            setEffects(effects);
+            setCarrouselInterval(carrouselInterval);
+        });
     }, [props.userOnly]);
 
     if (!effects) {
@@ -141,47 +177,77 @@ export function Effects(props: { userOnly?: boolean }) {
     return (
         <div className="flex justify-center px-1 md:px-4 pt-3 md:pt-10">
             <div style={{ width: "800px" }}>
-                <Button
-                    icon={faPlus}
-                    onClick={async () => {
-                        let name = prompt("Geef je nieuwe effect een naam");
-                        if (!name) return;
-                        let newEffect = await client.createEffect({ code: DEFAULT_CODE, name: name });
-                        if (newEffect.status === "ok") {
-                            setEffects([...effects, newEffect.effect]);
-                            history.push(`/effects/${newEffect.effect.id}`);
-                        } else {
-                            alert(`Kon geen nieuw effect aanmaken:\n${newEffect.error}`);
-                        }
-                    }}>
-                    Nieuw effect maken
-                </Button>
+                <div className="flex items-center flex-wrap">
+                    <Button
+                        icon={faPlus}
+                        onClick={async () => {
+                            let name = prompt("Geef je nieuwe effect een naam");
+                            if (!name) return;
+                            let newEffect = await client.createEffect({ code: DEFAULT_CODE, name: name });
+                            if (newEffect.status === "ok") {
+                                setEffects([...effects, newEffect.effect]);
+                                history.push(`/effects/${newEffect.effect.id}`);
+                            } else {
+                                alert(`Kon geen nieuw effect aanmaken:\n${newEffect.error}`);
+                            }
+                        }}>
+                        Nieuw effect maken
+                    </Button>
+                    {client.user!.admin && (
+                        <div className="ml-auto p-2 flex">
+                            <p className="text-xs opacity-50 w-24 lg:w-40 text-right leading-3 mr-2">
+                                {carrouselInterval > 0 ? (
+                                    <>Het carrousel switcht elke {carrouselInterval / 1000} seconden tussen de favoriete effecten.</>
+                                ) : (
+                                    <>Het carrousel is inactief.</>
+                                )}
+                            </p>
+                            <Button
+                                allowSmall
+                                icon={faUndo}
+                                onClick={() => {
+                                    let input = parseInt(
+                                        prompt(
+                                            "Het carrousel wisselt elke x seconden tussen de favoriete effecten. Voer het interval in seconden in om tussen effecten te switchen, voer 0 in om deze functie uit te schakelen."
+                                        )!
+                                    );
+                                    if (isNaN(input)) return;
+                                    client.setCarrousel(input);
+                                }}>
+                                Instellen
+                            </Button>
+                        </div>
+                    )}
+                </div>
                 <List>
                     {effects.map((e) => (
                         <EffectListItem
+                            showAuthor={!props.userOnly}
                             key={e.id}
                             effect={e}
-                            onClick={async () => {
+                            onFavorite={async () => {
+                                await client.favoriteEffect(e.id, !e.favorite);
+                                setEffects((effects) => effects!.map((t) => (e.id === t.id ? { ...t, favorite: !e.favorite } : t)));
+                            }}
+                            onActivate={async () => {
                                 if (e.active) return;
                                 let res = await client.buildEffect(e.id, true);
                                 if (res.status === "ok") {
-                                    setEffects((effects) =>
-                                        effects!.map((t) => (t.id === e.id ? { ...t, active: true, lastError: null } : { ...t, active: false }))
-                                    );
+                                    // setEffects((effects) =>
+                                    //     effects!.map((t) => (t.id === e.id ? { ...t, active: true, lastError: null } : { ...t, active: false }))
+                                    // );
+                                    await new Promise((res) => setTimeout(res, 500));
                                 } else {
-                                    let error = res.error;
-                                    setEffects((effects) => effects!.map((t) => (t.id === e.id ? { ...t, lastError: error } : t)));
+                                    alert("Kon niet uploaden: " + res.error);
                                 }
-                                await new Promise((res) => setTimeout(res, 1000));
                             }}
                         />
                     ))}
                     {effects.length === 0 && (
-                        <p className="text-gray-500 px-4 py-3">
-                            {props.userOnly ? "Je hebt nog geen effecten. Wat is een effect? Een effect is een" : "Er zijn nog geen effecten"}
-                        </p>
+                        <p className="text-gray-500 px-4 py-3">{props.userOnly ? "Je hebt nog geen effecten." : "Er zijn nog geen effecten"}</p>
                     )}
                 </List>
+                <div className="h-32"></div>
             </div>
         </div>
     );

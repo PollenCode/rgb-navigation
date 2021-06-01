@@ -15,46 +15,60 @@ export function LedController() {
     return (
         <div className="flex items-center flex-col min-h-screen justify-center">
             <h1 className="text-4xl font-bold mb-8">LedController</h1>
-            <div className="flex flex-row">
-                <p className="mr-5 text-lg">Start led:</p>
-                <input
-                    type="number"
-                    id="quantity"
-                    name="quantity"
-                    min="0"
-                    max={MAX_LEDS}
-                    defaultValue="0"
-                    onChange={(event) => setStartLed(event.target.value)}
-                    className="border-black h-5 mr-5 "></input>
-                <p className="mr-5 text-lg">End led:</p>
-                <input
-                    type="number"
-                    id="quantity"
-                    name="quantity"
-                    min="0"
-                    max={MAX_LEDS}
-                    defaultValue={MAX_LEDS}
-                    onChange={(event) => setEndLed(event.target.value)}
-                    className="border-black h-5 mr-5 "></input>
-                <p className="mr-5 text-lg">Tijd:</p>
-                <input
-                    type="number"
-                    id="quantity"
-                    name="quantity"
-                    min="1"
-                    defaultValue="1"
-                    onChange={(event) => setDuration(event.target.value)}
-                    className="border-black h-5 mr-5 "></input>
-                <p className="mr-5 text-lg">Kleur:</p>
-                <input type="color" onChange={(event) => setColor(event.target.value)}></input>
-                <Button
-                    style={{ margin: "0.5em" }}
-                    type="button"
-                    onClick={async () => {
-                        client.ledController(Number(startLed), Number(endLed), Number(duration), color);
-                    }}>
-                    Verzenden
-                </Button>
+            <div className="flex flex-col">
+                <div className="flex flex-row">
+                    <p className="mr-5 text-lg">Start led:</p>
+                    <input
+                        type="number"
+                        id="quantity"
+                        name="quantity"
+                        min="0"
+                        max={MAX_LEDS}
+                        defaultValue="0"
+                        onChange={(event) => setStartLed(event.target.value)}
+                        className="border-black h-5 mr-5 w-20"
+                    ></input>
+                </div>
+                <div className="flex flex-row mt-3">
+                    <p className="mr-5 text-lg">End led:</p>
+                    <input
+                        type="number"
+                        id="quantity"
+                        name="quantity"
+                        min="0"
+                        max={MAX_LEDS}
+                        defaultValue={MAX_LEDS}
+                        onChange={(event) => setEndLed(event.target.value)}
+                        className="border-black h-5 mr-5 w-20"
+                    ></input>
+                </div>
+                <div className="flex flex-row mt-3">
+                    <p className="mr-5 text-lg">Tijd (in seconden):</p>
+                    <input
+                        type="number"
+                        id="quantity"
+                        name="quantity"
+                        min="1"
+                        defaultValue="1"
+                        onChange={(event) => setDuration(event.target.value)}
+                        className="border-black h-5 mr-5 w-20"
+                    ></input>
+                </div>
+                <div className="flex flex-row mt-3">
+                    <p className="mr-5 text-lg">Kleur:</p>
+                    <input type="color" onChange={(event) => setColor(event.target.value)}></input>
+                </div>
+                <div className="mt-3">
+                    <Button
+                        style={{ margin: "0.5em" }}
+                        type="button"
+                        onClick={async () => {
+                            client.enableLedRoute(Number(startLed), Number(endLed), Number(duration), color);
+                        }}
+                    >
+                        Verzenden
+                    </Button>
+                </div>
             </div>
         </div>
     );

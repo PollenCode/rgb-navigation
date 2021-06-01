@@ -9,6 +9,7 @@ import apiRouter from "./apiRouter";
 import path from "path";
 import fs from "fs";
 import debug from "debug";
+import helmet from "helmet";
 
 const logger = debug("rgb:server");
 
@@ -20,6 +21,7 @@ if (!process.env.NODE_ENV || !process.env.PORT || !process.env.JWT_SECRET) {
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
 if (isDevelopment) {
     // Bypass cors during development
     app.use((req, res, next) => {
@@ -31,14 +33,36 @@ if (isDevelopment) {
     });
 }
 
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                "default-src": ["'self'"],
+                "base-uri": ["'self'"],
+                "block-all-mixed-content": [],
+                "font-src": ["'self'", "https:", "data:"],
+                "frame-ancestors": ["'self'"],
+                "img-src": ["'self'", "data:", "https://www.google-analytics.com"],
+                "object-src": ["'none'"],
+                "script-src": [
+                    "'self'",
+                    "https://www.google-analytics.com",
+                    "https://ssl.google-analytics.com",
+                    "https://cdn.jsdelivr.net",
+                    "'unsafe-eval'",
+                ],
+                "worker-src": ["'self'", "blob:"],
+                "script-src-attr": ["'none'"],
+                "style-src": ["'self'", "https:", "'unsafe-inline'"],
+                "upgrade-insecure-requests": [],
+                "connect-src": ["'self'", "https://maps.googleapis.com", "https://www.google-analytics.com"],
+            },
+        },
+    })
+);
+
 app.use(express.static("public"));
 app.use("/api", apiRouter);
-
-if (isDevelopment) {
-    app.get("/deviceToken/:roomId", (req, res, next) => {
-        res.end(createDeviceAccessToken(req.params.roomId));
-    });
-}
 
 app.use((req, res, next) => {
     res.sendFile("index.html", { root: "public" });

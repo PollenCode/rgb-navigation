@@ -1,13 +1,16 @@
-import { PrismaClient } from ".prisma/client";
+import { Effect, PrismaClient } from ".prisma/client";
 import { Router } from "express";
 import debug from "debug";
-import { withUser } from "./middleware";
-import { sendArduino } from "./socketServer";
-import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, VoidType } from "rgb-compiler";
+import { withAuth, withValidator } from "./middleware";
+import { roomNumberToLine, notifyActiveEffect, notifyLedController } from "./socketServer";
+import { ByteCodeTarget, ByteType, CompareToken, IntType, parseProgram, Scope, Var, VoidType } from "rgb-compiler";
 import { isDevelopment } from "./helpers";
 import fs from "fs";
+import { IdeInfo } from "rgb-navigation-api";
+import { ideInfo } from "./ideInfo";
+import * as tv from "typed-object-validator";
 
-const MAX_EFFECT_PER_USER = 10;
+const MAX_EFFECT_PER_USER = 8;
 const LED_COUNT = 784;
 
 const logger = debug("rgb:effects");
@@ -15,17 +18,63 @@ const router = Router();
 const prisma = new PrismaClient();
 
 let activeEffectId = -1;
+let lastVariables: ReadonlyMap<string, Var>;
+let carrouselInterval = 0;
+let effectCarrouselTask: NodeJS.Timeout | undefined = undefined;
 
-function compile(input: string): [Buffer, number] {
+async function startEffectCarrousel() {
+    effectCarrouselTask = undefined;
+
+    let favorites = await prisma.effect.findMany({
+        where: {
+            favorite: true,
+        },
+    });
+
+    if (favorites.length <= 0) {
+        return;
+    }
+
+    let index = favorites.findIndex((e) => e.id === activeEffectId);
+    if (index < 0 || ++index >= favorites.length) {
+        index = 0;
+    }
+
+    let effect = favorites[index];
+    logger("playing next carrousel effect", effect.name, effect.id);
+    try {
+        let [compiled, entryPoint, lastVars] = compile(effect.code);
+        activeEffectId = effect.id;
+        lastVariables = lastVars;
+        notifyLedController({ type: "uploadProgram", byteCode: compiled.toString("hex"), entryPoint: entryPoint });
+        notifyActiveEffect(activeEffectId, carrouselInterval);
+    } catch (ex) {
+        logger("could not play next carrousel effect with id %d: %s", effect.id, ex);
+    }
+
+    effectCarrouselTask = setTimeout(startEffectCarrousel, carrouselInterval);
+}
+
+function stopEffectCarrousel() {
+    carrouselInterval = 0;
+    if (effectCarrouselTask !== undefined) {
+        clearTimeout(effectCarrouselTask);
+        effectCarrouselTask = undefined;
+    }
+}
+
+// effectCarrouselTask = setTimeout(startEffectCarrousel, 5000);
+
+function compile(input: string): [Buffer, number, ReadonlyMap<string, Var>] {
     let scope = new Scope();
     let target = new ByteCodeTarget();
 
-    scope.defineVar("r", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(0, new ByteType()) });
-    scope.defineVar("g", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(1, new ByteType()) });
-    scope.defineVar("b", { type: new ByteType(), volatile: true, location: target.allocateVariableAt(2, new ByteType()) });
-    scope.defineVar("index", { type: new IntType(), volatile: true, location: target.allocateVariableAt(4, new IntType()), readonly: true });
-    scope.defineVar("timer", { type: new IntType(), volatile: true, location: target.allocateVariableAt(8, new IntType()), readonly: true });
-    scope.defineVar("LED_COUNT", { type: new IntType(), readonly: true });
+    scope.defineVar("r", { type: new ByteType(), location: target.allocateVariableAt(0, new ByteType()) });
+    scope.defineVar("g", { type: new ByteType(), location: target.allocateVariableAt(1, new ByteType()) });
+    scope.defineVar("b", { type: new ByteType(), location: target.allocateVariableAt(2, new ByteType()) });
+    scope.defineVar("index", { type: new IntType(), location: target.allocateVariableAt(4, new IntType()) });
+    scope.defineVar("timer", { type: new IntType(), location: target.allocateVariableAt(8, new IntType()) });
+    scope.defineVar("LED_COUNT", { type: new IntType(), constant: true });
     scope.setVarKnownValue("LED_COUNT", LED_COUNT);
 
     target.defineDefaultMacros(scope);
@@ -47,14 +96,32 @@ function compile(input: string): [Buffer, number] {
         fs.writeFileSync("../arduino/testing/input.hex", buffer);
     }
 
-    return [buffer, entryPoint];
+    return [buffer, entryPoint, scope.variables];
 }
 
-router.post("/effect/build/:id", async (req, res, next) => {
+router.post("/effect/carrousel/:seconds", withAuth(true, true), async (req, res, next) => {
+    let seconds = parseInt(req.params.seconds);
+    if (isNaN(seconds)) {
+        return res.status(406);
+    }
+
+    stopEffectCarrousel();
+
+    if (seconds >= 4) {
+        carrouselInterval = seconds * 1000;
+        await startEffectCarrousel();
+    }
+
+    notifyActiveEffect(activeEffectId, carrouselInterval);
+
+    res.end();
+});
+
+router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) => {
     let id = parseInt(req.params.id);
     let upload = !!req.query.upload;
     if (isNaN(id)) {
-        return res.status(400).end();
+        return res.status(406).end();
     }
 
     let effect = await prisma.effect.findUnique({
@@ -67,8 +134,9 @@ router.post("/effect/build/:id", async (req, res, next) => {
         return res.status(404).end();
     }
 
+    let compiled, entryPoint, lastVars;
     try {
-        let [compiled, entryPoint] = compile(effect.code);
+        [compiled, entryPoint, lastVars] = compile(effect.code);
         effect = await prisma.effect.update({
             where: {
                 id: id,
@@ -99,15 +167,19 @@ router.post("/effect/build/:id", async (req, res, next) => {
 
     if (upload) {
         activeEffectId = id;
-        sendArduino({ type: "uploadProgram", byteCode: effect.compiled!.toString("hex"), entryPoint: effect.entryPoint! });
+        lastVariables = lastVars;
+        stopEffectCarrousel();
+        notifyLedController({ type: "uploadProgram", byteCode: effect.compiled!.toString("hex"), entryPoint: effect.entryPoint! });
+        notifyActiveEffect(activeEffectId, carrouselInterval);
     }
     res.json({ status: "ok" });
 });
 
-router.get("/effect", withUser(false, false), async (req, res, next) => {
+router.get("/effect", async (req, res, next) => {
+    let authorId = String(req.query.authorId) || undefined;
     let effects = await prisma.effect.findMany({
         where: {
-            authorId: req.user && req.query.onlyUser === "true" ? req.user.id : undefined,
+            authorId: authorId,
         },
         select: {
             name: true,
@@ -116,6 +188,7 @@ router.get("/effect", withUser(false, false), async (req, res, next) => {
             lastError: true,
             modifiedAt: true,
             createdAt: true,
+            favorite: true,
             author: {
                 select: {
                     id: true,
@@ -124,9 +197,7 @@ router.get("/effect", withUser(false, false), async (req, res, next) => {
                 },
             },
         },
-        orderBy: {
-            modifiedAt: "desc",
-        },
+        orderBy: [{ favorite: "desc" }, { modifiedAt: "desc" }],
     });
     // Move active effect to beginning of array
     if (activeEffectId >= 0) {
@@ -135,13 +206,17 @@ router.get("/effect", withUser(false, false), async (req, res, next) => {
             effects.unshift(effects.splice(activeIndex, 1)[0]);
         }
     }
-    res.json(effects.map((e) => ({ ...e, active: activeEffectId === e.id })));
+    res.json({
+        effects: effects.map((e) => ({ ...e, active: activeEffectId === e.id })),
+        activeEffectId: activeEffectId,
+        carrouselInterval: carrouselInterval,
+    });
 });
 
-router.delete("/effect/:id", withUser(false), async (req, res, next) => {
+router.delete("/effect/:id", withAuth(false), async (req, res, next) => {
     let id = parseInt(req.params.id);
     if (isNaN(id)) {
-        return res.status(400).end();
+        return res.status(406).end();
     }
 
     let effect = await prisma.effect.findUnique({
@@ -154,7 +229,7 @@ router.delete("/effect/:id", withUser(false), async (req, res, next) => {
         logger("user %d tried to delete effect that doesn't exist (%d)", req.user!.id, id);
         return res.status(404).end();
     }
-    if (effect.authorId !== req.user!.id) {
+    if (effect.authorId !== req.user!.id && !req.user.admin) {
         logger("user %d tried to delete effect that isn't his (%s)", req.user.id, effect.name);
         return res.status(403).end();
     }
@@ -168,18 +243,13 @@ router.delete("/effect/:id", withUser(false), async (req, res, next) => {
     res.end();
 });
 
-router.post("/effect", withUser(false), async (req, res, next) => {
-    let { code, name } = req.body;
+const CreateEffectRequestSchema = tv.object({
+    code: tv.string().min(0).max(2000),
+    name: tv.string().min(1).max(30),
+});
 
-    let existing = await prisma.effect.findUnique({
-        where: {
-            name,
-        },
-    });
-
-    if (existing) {
-        return res.status(400).json({ status: "error", error: "Effect with set name already exists." });
-    }
+router.post("/effect", withAuth(false), withValidator(CreateEffectRequestSchema), async (req, res, next) => {
+    let data: tv.SchemaType<typeof CreateEffectRequestSchema> = req.body;
 
     let userEffectCount = await prisma.effect.count({ where: { authorId: req.user.id } });
     if (!req.user.admin && userEffectCount > MAX_EFFECT_PER_USER) {
@@ -191,8 +261,8 @@ router.post("/effect", withUser(false), async (req, res, next) => {
 
     let effect = await prisma.effect.create({
         data: {
-            name: name,
-            code: code,
+            name: data.name,
+            code: data.code,
             author: {
                 connect: {
                     id: req.user!.id,
@@ -219,8 +289,30 @@ router.post("/effect", withUser(false), async (req, res, next) => {
     });
 });
 
-router.patch("/effect", withUser(false), async (req, res, next) => {
-    let { code, name, id } = req.body;
+router.patch("/effect/:id", withAuth(true), async (req, res, next) => {
+    let id = parseInt(req.params.id);
+    if (isNaN(id)) {
+        return res.status(406).end();
+    }
+
+    await prisma.effect.update({
+        where: {
+            id: id,
+        },
+        data: {
+            favorite: req.query.favorite === "true",
+        },
+    });
+
+    res.end();
+});
+
+router.put("/effect/:id", withAuth(false), withValidator(CreateEffectRequestSchema), async (req, res, next) => {
+    let id = parseInt(req.params.id);
+    if (isNaN(id)) {
+        return res.status(406).end();
+    }
+    let data: tv.SchemaType<typeof CreateEffectRequestSchema> = req.body;
 
     let existing = await prisma.effect.findUnique({
         where: {
@@ -232,7 +324,7 @@ router.patch("/effect", withUser(false), async (req, res, next) => {
         return res.status(404).end();
     }
 
-    if (existing.authorId !== req.user.id) {
+    if (existing.authorId !== req.user.id && !req.user.admin) {
         logger("user %d tried to update other user's effect (%s)", req.user.id, name);
         return res.status(403).end();
     }
@@ -242,8 +334,8 @@ router.patch("/effect", withUser(false), async (req, res, next) => {
             id: existing.id,
         },
         data: {
-            code: code,
-            name: name,
+            code: data.code,
+            name: data.name,
             modifiedAt: new Date(),
         },
         select: {
@@ -263,10 +355,10 @@ router.patch("/effect", withUser(false), async (req, res, next) => {
     res.json(effect);
 });
 
-router.get("/effect/:id", withUser(false), async (req, res, next) => {
+router.get("/effect/:id", async (req, res, next) => {
     let id = parseInt(req.params.id);
     if (isNaN(id)) {
-        return res.status(400).end();
+        return res.status(406).end();
     }
 
     let effect = await prisma.effect.findUnique({
@@ -295,6 +387,72 @@ router.get("/effect/:id", withUser(false), async (req, res, next) => {
     }
 
     res.json(effect);
+});
+
+router.post("/effectVar/:varName/:value", withAuth(true, true), async (req, res, next) => {
+    let value = parseInt(req.params.value);
+    let varName = req.params.varName;
+    if (isNaN(value) || !varName) {
+        return res.status(406).end("invalid value or varName");
+    }
+    if (!lastVariables) {
+        return res.status(400).end("no program has been uploaded");
+    }
+
+    let v = lastVariables.get(varName);
+    if (!v) {
+        return res
+            .status(404)
+            .end("variable not found in currently running program, available variables: " + Array.from(lastVariables.keys()).join(", "));
+    }
+    if (v.constant) {
+        return res.status(400).end("the variable you tried to assign is constant, please convert it to a normal variable");
+    }
+
+    notifyLedController({
+        type: "setVar",
+        location: v.location! as number,
+        size: v.type.size,
+        value: value,
+    });
+
+    res.status(201).end();
+});
+
+const RouteRequestSchema = tv.object({
+    r: tv.number().min(0).max(255),
+    g: tv.number().min(0).max(255),
+    b: tv.number().min(0).max(255),
+    startLed: tv.number().min(0).max(LED_COUNT),
+    endLed: tv.number().min(0).max(LED_COUNT),
+    duration: tv.number().min(0).max(1000),
+});
+
+router.post("/route", withAuth(true, true), withValidator(RouteRequestSchema), async (req, res, next) => {
+    let data = req.body as tv.SchemaType<typeof RouteRequestSchema>;
+    notifyLedController({
+        type: "enableLine",
+        r: data.r,
+        g: data.g,
+        b: data.b,
+        duration: data.duration,
+        endLed: data.endLed,
+        startLed: data.startLed,
+    });
+    res.status(201).end();
+});
+
+router.post("/roomRoute/:n", withAuth(true, true), async (req, res, next) => {
+    let roomNumber = parseInt(req.params.n);
+    if (isNaN(roomNumber)) {
+        return res.status(406);
+    }
+    notifyLedController(roomNumberToLine(roomNumber));
+    res.status(201).end();
+});
+
+router.get("/ideInfo", async (req, res, next) => {
+    res.json(ideInfo);
 });
 
 export default router;

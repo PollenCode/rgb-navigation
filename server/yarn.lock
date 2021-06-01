@@ -754,6 +754,11 @@ has-yarn@^2.1.0:
   resolved "https://registry.yarnpkg.com/has-yarn/-/has-yarn-2.1.0.tgz#137e11354a7b5bf11aa5cb649cf0c6f3ff2b2e77"
   integrity sha512-UqBRqi4ju7T+TqGNdqAO0PaSVGsDGJUBQvk9eUWNGRY1CFGDzYhLWoM7JQEemnlvVcv/YEmc2wNW8BC24EnUsw==
 
+helmet@^4.6.0:
+  version "4.6.0"
+  resolved "https://registry.yarnpkg.com/helmet/-/helmet-4.6.0.tgz#579971196ba93c5978eb019e4e8ec0e50076b4df"
+  integrity sha512-HVqALKZlR95ROkrnesdhbbZJFi/rIVSoNq6f3jA/9u6MIbTsPh3xZwihjeI5+DO/2sOV6HMHooXcEOuwskHpTg==
+
 http-cache-semantics@^4.0.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/http-cache-semantics/-/http-cache-semantics-4.1.0.tgz#49e91c5cbf36c9b94bcfcd71c23d5249ec74e390"
@@ -1545,6 +1550,11 @@ type-is@~1.6.17, type-is@~1.6.18:
   dependencies:
     media-typer "0.3.0"
     mime-types "~2.1.24"
+
+typed-object-validator@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/typed-object-validator/-/typed-object-validator-1.0.7.tgz#2913ed6f5052b7e2f3f52abcbc9dfc03247eba20"
+  integrity sha512-SrjHAivyGYAB1xmX3aZCaqNrubp7ZjHlYlGgMx4+R2n5ymv5R9HdajUPWRe/LxYOtMztKpLiC7Vwh+wP85bKYg==
 
 typedarray-to-buffer@^3.1.5:
   version "3.1.5"

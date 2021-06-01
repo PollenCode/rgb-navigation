@@ -1,15 +1,15 @@
 import React, { useEffect, useMemo, useState, useContext } from "react";
 import { BrowserRouter as Router, Switch, Route, Redirect, useHistory } from "react-router-dom";
-import { Complete } from "./pages/Complete";
+import { Complete } from "./pages/CardScanner";
 import { User, RGBClient, serverPath } from "rgb-navigation-api";
-import { Overview } from "./pages/Overview";
+import { LiveOverview } from "./pages/LiveOverview";
 import { AuthContext } from "./AuthContext";
 import { PageWrapper } from "./components/PageWrapper";
 import { DGang } from "./pages/DGang";
 import { Effects } from "./pages/Effects";
 import { LedController } from "./pages/LedController";
-import { Token } from "./pages/Token";
-import { GiveAdmin } from "./pages/GiveAdmin";
+import { ApiKeys } from "./pages/ApiKeys";
+import { GiveAdmin } from "./pages/Users";
 import { EffectEditor } from "./pages/EffectEditor";
 
 const client = new RGBClient();
@@ -18,7 +18,7 @@ export function Routes() {
     return (
         <AuthContext.Provider value={client}>
             <Switch>
-                <Route path="/realtime" exact component={Overview} />
+                <Route path="/realtime" exact component={LiveOverview} />
                 <Route component={UserRouter} />
             </Switch>
         </AuthContext.Provider>
@@ -100,9 +100,8 @@ function AdminRouter() {
         <Switch>
             {<Route path="/admin/dgang" exact component={DGang} />}
             <Route path="/admin/ledcontrol" exact component={LedController} />
-            <Route path="/admin/token" exact component={Token} />
+            <Route path="/admin/apikeys" exact component={ApiKeys} />
             <Route path="/admin/users" exact component={GiveAdmin} />
-            {/* <Route path="/admin/lessenrooster" exact component={Lessenrooster} /> */}
             <Redirect to="/effects" />
         </Switch>
     );

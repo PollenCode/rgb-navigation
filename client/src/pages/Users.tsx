@@ -22,13 +22,15 @@ export function GiveAdmin() {
                 <List>
                     {users.map((user: any) => (
                         <ListItem key={user.id}>
-                            <p className="ml-5">Gebruiker: {user.name}</p>
+                            <p className="ml-5">
+                                {user.name} <small className="opacity-50">({user.email})</small>
+                            </p>
                             {!user.admin && (
                                 <Button
                                     style={{ margin: "0.5em 0.5em 0.5em auto" }}
                                     type="button"
                                     onClick={() => {
-                                        client.giveAdmin(user);
+                                        client.giveAdmin(user.id);
                                         setMessage("Admin gegeven aan user: " + user.name);
                                     }}>
                                     Geef Admin
@@ -39,7 +41,7 @@ export function GiveAdmin() {
                                     style={{ margin: "0.5em 0.5em 0.5em auto" }}
                                     type="button"
                                     onClick={() => {
-                                        client.takeAdmin(user);
+                                        client.takeAdmin(user.id);
                                         setMessage("Admin afgenomen vam user: " + user.name);
                                     }}>
                                     Neem Admin
