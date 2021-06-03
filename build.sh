@@ -7,17 +7,17 @@ cd api
 yarn build
 cd ..
 
+cd compiler
+# yarn install --frozen-lockfile
+yarn build
+cd ..
+
 cd client
 # yarn install --frozen-lockfile
 yarn build
 cd ..
 
 cd server
-# yarn install --frozen-lockfile
-yarn build
-cd ..
-
-cd compiler
 # yarn install --frozen-lockfile
 yarn build
 cd ..
