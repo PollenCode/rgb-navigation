@@ -176,7 +176,7 @@ router.post("/effect/:id/build", withAuth(true, true), async (req, res, next) =>
 });
 
 router.get("/effect", async (req, res, next) => {
-    let authorId = String(req.query.authorId) || undefined;
+    let authorId = req.query.authorId ? String(req.query.authorId) : undefined;
     let effects = await prisma.effect.findMany({
         where: {
             authorId: authorId,
