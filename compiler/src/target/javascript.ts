@@ -88,11 +88,11 @@ export class JavascriptTarget implements Target {
     }
 
     private compileValue(token: ValueToken) {
-        let val = token.value;
-        while (val[0] === "0") {
-            val = val.substr(1);
+        let value = token.value;
+        while (value[0] === "0" && value.length > 1) {
+            value = value.substr(1);
         }
-        this.buffer.push(val);
+        this.buffer.push(value);
     }
 
     private compileTernary(token: TernaryToken) {
