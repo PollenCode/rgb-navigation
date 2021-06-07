@@ -6,8 +6,6 @@ interface Memory {
     index: number;
 }
 
-let timeOffset = new Date().getTime();
-
 export class SimulateDataEvent extends Event {
     constructor(public memory: Memory) {
         super("simulate-data");
@@ -47,7 +45,7 @@ export function beginRenderLeds(canvas: HTMLCanvasElement): { task: number } {
 
     function renderLeds() {
         if ((window as any).runLeds) {
-            memory.timer = new Date().getTime() - timeOffset;
+            memory.timer = new Date().getTime() - (window as any).programTime;
             for (let i = 0; i < leds.length; i++) {
                 memory.index = i;
 
