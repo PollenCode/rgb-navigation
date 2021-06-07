@@ -96,6 +96,13 @@ function compile(input: string): [Buffer, number, ReadonlyMap<string, Var>] {
         fs.writeFileSync("../arduino/testing/input.hex", buffer);
     }
 
+    let str = buffer.toString("hex");
+    let s = [];
+    for (let i = 0; i < str.length; i += 2) {
+        s.push("0x" + str[i] + str[i + 1]);
+    }
+    logger("code(entryPoint=%d) %s", entryPoint, s.join(", "));
+
     return [buffer, entryPoint, scope.variables];
 }
 
