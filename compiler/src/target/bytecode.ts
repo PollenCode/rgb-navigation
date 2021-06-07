@@ -35,7 +35,7 @@ export class ByteCodeTarget implements Target {
 
     allocateVariable(type: Type): VariableLocation {
         let address = this.currentVarAllocation;
-        this.currentVarAllocation += type.size;
+        this.currentVarAllocation += 4; // type.size
         if (this.currentVarAllocation > this.maxVarAllocation) {
             this.maxVarAllocation = this.currentVarAllocation;
         }
@@ -193,7 +193,7 @@ export class ByteCodeTarget implements Target {
     }
 
     private compileReference(token: ReferenceToken, isRoot: boolean) {
-        if (token.type instanceof IntType && token.constantValue !== undefined) {
+        if (token.variable.constant) {
             this.writer.pushConst(token.constantValue!);
         } else {
             let v = token.variable;
@@ -207,13 +207,17 @@ export class ByteCodeTarget implements Target {
     }
 
     private compileAssignment(token: AssignmentToken, isRoot: boolean) {
+        if (token.variable.constant) {
+            return;
+        }
+
         let v = token.variable;
         if (token.type && v.location === undefined) {
             // This is a declaration
             v.location = this.allocateVariable(token.type);
         }
 
-        if (token.value && !token.variable.constant) {
+        if (token.value) {
             this.compileToken(token.value);
             if (!isRoot) {
                 this.writer.dup();
