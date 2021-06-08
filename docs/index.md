@@ -47,7 +47,7 @@ b = timer % 255
 
 This will show a flashing blue color. This is a rather sudden transition, it is better to use the builtin `sin()` function to create a smooth transition from blue to black:
 
-```
+```c
 r = 0
 g = 0
 b = sin(timer)
