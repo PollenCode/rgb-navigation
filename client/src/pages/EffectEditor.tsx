@@ -108,6 +108,7 @@ export function EffectEditor(props: RouteComponentProps<{ id: string }>) {
             if (compiled) {
                 // Place compiled javascript code on window object
                 console.log(compiled);
+                (window as any).programTime = new Date().getTime();
                 (window as any).runLeds = eval(compiled); // Yikes, transition to iframe sandboxing?
             }
         }
@@ -380,7 +381,7 @@ function registerLanguage(monaco: Monaco, ideInfo: IdeInfo) {
         },
     });
     monaco.editor.defineTheme("rgb-lang-theme", {
-        base: "vs-dark", // Can also be vs-dark or hc-black
+        base: "vs", // Can also be vs-dark or hc-black
         inherit: true,
         colors: {},
         rules: [

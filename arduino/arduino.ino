@@ -14,10 +14,10 @@ extern "C"
 #define LED_COUNT 784
 =======
 // Uncomment if using in production
-// #define PRODUCTION
+#define PRODUCTION
 
 #define BRIGHTNESS 40
-#define LED_ORDER RGB
+#define LED_ORDER BGR
 #define LED_COUNT 50
 #define BAUD_RATE 4800
 >>>>>>> ec5d91073185d12108cc96524cb044da25922e2d
@@ -41,9 +41,9 @@ extern "C"
 #define BRIGHTNESS 255
 #define LED_ORDER RGB
 #define LED_COUNT 784
-#define BAUD_RATE 115200
+#define BAUD_RATE 4800
 #define DATA_PIN 4
-#define MAX_PROGRAM_SIZE 2000
+#define MAX_PROGRAM_SIZE 4000
 #endif
 >>>>>>> ec5d91073185d12108cc96524cb044da25922e2d
 
@@ -58,6 +58,7 @@ struct LineEffect
 };
 
 uint32_t fpsCounter = 0;
+uint64_t programStartTime = 0;
 uint64_t lastShownInfoTime = 0;
 
 CRGB leds[LED_COUNT];
@@ -67,8 +68,8 @@ CRGB routeColors[MAX_LINES];
 uint8_t routeIdCounter = 0;
 
 int effectInterlacing = 0;
-unsigned short effectEntryPoint = 12;
-uint8_t mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x04, 0x03, 0x00, 0x22, 0x03, 0x04, 0xff, 0x00, 0x08, 0x00, 0x00, 0x03, 0x00, 0x08, 0x01, 0x00, 0x01, 0x04, 0x00, 0x03, 0x02, 0x14, 0x03, 0x00, 0x30, 0x21, 0x05, 0x04, 0xff, 0x00, 0x22, 0x02, 0x03, 0x00, 0x08, 0x02, 0x00, 0x0f};
+unsigned short effectEntryPoint = 24;
+uint8_t mem[MAX_PROGRAM_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x14, 0x02, 0x10, 0x00, 0x01, 0x08, 0x00, 0x01, 0x10, 0x00, 0x13, 0x01, 0x04, 0x00, 0x03, 0x02, 0x12, 0x10, 0x03, 0xff, 0x03, 0xff, 0x23, 0x08, 0x0f};
 int lastExitCode = 0;
 
 #define PROGRAM_INDEX32(address) *(int32_t *)(mem + address)
@@ -346,6 +347,8 @@ void handlePackets()
             Serial.print(", entryPoint=");
             Serial.print(effectEntryPoint);
             Serial.println(")");
+
+            programStartTime = millis();
         }
         break;
     case 6:
@@ -398,7 +401,7 @@ void handlePackets()
     }
 }
 
-void drawRoutes(uint32_t time)
+void drawRoutes(uint64_t time)
 {
     // Iterate every led
     for (int i = 0; i < LED_COUNT; i++)
@@ -458,10 +461,10 @@ void drawRoutes(uint32_t time)
     }
 }
 
-void drawEffect(uint32_t time)
+void drawEffect(uint64_t time)
 {
     // Set timer int variable which is located at 8
-    *(uint32_t *)(mem + 8) = (uint32_t)time;
+    *(uint32_t *)(mem + 8) = (uint32_t)(time - programStartTime);
 
     // Execute program for every led on the strip
     lastExitCode = 0;
@@ -470,17 +473,17 @@ void drawEffect(uint32_t time)
         // Set index int variable which is located at 4
         *(uint32_t *)(mem + 4) = i;
         // Set red byte variable which is located at 0
-        mem[0] = leds[i].r;
         // Set green byte variable which is located at 1
-        mem[1] = leds[i].g;
         // Set blue byte variable which is located at 2
+        mem[0] = leds[i].r;
+        mem[1] = leds[i].g;
         mem[2] = leds[i].b;
 
         // Run the program in effect
         stackPointer = MAX_PROGRAM_SIZE;
         exePointer = effectEntryPoint;
         lastExitCode = run();
-        if (lastExitCode)
+        if (lastExitCode || Serial.available() > 0)
             break;
 
         // Update led color with result of program
