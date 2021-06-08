@@ -129,7 +129,7 @@ export function createSocketServer(server: http.Server) {
 
                     let roomNumber = Math.floor(Math.random() * 6);
                     let ledMessage: LedControllerServerMessage = roomNumberToLine(roomNumber);
-                    let color = "rgb(" + ledMessage.r + "," + ledMessage.b + "," + ledMessage.g + ")";
+                    let color = "rgb(" + ledMessage.r + "," + ledMessage.g + "," + ledMessage.b + ")";
                     let followData = { name: boundUser.name, color: color };
 
                     socket.in(deviceToken.roomId).emit("userShouldFollow", followData);
@@ -198,49 +198,49 @@ export function roomNumberToLine(roomNumber: number) {
             room = "D027";
             startLed = 784;
             endLed = 723;
-            r = 255;
-            g = 0;
-            b = 0;
+            r = 245;
+            g = 238;
+            b = 60;
             break;
         case 1:
             room = "D029";
             startLed = 784;
             endLed = 552;
-            r = 0;
-            g = 0;
-            b = 255;
+            r = 243;
+            g = 77;
+            b = 36;
             break;
         case 2:
             room = "D030";
             startLed = 784;
             endLed = 517;
-            r = 238;
-            g = 130;
-            b = 238;
+            r = 9;
+            g = 142;
+            b = 201;
             break;
         case 3:
             room = "D034a";
             startLed = 0;
             endLed = 308;
-            r = 238;
-            g = 130;
-            b = 238;
+            r = 102;
+            g = 171;
+            b = 40;
             break;
         case 4:
             room = "D034b";
             startLed = 0;
             endLed = 206;
-            r = 255;
-            g = 165;
-            b = 0;
+            r = 104;
+            g = 64;
+            b = 184;
             break;
         case 5:
             room = "D035";
             startLed = 0;
             endLed = 170;
-            r = 58;
-            g = 255;
-            b = 255;
+            r = 75;
+            g = 199;
+            b = 197;
             break;
     }
     let ledMessage: LedControllerServerMessage = {
