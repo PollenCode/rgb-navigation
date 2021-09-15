@@ -3,22 +3,22 @@
 rm -rf build
 
 cd api
-# yarn install --frozen-lockfile
+yarn install
 yarn build
 cd ..
 
 cd compiler
-# yarn install --frozen-lockfile
+yarn install
 yarn build
 cd ..
 
 cd client
-# yarn install --frozen-lockfile
+yarn install
 yarn build
 cd ..
 
 cd server
-# yarn install --frozen-lockfile
+yarn install
 yarn build
 cd ..
 

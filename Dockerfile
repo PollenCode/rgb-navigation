@@ -14,8 +14,8 @@ RUN ./build.sh
 ENV NODE_ENV=production
 
 WORKDIR /app/build/shared
-RUN yarn 
+RUN yarn install --frozen-lockfile
 WORKDIR /app/build/server
-RUN yarn 
+RUN yarn install --frozen-lockfile
 
 CMD ["node", "src/index.js"] 
