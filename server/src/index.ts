@@ -68,21 +68,7 @@ app.use((req, res, next) => {
     res.sendFile("index.html", { root: "public" });
 });
 
-if (isDevelopment) {
-    if (!process.env.PORT) {
-        logger("missing PORT environment variable");
-        process.exit(-1);
-    }
-    let port = parseInt(process.env.PORT);
-    let httpServer = http.createServer(app);
-    httpServer.listen(port);
-    createSocketServer(httpServer);
-    logger("development port open at %d", port);
-} else {
-    if (!process.env.SSL_KEY_FILE || !process.env.SSL_CERT_FILE || !process.env.SSL_CA_FILE) {
-        logger("could not find ssl environment variables, SSL_CA_FILE, SSL_KEY_FILE or SSL_CERT_FILE");
-        process.exit(-1);
-    }
+if (process.env.SSL_KEY_FILE && process.env.SSL_CERT_FILE && process.env.SSL_CA_FILE) {
     let httpsServer = https.createServer(
         {
             key: fs.readFileSync(process.env.SSL_KEY_FILE),
@@ -101,4 +87,15 @@ if (isDevelopment) {
     });
     httpServer.listen(80);
     logger("listening for http on port 80");
+} else {
+    if (!process.env.PORT) {
+        logger("missing PORT environment variable");
+        process.exit(-1);
+    }
+
+    let port = parseInt(process.env.PORT);
+    let httpServer = http.createServer(app);
+    httpServer.listen(port);
+    createSocketServer(httpServer);
+    logger("development port open at %d", port);
 }
