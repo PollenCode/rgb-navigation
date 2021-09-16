@@ -21,6 +21,6 @@ WORKDIR /app/build/server
 RUN yarn install --frozen-lockfile
 
 RUN npx prisma generate
-RUN npx prisma migrate deploy
+# RUN npx prisma migrate deploy
 
 CMD ["node", "src/index.js"] 
