@@ -35,5 +35,4 @@ cp compiler/package.json build/compiler/package.json
 
 cp -r server/prisma build/server
 cp server/package.json build/server
-cp server/.env.example build/server/.env
 cp -r server/dist build/server/src
