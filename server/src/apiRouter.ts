@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createApiKey, createDeviceAccessToken, createUserAccessToken, getOAuthUrl } from "./auth";
+import { createApiKey, createDeviceAccessToken, createUserAccessToken, getGoogleOAuthUrl, getKuOAuthUrl } from "./auth";
 import { isDevelopment } from "./helpers";
 import { withAuth as withAuth, withValidator } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
@@ -17,10 +17,18 @@ const prisma = new PrismaClient();
 router.use(effectRouter);
 
 router.get("/oauth", async (req, res, next) => {
-    res.redirect(getOAuthUrl());
+    res.redirect(getKuOAuthUrl());
 });
 
 router.get("/oauth/complete", async (req, res, next) => {
+    res.end(req.body());
+});
+
+router.get("/google/oauth", async (req, res, next) => {
+    res.redirect(getGoogleOAuthUrl());
+});
+
+router.get("/google/oauth/complete", async (req, res, next) => {
     let code = req.query.code;
     if (!code || typeof code !== "string") {
         return res.status(400).json({ status: "error", error: "invalid code" });
@@ -33,9 +41,9 @@ router.get("/oauth/complete", async (req, res, next) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             code,
-            client_id: process.env.OAUTH_CLIENT_ID,
-            client_secret: process.env.OAUTH_CLIENT_SECRET,
-            redirect_uri: isDevelopment ? "http://localhost:3001/api/oauth/complete" : process.env.OAUTH_REDIRECT,
+            client_id: process.env.GOOGLE_OAUTH_CLIENT_ID,
+            client_secret: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+            redirect_uri: isDevelopment ? "http://localhost:3001/api/oauth/complete" : process.env.GOOGLE_OAUTH_REDIRECT,
             grant_type: "authorization_code",
         }),
     });

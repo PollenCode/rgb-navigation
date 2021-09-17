@@ -35,17 +35,25 @@ export function validateDeviceAccessToken(token: string) {
     }
 }
 
-export function getOAuthUrl() {
+export function getGoogleOAuthUrl() {
     let options = {
-        redirect_uri: `${isDevelopment ? "http://localhost:3001/api/oauth/complete" : process.env.OAUTH_REDIRECT}`,
-        client_id: process.env.OAUTH_CLIENT_ID,
+        redirect_uri: `${isDevelopment ? "http://localhost:3001/api/oauth/complete" : process.env.GOOGLE_OAUTH_REDIRECT}`,
+        client_id: process.env.GOOGLE_OAUTH_CLIENT_ID,
         access_type: "offline",
         response_type: "code",
         prompt: "consent",
-        state: "hello",
+        state: "hello", // TODO
         scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"].join(" "),
     };
     return `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(options)}`;
+}
+
+export function getKuOAuthUrl() {
+    return `https://webwsq.aps.kuleuven.be/sap/bc/sec/oauth2/authorize/index.html?response_type=code&client_id=${encodeURIComponent(
+        process.env.KU_OAUTH_CLIENT_ID!
+    )}&redirect_uri=${encodeURIComponent(
+        process.env.KU_OAUTH_REDIRECT!
+    )}&scope=ZC_EP_UURROOSTER_OAUTH_SRV_0001%2520ZC_EP_OPO_INFO_SRV_0001&state=hello`;
 }
 
 logger("device token", createDeviceAccessToken("dgang"));

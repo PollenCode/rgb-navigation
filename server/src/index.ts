@@ -2,7 +2,7 @@ require("dotenv").config(); // Load .env file
 import express, { json } from "express";
 import http from "http";
 import https from "https";
-import { createDeviceAccessToken, getOAuthUrl } from "./auth";
+import { createDeviceAccessToken, getGoogleOAuthUrl } from "./auth";
 import { isDevelopment } from "./helpers";
 import { createSocketServer } from "./socketServer";
 import apiRouter from "./apiRouter";
