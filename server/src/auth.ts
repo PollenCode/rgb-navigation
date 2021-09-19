@@ -38,12 +38,12 @@ export function validateDeviceAccessToken(token: string) {
 
 export function getGoogleOAuthUrl() {
     let options = {
-        redirect_uri: `${isDevelopment ? "http://localhost:3001/api/oauth/complete" : process.env.GOOGLE_OAUTH_REDIRECT}`,
+        redirect_uri: `${isDevelopment ? "http://localhost:3001/api/oauth/google/complete" : process.env.GOOGLE_OAUTH_REDIRECT}`,
         client_id: process.env.GOOGLE_OAUTH_CLIENT_ID,
         access_type: "offline",
         response_type: "code",
         prompt: "consent",
-        state: "hello", // TODO
+        state: crypto.randomBytes(36).toString("hex"), // TODO
         scope: ["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email"].join(" "),
     };
     return `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(options)}`;
@@ -55,7 +55,7 @@ export function getKuOAuthUrl() {
         client_id: process.env.KU_OAUTH_CLIENT_ID!,
         redirect_uri: process.env.KU_OAUTH_REDIRECT!,
         scope: "ZC_EP_UURROOSTER_OAUTH_SRV_0001 ZC_EP_OPO_INFO_SRV_0001",
-        state: crypto.randomBytes(36).toString("hex"),
+        state: crypto.randomBytes(36).toString("hex"), // TODO
     })}`;
 }
 

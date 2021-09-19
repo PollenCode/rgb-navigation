@@ -41,7 +41,7 @@ function UserRouter() {
             }
 
             if (!user) {
-                window.location.href = serverPath + "/api/oauth";
+                window.location.href = serverPath + "/api/oauth/google";
             }
         }
 
@@ -54,7 +54,7 @@ function UserRouter() {
             client.setAccessToken(localStorage.getItem("s")!);
         } else {
             // Redirect to oauth
-            window.location.href = serverPath + "/api/oauth";
+            window.location.href = serverPath + "/api/oauth/google";
         }
 
         return () => {

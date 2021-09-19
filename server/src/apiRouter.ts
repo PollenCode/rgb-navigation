@@ -24,11 +24,11 @@ router.get("/oauth/complete", async (req, res, next) => {
     res.end(req.body());
 });
 
-router.get("/google/oauth", async (req, res, next) => {
+router.get("/oauth/google", async (req, res, next) => {
     res.redirect(getGoogleOAuthUrl());
 });
 
-router.get("/google/oauth/complete", async (req, res, next) => {
+router.get("/oauth/google/complete", async (req, res, next) => {
     let code = req.query.code;
     if (!code || typeof code !== "string") {
         return res.status(400).json({ status: "error", error: "invalid code" });
@@ -43,7 +43,7 @@ router.get("/google/oauth/complete", async (req, res, next) => {
             code,
             client_id: process.env.GOOGLE_OAUTH_CLIENT_ID,
             client_secret: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
-            redirect_uri: isDevelopment ? "http://localhost:3001/api/oauth/complete" : process.env.GOOGLE_OAUTH_REDIRECT,
+            redirect_uri: isDevelopment ? "http://localhost:3001/api/oauth/google/complete" : process.env.GOOGLE_OAUTH_REDIRECT,
             grant_type: "authorization_code",
         }),
     });
