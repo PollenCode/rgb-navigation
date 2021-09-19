@@ -2,6 +2,7 @@ import jsonwebtoken from "jsonwebtoken";
 import querystring from "querystring";
 import { isDevelopment } from "./helpers";
 import debug from "debug";
+import crypto from "crypto";
 
 const logger = debug("rgb:server:jwt");
 
@@ -49,11 +50,13 @@ export function getGoogleOAuthUrl() {
 }
 
 export function getKuOAuthUrl() {
-    return `https://webwsq.aps.kuleuven.be/sap/bc/sec/oauth2/authorize/index.html?response_type=code&client_id=${encodeURIComponent(
-        process.env.KU_OAUTH_CLIENT_ID!
-    )}&redirect_uri=${encodeURIComponent(
-        process.env.KU_OAUTH_REDIRECT!
-    )}&scope=ZC_EP_UURROOSTER_OAUTH_SRV_0001%2520ZC_EP_OPO_INFO_SRV_0001&state=hello`;
+    return `https://webwsp.aps.kuleuven.be/sap/bc/sec/oauth2/authorize?${querystring.stringify({
+        response_type: "code",
+        client_id: process.env.KU_OAUTH_CLIENT_ID!,
+        redirect_uri: process.env.KU_OAUTH_REDIRECT!,
+        scope: "ZC_EP_UURROOSTER_OAUTH_SRV_0001 ZC_EP_OPO_INFO_SRV_0001",
+        state: crypto.randomBytes(36).toString("hex"),
+    })}`;
 }
 
-logger("device token", createDeviceAccessToken("dgang"));
+// logger("device token", createDeviceAccessToken("dgang"));
