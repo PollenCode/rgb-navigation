@@ -49,11 +49,13 @@ export function getGoogleOAuthUrl() {
     return `https://accounts.google.com/o/oauth2/v2/auth?${querystring.stringify(options)}`;
 }
 
+// From: https://admin.kuleuven.be/icts/services/dataservices
+// To connect to testing environment, use their VPN: https://admin.kuleuven.be/icts/services/extranet/ssl-vpn-pulse-client-en
 export function getKuOAuthUrl() {
-    return `https://webwsp.aps.kuleuven.be/sap/bc/sec/oauth2/authorize?${querystring.stringify({
+    return `https://${process.env.KU_OAUTH_CLIENT_ENDPOINT!}/sap/bc/sec/oauth2/authorize?${querystring.stringify({
         response_type: "code",
         client_id: process.env.KU_OAUTH_CLIENT_ID!,
-        redirect_uri: process.env.KU_OAUTH_REDIRECT!,
+        redirect_uri: process.env.KU_OAUTH_CLIENT_REDIRECT!,
         scope: "ZC_EP_UURROOSTER_OAUTH_SRV_0001 ZC_EP_OPO_INFO_SRV_0001",
         state: crypto.randomBytes(36).toString("hex"), // TODO
     })}`;
