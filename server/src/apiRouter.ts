@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createApiKey, createDeviceAccessToken, createUserAccessToken, getGoogleOAuthUrl, getKuOAuthUrl } from "./auth";
+import { createApiKey, createDeviceAccessToken, createUserAccessToken, getGoogleOAuthUrl } from "./auth";
 import { isDevelopment } from "./helpers";
 import { withAuth as withAuth, withValidator } from "./middleware";
 import jsonwebtoken from "jsonwebtoken";
@@ -10,6 +10,7 @@ import debug from "debug";
 import effectRouter from "./effectRouter";
 import tv, { SchemaType } from "typed-object-validator";
 import querystring from "querystring";
+import { kulValidateOAuthCode, kulGetOAuthUrl, kulRefreshToken, kulGetUserInfo, kulGetSchedule } from "./kul";
 
 const logger = debug("rgb:router");
 const router = Router();
@@ -18,41 +19,47 @@ const prisma = new PrismaClient();
 router.use(effectRouter);
 
 router.get("/oauth", async (req, res, next) => {
-    res.redirect(getKuOAuthUrl());
+    res.redirect(kulGetOAuthUrl());
 });
 
 router.get("/oauth/complete", async (req, res, next) => {
     // https://admin.kuleuven.be/icts/services/dataservices
-    let authToken = Buffer.from(
-        encodeURIComponent(process.env.KU_OAUTH_CLIENT_ID!) + ":" + encodeURIComponent(process.env.KU_OAUTH_CLIENT_SECRET!),
-        "utf-8"
-    ).toString("base64");
-    console.log("authToken", authToken);
+    if (typeof req.query.code !== "string") {
+        return res.status(406).end();
+    }
 
-    let tokenUrl = `https://${process.env.KU_OAUTH_CLIENT_ENDPOINT!}/sap/bc/sec/oauth2/token?${querystring.stringify({
-        grant_type: "authorization_code",
-        code: req.query.code as string,
-        redirect_uri: process.env.KU_OAUTH_CLIENT_REDIRECT!,
-    })}`;
+    let code = req.query.code;
+    let token = await kulValidateOAuthCode(code);
+    if (!token) {
+        return res.status(400).end("could not authenticate");
+    }
 
-    console.log("tokenUrl", tokenUrl);
+    let userInfo = await kulGetUserInfo(token.access_token);
+    if (!userInfo) {
+        return res.status(400).end("could not get user info");
+    }
+    let userId = userInfo.d.results[0].id;
+    if (!userId || typeof userId !== "string") {
+        return res.status(400).end("invalid user id");
+    }
 
-    let tokenRes = await fetch(tokenUrl, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            Authorization: `Basic ${authToken}`,
+    // let now = new Date();
+    // now.setDate(1);
+    // now.setMonth(11);
+    // let schedule = await kulGetSchedule(userId, token.access_token, now);
+
+    await prisma.user.upsert({
+        where: {
+            id: userId,
+        },
+        update: {},
+        create: {
+            id: userId,
+            refreshToken: token.refresh_token,
         },
     });
 
-    res.json({
-        status: tokenRes.status,
-        body: req.body,
-        query: req.query,
-        response: await tokenRes.text(),
-        responseStatus: tokenRes.status,
-        responseStatusText: tokenRes.statusText,
-    });
+    res.redirect((isDevelopment ? "http://localhost:3000/oauth?s=" : "/oauth?s=") + createUserAccessToken(userId));
 });
 
 router.get("/oauth/google", async (req, res, next) => {

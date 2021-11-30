@@ -12,12 +12,14 @@ generator client {
 
 model User {
   id           String   @id @default(uuid())
-  name         String
-  email        String
+  name         String?
+  email        String?
   // NFC unique id
   identifier   String?  @unique
   // Auth token for google or kuleuven
   token        String?
+  // KUL refresh token
+  refreshToken String?
   ownedEffects Effect[]
   admin        Boolean  @default(false)
   tokens       Token[]
