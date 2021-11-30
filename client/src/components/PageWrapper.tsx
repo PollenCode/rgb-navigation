@@ -85,10 +85,7 @@ export function PageWrapper(props: { children?: React.ReactNode }) {
                 <button className="hover:underline mr-5 py-1 inline" onClick={() => client.setAccessToken(undefined)}>
                     <FontAwesomeIcon icon={faSignOutAlt} /> Uitloggen
                 </button>
-                <a
-                    target="_blank"
-                    className="hover:underline ml-auto mr-5 py-1 inline-block"
-                    href="https://git.ikdoeict.be/stijn.rogiest/rgb-navigation">
+                <a target="_blank" className="hover:underline ml-auto mr-5 py-1 inline-block" href="https://gitlab.com/stijn.rogiest/rgb-navigation">
                     <FontAwesomeIcon icon={faGitlab} /> GitLab
                 </a>
                 <a target="_blank" className="hover:underline sm:mr-5 py-1 inline-block" href="https://pollencode.github.io/rgb-navigation/">
