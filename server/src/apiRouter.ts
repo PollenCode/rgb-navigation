@@ -27,34 +27,32 @@ router.get("/oauth/complete", async (req, res, next) => {
         encodeURIComponent(process.env.KU_OAUTH_CLIENT_ID!) + ":" + encodeURIComponent(process.env.KU_OAUTH_CLIENT_SECRET!),
         "utf-8"
     ).toString("base64");
-    let tokenRes = await fetch(
-        `https://${process.env.KU_OAUTH_CLIENT_ENDPOINT!}/sap/bc/sec/oauth2/token?${querystring.stringify({
-            grant_type: "authorization_code",
-            code: req.query.code as string,
-            redirect_uri: process.env.KU_OAUTH_CLIENT_REDIRECT!,
-        })}`,
-        {
-            method: "GET",
-            headers: {
-                Authorization: `Basic ${authToken}`,
-            },
-        }
-    );
+    console.log("authToken", authToken);
 
-    if (tokenRes.ok) {
-        res.json({
-            status: tokenRes.status,
-            body: req.body,
-            query: req.query,
-            token: await tokenRes.text(),
-        });
-    } else {
-        res.json({
-            status: tokenRes.status,
-            body: req.body,
-            query: req.query,
-        });
-    }
+    let tokenUrl = `https://${process.env.KU_OAUTH_CLIENT_ENDPOINT!}/sap/bc/sec/oauth2/token?${querystring.stringify({
+        grant_type: "authorization_code",
+        code: req.query.code as string,
+        redirect_uri: process.env.KU_OAUTH_CLIENT_REDIRECT!,
+    })}`;
+
+    console.log("tokenUrl", tokenUrl);
+
+    let tokenRes = await fetch(tokenUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${authToken}`,
+        },
+    });
+
+    res.json({
+        status: tokenRes.status,
+        body: req.body,
+        query: req.query,
+        response: await tokenRes.text(),
+        responseStatus: tokenRes.status,
+        responseStatusText: tokenRes.statusText,
+    });
 });
 
 router.get("/oauth/google", async (req, res, next) => {
