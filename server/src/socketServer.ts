@@ -5,9 +5,44 @@ import { PrismaClient } from ".prisma/client";
 import { LedControllerServerMessage } from "rgb-navigation-api";
 import debug from "debug";
 import tv, { Schema } from "typed-object-validator";
+import { KUCourse, kulGetSchedule, kulRefreshToken, parseKulCourseDate, parseKulCourseTime } from "./kul";
 
 const logger = debug("rgb:socket");
 const prisma = new PrismaClient();
+
+// The system will still detect if the user is too early
+const TIME_SHIFT_BACKWARDS_MILLISECONDS = 1000 * 60 * 30;
+const LED_PER_ROOM_NUMBER: {
+    [roomNumber: string]: {
+        startLed: number;
+        endLed: number;
+    };
+} = {
+    D027: {
+        startLed: 784,
+        endLed: 723,
+    },
+    D029: {
+        startLed: 784,
+        endLed: 552,
+    },
+    D030: {
+        startLed: 784,
+        endLed: 517,
+    },
+    D034a: {
+        startLed: 0,
+        endLed: 308,
+    },
+    D034b: {
+        startLed: 0,
+        endLed: 206,
+    },
+    D035: {
+        startLed: 0,
+        endLed: 170,
+    },
+};
 
 let roomsCurrentlyBinding: {
     [roomId: string]: { socketId: string; userId: string };
@@ -126,6 +161,79 @@ export function createSocketServer(server: http.Server) {
                     }
 
                     logger("enable led for user", boundUser.id);
+
+                    if (boundUser.refreshToken) {
+                        let kuToken = await kulRefreshToken(boundUser.refreshToken);
+                        if (!kuToken) {
+                            console.error("could not refresh token for user after nfc scan");
+                            socket.in(deviceToken.roomId).emit("nfcGetScheduleError");
+                            return;
+                        }
+
+                        let now = new Date();
+                        let schedule = await kulGetSchedule(boundUser.id, kuToken!.access_token, now);
+                        if (!schedule) {
+                            console.error("could not get schedule for user after nfc scan");
+                            socket.in(deviceToken.roomId).emit("nfcGetScheduleError");
+                            return;
+                        }
+
+                        let currentCourse: KUCourse | null = null;
+                        for (let i = 0; i < schedule.d.results.length; i++) {
+                            let course = schedule.d.results[i];
+                            let date = parseKulCourseDate(course.date);
+                            let startTime = parseKulCourseTime(course.startTime);
+                            let endTime = parseKulCourseTime(course.endTime);
+                            if (!date || !startTime || !endTime) {
+                                console.warn("invalid date/time for course", course);
+                                continue;
+                            }
+
+                            let startDate = new Date(date);
+                            startDate.setHours(startTime.hour);
+                            startDate.setMinutes(startTime.minute);
+                            startDate.setSeconds(startTime.seconds);
+
+                            let endDate = new Date(date);
+                            endDate.setHours(endTime.hour);
+                            endDate.setMinutes(endTime.minute);
+                            endDate.setSeconds(endTime.seconds);
+
+                            if (
+                                now.getTime() >= startDate.getTime() - TIME_SHIFT_BACKWARDS_MILLISECONDS &&
+                                now.getTime() < endDate.getTime() - TIME_SHIFT_BACKWARDS_MILLISECONDS
+                            ) {
+                                currentCourse = course;
+                                break;
+                            }
+                        }
+
+                        if (!currentCourse) {
+                            console.log("user scanned but no course available");
+                            socket.in(deviceToken.roomId).emit("nfcNoSchedule");
+                            return;
+                        }
+
+                        if (
+                            !currentCourse.locations ||
+                            !Array.isArray(currentCourse.locations.results) ||
+                            currentCourse.locations.results.length <= 0
+                        ) {
+                            console.error("no location specified for course", currentCourse);
+                            socket.in(deviceToken.roomId).emit("nfcNoSchedule");
+                            return;
+                        }
+
+                        let location = currentCourse.locations.results[0];
+
+                        if (!(location.roomNumber in LED_PER_ROOM_NUMBER)) {
+                            console.error("no location specified for course", currentCourse);
+                            socket.in(deviceToken.roomId).emit("nfcOtherLocation", { roomName: location.roomName });
+                            return;
+                        }
+
+                        let led = LED_PER_ROOM_NUMBER[location.roomNumber];
+                    }
 
                     let roomNumber = Math.floor(Math.random() * 6);
                     let ledMessage: LedControllerServerMessage = roomNumberToLine(roomNumber);

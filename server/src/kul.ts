@@ -31,41 +31,44 @@ export interface KUUserResponse {
     };
 }
 
-export interface KUScheduleResponse {
-    d: {
+export interface KUCourse {
+    id: string;
+    startTime: string;
+    date: string;
+    academicYear: string;
+    endTime: string;
+    weekDay: string;
+    ects: string;
+    shortDescription: string;
+    longDescription: string;
+    groupinfoGeneral: string;
+    groupinfoDetail: string;
+    locations: {
         results: {
             __metadata: any;
+            eventId: string;
             id: string;
-            startTime: string;
-            date: string;
-            academicYear: string;
-            endTime: string;
-            weekDay: string;
-            ects: string;
-            shortDescription: string;
-            longDescription: string;
-            groupinfoGeneral: string;
-            groupinfoDetail: string;
-            locations: {
-                results: {
-                    __metadata: any;
-                    eventId: string;
-                    id: string;
-                    buildingNumber: string;
-                    roomNumber: string;
-                    roomName: string;
-                    coordY: string;
-                    coordX: string;
-                    buildingName: string;
-                    city: string;
-                    street: string;
-                    mnemonic: string;
-                }[];
-            };
-            teachers: {
-                results: { __metadata: any; eventId: string; id: string; name: string; personnelNumber: string }[];
-            };
+            buildingNumber: string;
+            roomNumber: string;
+            roomName: string;
+            coordY: string;
+            coordX: string;
+            buildingName: string;
+            city: string;
+            street: string;
+            mnemonic: string;
         }[];
+    };
+    teachers: {
+        results: { __metadata: any; eventId: string; id: string; name: string; personnelNumber: string }[];
+    };
+}
+
+export interface KUScheduleResponse {
+    d: {
+        results: (KUCourse & {
+            __metadata: any;
+        })[];
     };
 }
 
@@ -73,6 +76,33 @@ const KU_BASIC_AUTH = Buffer.from(
     encodeURIComponent(process.env.KU_OAUTH_CLIENT_ID!) + ":" + encodeURIComponent(process.env.KU_OAUTH_CLIENT_SECRET!),
     "utf-8"
 ).toString("base64");
+
+/**
+ * Parses date in format "PT12H45M00S"
+ */
+export function parseKulCourseTime(timeString: string) {
+    let hour = parseInt(timeString.substr(2, 2));
+    let minute = parseInt(timeString.substr(5, 2));
+    let seconds = parseInt(timeString.substr(8, 2));
+    if (isNaN(hour) || isNaN(minute) || isNaN(seconds)) return null;
+    return { hour: hour, minute: minute, seconds: seconds };
+}
+
+/**
+ * Parses date in format "\/Date(1638316800000)\/"
+ */
+export function parseKulCourseDate(dateString: string) {
+    let match = dateString.match(/[0-9]+/);
+    if (match) {
+        let timestamp = parseInt(match[0]);
+        if (isNaN(timestamp)) {
+            return null;
+        }
+        return new Date(timestamp);
+    } else {
+        return null;
+    }
+}
 
 export async function kulValidateOAuthCode(code: string) {
     let tokenUrl = `https://${process.env.KU_OAUTH_CLIENT_ENDPOINT!}/sap/bc/sec/oauth2/token?${querystring.stringify({
