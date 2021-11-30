@@ -9,6 +9,7 @@ import { notifyLedController, roomNumberToLine } from "./socketServer";
 import debug from "debug";
 import effectRouter from "./effectRouter";
 import tv, { SchemaType } from "typed-object-validator";
+import querystring from "querystring";
 
 const logger = debug("rgb:router");
 const router = Router();
@@ -21,10 +22,39 @@ router.get("/oauth", async (req, res, next) => {
 });
 
 router.get("/oauth/complete", async (req, res, next) => {
-    res.json({
-        body: req.body,
-        query: req.query,
-    });
+    // https://admin.kuleuven.be/icts/services/dataservices
+    let authToken = Buffer.from(
+        encodeURIComponent(process.env.KU_OAUTH_CLIENT_ID!) + ":" + encodeURIComponent(process.env.KU_OAUTH_CLIENT_SECRET!),
+        "utf-8"
+    ).toString("base64");
+    let tokenRes = await fetch(
+        `https://${process.env.KU_OAUTH_CLIENT_ENDPOINT!}/sap/bc/sec/oauth2/token?${querystring.stringify({
+            grant_type: "authorization_code",
+            code: req.query.code as string,
+            redirect_uri: process.env.KU_OAUTH_CLIENT_REDIRECT!,
+        })}`,
+        {
+            method: "GET",
+            headers: {
+                Authorization: `Basic ${authToken}`,
+            },
+        }
+    );
+
+    if (tokenRes.ok) {
+        res.json({
+            status: tokenRes.status,
+            body: req.body,
+            query: req.query,
+            token: await tokenRes.text(),
+        });
+    } else {
+        res.json({
+            status: tokenRes.status,
+            body: req.body,
+            query: req.query,
+        });
+    }
 });
 
 router.get("/oauth/google", async (req, res, next) => {

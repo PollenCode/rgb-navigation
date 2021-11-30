@@ -17,7 +17,7 @@ export function createApiKey(tokenId: number) {
 export function validateUserAccessToken(token: string) {
     try {
         return jsonwebtoken.verify(token, process.env.JWT_SECRET!) as { userId: string } | { tokenId: number };
-    } catch (ex) {
+    } catch (ex: any) {
         if (ex.message !== "jwt expired") logger("could not verify user jwt", ex, token);
         return null;
     }
