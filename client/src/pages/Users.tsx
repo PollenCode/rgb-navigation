@@ -3,6 +3,7 @@ import { AuthContext } from "../AuthContext";
 import { useContext, useEffect } from "react";
 import { useState } from "react";
 import { List, ListItem } from "../components/List";
+import { User } from "rgb-navigation-api";
 
 export function GiveAdmin() {
     let client = useContext(AuthContext);
@@ -20,10 +21,10 @@ export function GiveAdmin() {
             <div style={{ width: "1000px" }}>
                 <p className="mt-5">{message}</p>
                 <List>
-                    {users.map((user: any) => (
+                    {users.map((user: User) => (
                         <ListItem key={user.id}>
                             <p className="ml-5">
-                                {user.name} <small className="opacity-50">({user.email})</small>
+                                {user.name || user.id} {user.email && <small className="opacity-50">({user.email})</small>}
                             </p>
                             {!user.admin && (
                                 <Button
