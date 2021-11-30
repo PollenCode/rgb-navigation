@@ -21,7 +21,10 @@ router.get("/oauth", async (req, res, next) => {
 });
 
 router.get("/oauth/complete", async (req, res, next) => {
-    res.end(req.body());
+    res.json({
+        body: req.body,
+        query: req.query,
+    });
 });
 
 router.get("/oauth/google", async (req, res, next) => {
